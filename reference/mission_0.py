@@ -2,8 +2,10 @@ import numpy as np
 
 # 1. 准备数据
 # 根据教程的上下文，我们使用这些点进行训练
+# x_train = np.array([-2, -1, 0, 1, 2, 3, 4])
+# y_train = np.array([-2, -1, 0, 1, 2, 3, 4])
 x_train = np.array([-2, -1, 0, 1, 2, 3, 4])
-y_train = np.array([-2, -1, 0, 1, 2, 3, 4])
+y_train = np.array([-4.4, -3.2, -2.3, -1.1, 0.5, 1.9, 2.2])
 
 # 2. 初始化参数
 # 随机初始化参数 a 和 b
