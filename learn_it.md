@@ -143,7 +143,7 @@ $$
 - ReLU(Rectified Linear Unit):
 
   $$
-  \operatorname{ReLU}(x) = \max(0, x)
+  \mathrm{ReLU}(x) = \max(0, x)
   $$
 
   它会把小于 0 的数都变成 0, 让模型产生折线的效果.
@@ -158,7 +158,7 @@ $$
   ![alt text](picture/sigmoid.png)
 - Softmax:
  $$
-   \operatorname{softmax}(z_i) = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
+   \mathrm{softmax}(z_i) = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
  $$
  它把一组输入变成概率分布, 通常用于多分类任务.
 
@@ -202,7 +202,7 @@ $$
 $$
 L = -\sum_k y_k\log(p_k)
 $$ 
-其中 $\mathbf{p} = \operatorname{softmax}(\mathbf{z})$, $\mathbf{y}$ 为 one-hot.
+其中 $\mathbf{p} = \mathrm{softmax}(\mathbf{z})$, $\mathbf{y}$ 为 one-hot.
 [什么是one-hot(独热编码?)](https://zhuanlan.zhihu.com/p/634296763)
 
 从 logits 变成概率: 两条常见路径
@@ -211,7 +211,7 @@ $$
 
 二分类的两种等价实现(你选其一即可)
 1. 方案 A: 单输出 + Sigmoid + BCE($\hat{y}=\sigma(z)$).
-2. 方案 B: 双输出 + Softmax + CE($\mathbf{p}=\operatorname{softmax}([z_0, z_1])$).
+2. 方案 B: 双输出 + Softmax + CE($\mathbf{p}=\mathrm{softmax}([z_0, z_1])$).
 它们在二分类上是等价建模, 只是表达不同. 后续任务约定使用方案 B(2 维 logits + Softmax + CE), 便于扩展到多类.
 
 数值稳定与现代实践
@@ -232,9 +232,9 @@ $$
 
 - 输入层: 输入两个值 (x, y).
 - 隐藏层: 有 h 个神经元, 第 i 个神经元计算
-  $$ z_i = \operatorname{ReLU}(a_i x + b_i y + c_i). $$
+  $$ z_i = \mathrm{ReLU}(a_i x + b_i y + c_i). $$
 - 输出层: 将这些隐藏单元的输出线性组合得到 2 维 logits, 再用 softmax 变成概率
-  $$ \hat{\mathbf{y}} = \operatorname{softmax}(\mathbf{w}_1 z_1 + \cdots + \mathbf{w}_h z_h + \mathbf{b}). $$
+  $$ \hat{\mathbf{y}} = \mathrm{softmax}(\mathbf{w}_1 z_1 + \cdots + \mathbf{w}_h z_h + \mathbf{b}). $$
 
 不过手写每个神经元既笨又容易出错, 我们更推荐矩阵化的表达.
 
@@ -242,14 +242,14 @@ $$
 - 设一个 batch 的输入为 $\mathbf{X} \in \mathbb{R}^{m\times 2}$, 隐藏层宽度为 $h$.
 - 参数: $\mathbf{W}_1 \in \mathbb{R}^{2\times h},\; \mathbf{b}_1 \in \mathbb{R}^{1\times h}$; 输出层 $\mathbf{W}_2 \in \mathbb{R}^{h\times 2},\; \mathbf{b}_2 \in \mathbb{R}^{1\times 2}$.
 - 前向:
-  $$\mathbf{Z}_1 = \mathbf{X}\,\mathbf{W}_1 + \mathbf{b}_1\;(m\times h), \quad \mathbf{H}_1 = \operatorname{ReLU}(\mathbf{Z}_1).$$
-  $$\text{logits} = \mathbf{H}_1\,\mathbf{W}_2 + \mathbf{b}_2\;(m\times 2), \quad \hat{\mathbf{y}} = \operatorname{softmax}(\text{logits}).$$
+  $$\mathbf{Z}_1 = \mathbf{X}\,\mathbf{W}_1 + \mathbf{b}_1\;(m\times h), \quad \mathbf{H}_1 = \mathrm{ReLU}(\mathbf{Z}_1).$$
+  $$\mathrm{logits} = \mathbf{H}_1\,\mathbf{W}_2 + \mathbf{b}_2\;(m\times 2), \quad \hat{\mathbf{y}} = \mathrm{softmax}(\mathrm{logits}).$$
 
 如果一层不够, 我们可以再叠一层, 例如我们把结构定为 2-4-4-2:
 - 输入: X = $(x,y)$.
-- 第 1 层: $\mathbf{Z}_1 = \mathbf{X}\,\mathbf{W}_1 + \mathbf{b}_1,\; \mathbf{H}_1 = \operatorname{ReLU}(\mathbf{Z}_1)$.
-- 第 2 层: $\mathbf{Z}_2 = \mathbf{H}_1\,\mathbf{W}_2 + \mathbf{b}_2,\; \mathbf{H}_2 = \operatorname{ReLU}(\mathbf{Z}_2)$.
-- 输出层: $\text{logits} = \mathbf{H}_2\,\mathbf{W}_3 + \mathbf{b}_3,\; \hat{\mathbf{y}} = \operatorname{softmax}(\text{logits})$.
+- 第 1 层: $\mathbf{Z}_1 = \mathbf{X}\,\mathbf{W}_1 + \mathbf{b}_1,\; \mathbf{H}_1 = \mathrm{ReLU}(\mathbf{Z}_1)$.
+- 第 2 层: $\mathbf{Z}_2 = \mathbf{H}_1\,\mathbf{W}_2 + \mathbf{b}_2,\; \mathbf{H}_2 = \mathrm{ReLU}(\mathbf{Z}_2)$.
+- 输出层: $\mathrm{logits} = \mathbf{H}_2\,\mathbf{W}_3 + \mathbf{b}_3,\; \hat{\mathbf{y}} = \mathrm{softmax}(\mathrm{logits})$.
 
 #### 权重矩阵到底是什么?
 - 把任务一中的 $y = ax + b$ 推广到多维输入: 当输入是向量/矩阵时, 标量 a 就要“长成”一个矩阵, 这样才能一次性对所有维度做线性组合. 这就是权重矩阵的由来.
@@ -265,7 +265,7 @@ $$
 \mathbf{b}_1 = [b_1, b_2, b_3, b_4],\quad
 \mathbf{z} = \mathbf{x}\,\mathbf{W}_1 + \mathbf{b}_1 = [z_1, z_2, z_3, z_4].
 $$
-随后 $\mathbf{h}=\operatorname{ReLU}(\mathbf{z})$ 进入下一层. 多层网络就是把“线性投影 + 非线性”反复堆叠, 例如 2→4→4→2, 逐层拉伸/折叠输入空间, 以刻画更复杂的决策边界.
+随后 $\mathbf{h}=\mathrm{ReLU}(\mathbf{z})$ 进入下一层. 多层网络就是把“线性投影 + 非线性”反复堆叠, 例如 2→4→4→2, 逐层拉伸/折叠输入空间, 以刻画更复杂的决策边界.
 
 这就是多层感知机(Multi-Layer Perceptron, MLP).
 
@@ -302,13 +302,13 @@ $$
 1. 初始化参数: 给每个神经元的权重和偏置随机赋值(建议 He 初始化, 偏置 0).
 2. 前向传播(矩阵形式):
    - 第 1 隐藏层:
-    $$ \mathbf{z}_1 = \mathbf{W}_1\,[x,y]^\top + \mathbf{b}_1,\quad \mathbf{h}_1=\operatorname{ReLU}(\mathbf{z}_1) $$
+    $$ \mathbf{z}_1 = \mathbf{W}_1\,[x,y]^\top + \mathbf{b}_1,\quad \mathbf{h}_1=\mathrm{ReLU}(\mathbf{z}_1) $$
    - 第 2 隐藏层:
-    $$ \mathbf{z}_2 = \mathbf{W}_2\,\mathbf{h}_1 + \mathbf{b}_2,\quad \mathbf{h}_2=\operatorname{ReLU}(\mathbf{z}_2) $$
+    $$ \mathbf{z}_2 = \mathbf{W}_2\,\mathbf{h}_1 + \mathbf{b}_2,\quad \mathbf{h}_2=\mathrm{ReLU}(\mathbf{z}_2) $$
    - 输出层 logits:
-    $$\text{logits} = \mathbf{W}_3\,\mathbf{h}_2 + \mathbf{b}_3$$
+    $$\mathrm{logits} = \mathbf{W}_3\,\mathbf{h}_2 + \mathbf{b}_3$$
    - 概率: 
-    $$\mathbf{p} = \operatorname{softmax}(\text{logits})$$
+    $$\mathbf{p} = \mathrm{softmax}(\mathrm{logits})$$
 1. 计算损失(Loss): 使用交叉熵(CE), 对 batch 取均值.
 2. 反向传播(Backward): 计算损失对每个参数的梯度.
 3. 参数更新: 
@@ -355,25 +355,25 @@ $$
 - 第 1 层(全连接 + ReLU)
   - $\mathbf{W}_1 \in \mathbb{R}^{2\times 4}$, $\mathbf{b}_1 \in \mathbb{R}^{1\times 4}$ (按行广播到 $m\times 4$)
   - $\mathbf{z}_1 = \mathbf{X}\,\mathbf{W}_1 + \mathbf{b}_1 \;\Rightarrow\; (m\times 4)$
-  - $\mathbf{h}_1 = \operatorname{ReLU}(\mathbf{z}_1) \;\Rightarrow\; (m\times 4)$
+  - $\mathbf{h}_1 = \mathrm{ReLU}(\mathbf{z}_1) \;\Rightarrow\; (m\times 4)$
 - 第 2 层(全连接 + ReLU)
   - $\mathbf{W}_2 \in \mathbb{R}^{4\times 4}$, $\mathbf{b}_2 \in \mathbb{R}^{1\times 4}$
   - $\mathbf{z}_2 = \mathbf{h}_1\,\mathbf{W}_2 + \mathbf{b}_2 \;\Rightarrow\; (m\times 4)$
-  - $\mathbf{h}_2 = \operatorname{ReLU}(\mathbf{z}_2) \;\Rightarrow\; (m\times 4)$
+  - $\mathbf{h}_2 = \mathrm{ReLU}(\mathbf{z}_2) \;\Rightarrow\; (m\times 4)$
 - 输出层(全连接 + Softmax)
-  - $\mathbf{p} = \operatorname{softmax}(\text{logits}) \;\Rightarrow\; (m\times 2)$ (每行是两个类别的概率, 和为 1)
+  - $\mathbf{p} = \mathrm{softmax}(\mathrm{logits}) \;\Rightarrow\; (m\times 2)$ (每行是两个类别的概率, 和为 1)
 - 标签: $\mathbf{y}_{\text{onehot}} \in \mathbb{R}^{m\times 2}$ (例如类别 0=[1,0], 类别 1=[0,1]).
 
 为什么这些形状是这样? 直观地把列看作输入维度, 行看作输出维度: $\mathbf{W}$ 的形状就是“输入维度×输出维度”, 矩阵乘法自然把 $m\times \text{in}$ 变成 $m\times \text{out}$.
 
 ### 二. 前向传播
 - $\mathbf{z}_1 = \mathbf{X}(m\times 2)\cdot\mathbf{W}_1(2\times 4) + \mathbf{b}_1(1\times 4) \Rightarrow m\times 4$
-- $\mathbf{h}_1 = \operatorname{ReLU}(\mathbf{z}_1) \Rightarrow m\times 4$
+- $\mathbf{h}_1 = \mathrm{ReLU}(\mathbf{z}_1) \Rightarrow m\times 4$
 - $\mathbf{z}_2 = \mathbf{h}_1(m\times 4)\cdot\mathbf{W}_2(4\times 4) + \mathbf{b}_2(1\times 4) \Rightarrow m\times 4$
-- $\mathbf{h}_2 = \operatorname{ReLU}(\mathbf{z}_2) \Rightarrow m\times 4$
-- $\text{logits} = \mathbf{h}_2(m\times 4)\cdot\mathbf{W}_3(4\times 2) + \mathbf{b}_3(1\times 2) \Rightarrow m\times 2$
-- $\mathbf{p} = \operatorname{softmax}(\text{logits}) \Rightarrow m\times 2$
-- 损失: $L = \operatorname{CE}(\mathbf{p}, \mathbf{y}_{\text{onehot}})$ (对 batch 求均值)
+- $\mathbf{h}_2 = \mathrm{ReLU}(\mathbf{z}_2) \Rightarrow m\times 4$
+- $\mathrm{logits} = \mathbf{h}_2(m\times 4)\cdot\mathbf{W}_3(4\times 2) + \mathbf{b}_3(1\times 2) \Rightarrow m\times 2$
+- $\mathbf{p} = \mathrm{softmax}(\mathrm{logits}) \Rightarrow m\times 2$
+- 损失: $L = \mathrm{CE}(\mathbf{p}, \mathbf{y}_{\text{onehot}})$ (对 batch 求均值)
 
 ### 三. 损失与激活的搭配: 经典与现代做法
 
@@ -404,11 +404,11 @@ $$
 
 以 2-4-4-2 为例, batch 大小 $m$:
 - 最后一层(softmax + CE 给出优雅梯度)
-  - $\mathrm{d}\,\text{logits} = (\mathbf{p} - \mathbf{y}_{\text{onehot}}) / m$  (形状 $m\times 2$)
-  - $\mathrm{d}\mathbf{W}_3 = \mathbf{h}_2^\top\,\mathrm{d}\,\text{logits}$  (形状 $4\times 2$)
-  - $\mathrm{d}\mathbf{b}_3 = \text{按行求和}(\mathrm{d}\,\text{logits})$  (形状 $1\times 2$)
+  - $\mathrm{d}\,\mathrm{logits} = (\mathbf{p} - \mathbf{y}_{\text{onehot}}) / m$  (形状 $m\times 2$)
+  - $\mathrm{d}\mathbf{W}_3 = \mathbf{h}_2^\top\,\mathrm{d}\,\mathrm{logits}$  (形状 $4\times 2$)
+  - $\mathrm{d}\mathbf{b}_3 = \text{按行求和}(\mathrm{d}\,\mathrm{logits})$  (形状 $1\times 2$)
 - 传到隐藏层 2
-  - $\mathrm{d}\mathbf{h}_2 = \mathrm{d}\,\text{logits}\,\mathbf{W}_3^\top$  (形状 $m\times 4$)
+  - $\mathrm{d}\mathbf{h}_2 = \mathrm{d}\,\mathrm{logits}\,\mathbf{W}_3^\top$  (形状 $m\times 4$)
   - $\mathrm{d}\mathbf{h}_2^{\text{pre}} = \mathrm{d}\mathbf{h}_2 \odot 1[\mathbf{z}_2>0]$  (ReLU 掩码, 形状 $m\times 4$)
   - $\mathrm{d}\mathbf{W}_2 = \mathbf{h}_1^\top\,\mathrm{d}\mathbf{h}_2^{\text{pre}}$  (形状 $4\times 4$)
   - $\mathrm{d}\mathbf{b}_2 = \text{按行求和}(\mathrm{d}\mathbf{h}_2^{\text{pre}})$  (形状 $1\times 4$)
@@ -442,7 +442,7 @@ $$
 - **SiLU(Sigmoid Linear Unit)**: 也叫 Swish, 是 ReLU 的平滑版本, 由 Google 提出.SiLU 是由 Sigmoid 函数和线性变换结合而成的激活函数,公式如下：
 
     $$
-    \operatorname{SiLU}(x) = x \cdot \sigma(x)
+    \mathrm{SiLU}(x) = x \cdot \sigma(x)
     $$
 
     其中,$\sigma(x) = \frac{1}{1 + e^{-x}}$ 是标准的 Sigmoid 函数.简单来说,SiLU 将输入 $x$ 与其通过 Sigmoid 函数的输出相乘.这种设计既保留了非线性特性,又引入了平滑性.
@@ -452,19 +452,19 @@ $$
   GELU 则基于高斯分布的累积分布函数 (CDF), 其定义为：
 
   $$
-  \operatorname{GELU}(x) = x \cdot \Phi(x)
+  \mathrm{GELU}(x) = x \cdot \Phi(x)
   $$
 
   其中,$\Phi(x)$ 是标准正态分布的累积分布函数.由于直接计算 $\Phi(x)$ 较为复杂,实践中通常使用近似公式：
 
   $$
-  \operatorname{GELU}(x) \approx x \cdot \sigma(1.702x)
+  \mathrm{GELU}(x) \approx x \cdot \sigma(1.702x)
   $$
 
     或者更精确的近似：
 
     $$
-    \operatorname{GELU}(x) \approx 0.5x \left(1 + \tanh\left(\sqrt{\frac{2}{\pi}}(x + 0.044715x^3)\right)\right)
+    \mathrm{GELU}(x) \approx 0.5x \left(1 + \tanh\left(\sqrt{\frac{2}{\pi}}(x + 0.044715x^3)\right)\right)
     $$
 
 GELU 的灵感来源于高斯分布,因此它在处理输入时具有一定的概率特性.
@@ -543,7 +543,7 @@ AdamW 通常在大模型训练中表现更好,比如 Transformer 系列模型,�
 ### Batch Normalization (BN)
 - 在一个 batch 内, 对每个通道(特征维)做标准化, 再学习可训练的缩放/平移参数 $\gamma,\beta$:
   $$
-  \mu_B = \operatorname{mean}(x),\quad \sigma_B^2 = \operatorname{var}(x) \\
+  \mu_B = \mathrm{mean}(x),\quad \sigma_B^2 = \mathrm{var}(x) \\
   \hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \varepsilon}},\quad y = \gamma\,\hat{x} + \beta
   $$
 - 推理阶段使用滑动平均累计的全局 $\mu,\sigma^2$.
@@ -556,7 +556,7 @@ AdamW 通常在大模型训练中表现更好,比如 Transformer 系列模型,�
 ### Layer Normalization (LN)
 - 对每个样本自身在特征维上做标准化, 与 batch 大小无关:
   $$
-  \mu = \operatorname{mean}_{\text{feature}}(x),\quad \sigma^2 = \operatorname{var}_{\text{feature}}(x) \\
+  \mu = \mathrm{mean}_{\text{feature}}(x),\quad \sigma^2 = \mathrm{var}_{\text{feature}}(x) \\
   \hat{x} = \frac{x - \mu}{\sqrt{\sigma^2 + \varepsilon}},\quad y = \gamma\,\hat{x} + \beta
   $$
 - 适用: 小 batch、RNN、Transformer. 一般放在线性后、激活前(与实现保持一致即可).
