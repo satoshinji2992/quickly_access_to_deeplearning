@@ -1,3 +1,9 @@
+---
+title: learn_it
+created: '2025-10-22T14:32:31.229Z'
+modified: '2025-12-03T05:31:16.748Z'
+---
+
 # 前言
 这个教程的目的是带你入门或者巩固深度学习的基础知识和算法.你应该已经上过或正在上人工智能入门课并且把作业文档丢给 AI 让它生成过一份"完美的作业"了, 现在该到静下心来再学习一遍的时候了. 
 
@@ -202,7 +208,7 @@ $$L = -\big[y\log(\hat{y}) + (1-y)\log(1-\hat{y})\big]$$
 其中 $y\in\{0,1\}, \, \hat{y}$ 是在圆内的概率.你可以把不同的预测值和真实值带入到公式中, 体会 BCE 如何衡量预测的好坏.
 比如:
 
-| 真实值 y | 预测值 $\hat{y}$ | BCE 损失 L |
+| 真实值 $y$ | 预测值 $\hat{y}$ | BCE 损失 $L$ |
 | -------- | ---------------- | ---------- |
 | 1        | 0.9              | 0.1054     |
 | 1        | 0.6              | 0.5108     |
@@ -221,8 +227,7 @@ $$\hat{y} = \sigma(z) = \frac{1}{1 + e^{-z}} = \frac{1}{1 + e^{-2.0}} \approx 0.
 
 现在我们可以计算BCE损失:
 
-$$L = -[y\log(\hat{y}) + (1-y)\log(1-\hat{y})] = -[1\log(0.8808) + (1-1)\log(1-0.8808)] $$
-$$ = -\log(0.8808) \approx 0.1269$$
+$$L = -[y\log(\hat{y}) + (1-y)\log(1-\hat{y})] \\ = -[1\log(0.8808) + (1-1)\log(1-0.8808)] \\ = -\log(0.8808) \approx 0.1269$$
 
 看着很复杂,仔细一看会发现这是很符合直觉的
 
@@ -262,9 +267,9 @@ $$\mathbf{y} = [0, 1, 0]$$
 
 现在我们可以计算CE损失:
 
-$$L = -\sum_k y_k\log(p_k) = -[0\log(0.6590) + 1\log(0.2424) + 0\log(0.0986)] $$
+$$L = -\sum_k y_k\log(p_k) \\ = -[0\log(0.6590) + 1\log(0.2424) + 0\log(0.0986)] 
 
-$$ = -\log(0.2424) \approx 1.4170$$
+\\ = -\log(0.2424) \approx 1.4170$$
 
 这个损失值表示模型在这个样本上的预测与真实标签之间的差距. 损失值越小, 说明模型越自信地做出了正确的预测.
 
@@ -300,9 +305,9 @@ $$ = -\log(0.2424) \approx 1.4170$$
 
 - 输入层: 输入两个值 (x, y).
 - 隐藏层: 有 h 个神经元, 第 i 个神经元计算
-  $$ z_i = \mathrm{ReLU}(a_i x + b_i y + c_i). $$
+$$ z_i = \mathrm{ReLU}(a_i x + b_i y + c_i). $$
 - 输出层: 将这些隐藏单元的输出线性组合得到 2 维 logits, 再用 softmax 变成概率
-  $$ \hat{\mathbf{y}} = \mathrm{softmax}(\mathbf{w}_1 z_1 + \cdots + \mathbf{w}_h z_h + \mathbf{b}). $$
+$$ \hat{\mathbf{y}} = \mathrm{softmax}(\mathbf{w}_1 z_1 + \cdots + \mathbf{w}_h z_h + \mathbf{b}). $$
 
 不过手写每个神经元既笨又容易出错, 我们更推荐矩阵化的表达.
 
@@ -434,13 +439,13 @@ $$
 为什么这些形状是这样? 直观地把列看作输入维度, 行看作输出维度: $\mathbf{W}$ 的形状就是“输入维度×输出维度”, 矩阵乘法自然把 $m\times \text{in}$ 变成 $m\times \text{out}$.
 
 ### 二. 前向传播
-- $\mathbf{z}_1 = \mathbf{X}(m\times 2)\cdot\mathbf{W}_1(2\times 4) + \mathbf{b}_1(1\times 4) \Rightarrow m\times 4$
-- $\mathbf{h}_1 = \mathrm{ReLU}(\mathbf{z}_1) \Rightarrow m\times 4$
-- $\mathbf{z}_2 = \mathbf{h}_1(m\times 4)\cdot\mathbf{W}_2(4\times 4) + \mathbf{b}_2(1\times 4) \Rightarrow m\times 4$
-- $\mathbf{h}_2 = \mathrm{ReLU}(\mathbf{z}_2) \Rightarrow m\times 4$
-- $\mathrm{logits} = \mathbf{h}_2(m\times 4)\cdot\mathbf{W}_3(4\times 2) + \mathbf{b}_3(1\times 2) \Rightarrow m\times 2$
-- $\mathbf{p} = \mathrm{softmax}(\mathrm{logits}) \Rightarrow m\times 2$
-- 损失: $L = \mathrm{CE}(\mathbf{p}, \mathbf{y}_{\text{onehot}})$ (对 batch 求均值)
+- $$\mathbf{z}_1 = \mathbf{X}(m\times 2)\cdot\mathbf{W}_1(2\times 4) + \mathbf{b}_1(1\times 4) \Rightarrow m\times 4$$
+- $$\mathbf{h}_1 = \mathrm{ReLU}(\mathbf{z}_1) \Rightarrow m\times 4$$
+- $$\mathbf{z}_2 = \mathbf{h}_1(m\times 4)\cdot\mathbf{W}_2(4\times 4) + \mathbf{b}_2(1\times 4) \Rightarrow m\times 4$$
+- $$\mathbf{h}_2 = \mathrm{ReLU}(\mathbf{z}_2) \Rightarrow m\times 4$$
+- $$\mathrm{logits} = \mathbf{h}_2(m\times 4)\cdot\mathbf{W}_3(4\times 2) + \mathbf{b}_3(1\times 2) \Rightarrow m\times 2$$
+- $$\mathbf{p} = \mathrm{softmax}(\mathrm{logits}) \Rightarrow m\times 2$$
+- 损失: $$L = \mathrm{CE}(\mathbf{p}, \mathbf{y}_{\text{onehot}})$$ (对 batch 求均值)
 
 ### 三. 损失与激活的搭配: 经典与现代做法
 
@@ -720,7 +725,134 @@ $$\sigma = \sqrt{\frac{2}{\text{fan\_in}}} = \sqrt{\frac{2}{256}} = \sqrt{\frac{
 # 这是飞机还是轮船? 用 ResNet 分类物体!
 在前两个任务中, 你已经掌握了从零开始实现一个简单神经网络的基本方法, 并完善了你的深度学习小库. 现在, 你将使用它来搭建一个经典的 ResNet 网络, 并用它来识别cifar-100数据集中的物体类别
 
----
+## 一. 深度网络的退化现象与 ResNet 的提出
+
+### 深度网络的困境: 反直觉的退化现象
+在深度学习发展初期, 研究人员发现一个令人困惑的现象: 随着网络深度的增加, 性能并不会单调提升. 当网络层数超过某个阈值(如 20 层), 会出现明显的**退化问题**(Degradation Problem):
+
+- **训练误差上升**: 更深的网络在训练集上的表现反而变差
+- **测试误差同步恶化**: 这不是过拟合, 而是网络根本难以训练
+- **梯度传播困难**: 信号在深层网络中难以有效传播
+
+### ResNet 的理论突破: 残差学习框架
+何恺明等人在 2015 年提出的残差网络(ResNet)从根本上改变了这一局面. 其核心思想可以概括为:
+
+**如果深层网络难以学习恒等映射 H(x) = x, 那就让它学习残差 F(x) = H(x) - x**
+
+![](picture/resnet.png)
+
+这个看似简单的转变, 却蕴含着深刻的数学原理:
+
+$$H(x) = F(x) + x$$
+
+其中:
+- `x` 是输入(通过跳跃连接直接传递)
+- `F(x)` 是需要学习的残差函数
+- `H(x)` 是期望的底层映射
+
+### 为什么残差学习更有效?
+从优化理论的角度分析:
+
+
+1. **问题简化**: 学习恒等映射在数学上是一个困难问题, 但让 `F(x) = 0` 相对容易
+2. **梯度流动**: 跳跃连接提供了梯度传播的"高速公路", 缓解了梯度消失
+3. **表征能力**: 残差块实际上学习的是对恒等映射的微小扰动, 这更符合深度网络的优化特性
+
+## 二. 残差块的理论分析: 从数学到实现
+
+### 残差块的信息流分析
+考虑一个基本的残差块:
+$$y = F(x, {W_i}) + x$$
+其中 `F(x, {W_i})` 代表需要学习的残差映射. 在反向传播时, 梯度计算为:
+$$\frac{∂loss}{∂x} = \frac{∂loss}{∂y} × \frac{∂F}{∂x} + 1$$
+**即使 ∂F/∂x 很小, 梯度也不会完全消失**, 因为存在 "+1" 项. 这保证了梯度能够有效回传.
+
+
+
+### 数据增强的数学原理
+数据增强可以看作在输入空间施加变换群作用：
+
+$$设原始数据分布为 ( P_{data}(x) )，增强变换为 ( T_\theta )，$$
+$$则增强后的分布为：
+[
+P_{aug}(x) = \mathbb{E}_{\theta \sim \Theta}[P_{data}(T_\theta^{-1}(x))]
+]
+$$
+增强后的数据分布是原始数据分布经过随机变换后的平均分布。这样，通过数据增强，我们相当于用群平均（group averaging）获得一个更平滑、更稳定的数据分布，使得模型能够看到更多样化的数据，从而提高模型的泛化能力。
+**具体增强策略的数学解释**：
+- **随机水平翻转**：引入镜像对称性，扩大样本空间
+- **随机裁剪**：模拟平移不变性，增强空间鲁棒性
+- **颜色扰动**：在颜色空间添加噪声，提高对光照变化的鲁棒性
+
+### 归一化的统计理论
+对输入数据进行标准化：
+$$[
+x_{norm} = \frac{x - \mu}{\sigma}
+]$$
+其中 $$( \mu, \sigma )$$ 是数据集的均值和标准差。这种变换的理论好处：
+1. 将输入分布中心化，加速梯度下降收敛
+2. 避免某些维度的数值主导优化过程
+
+##  ResNet 模型构建的数学推导
+
+### 残差块的前向传播公式
+设输入为 x，残差函数为  F(x; W) ，则残差块输出为：
+$$[
+y = F(x; W) + x
+]$$
+
+对于基本的残差块（两个 3×3 卷积）：
+$$[
+F(x; W) = W_2 * \sigma(W_1 * x)
+]$$
+其中  *  表示卷积操作， \sigma  是激活函数（如 ReLU）。
+
+### 反向传播的链式法则推导
+
+在实践中，我们将利用pytorch的[自动微分](https://zhuanlan.zhihu.com/p/60048471)来规避反向传播的繁冗实现。
+
+下面让我们略作理论推导。
+
+考虑损失函数  L ，我们需要计算梯度$$\frac{\partial L}{\partial W_1}  和  \frac{\partial L}{\partial W_2}$$。
+
+**对第二个卷积层的梯度**：
+$$
+\frac{\partial L}{\partial W_2} = \frac{\partial L}{\partial y} \cdot \frac{\partial y}{\partial F} \cdot \frac{\partial F}{\partial W_2} = \frac{\partial L}{\partial y} \cdot \sigma(W_1 * x)^T
+$$
+
+**对第一个卷积层的梯度**：
+$$
+\frac{\partial L}{\partial W_1} = \frac{\partial L}{\partial y} \cdot \frac{\partial y}{\partial F} \cdot \frac{\partial F}{\partial (W_1 * x)} \cdot \frac{\partial (W_1 * x)}{\partial W_1}
+= \frac{\partial L}{\partial y} \cdot W_2^T \cdot \sigma'(W_1 * x) \cdot x^T
+]$$
+
+**关键观察**：由于残差连接，梯度包含两条路径：
+$$
+\frac{\partial L}{\partial x} = \frac{\partial L}{\partial y} \cdot \left( \frac{\partial F}{\partial x} + I \right)
+$$
+$$即使 \frac{\partial F}{\partial x} 很小，梯度也不会消失。$$
+
+### 批量归一化的梯度传播
+在残差块中通常包含批量归一化。设 BN 操作为：
+$$[
+\hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}, \quad y = \gamma\hat{x} + \beta
+]$$
+
+其梯度计算涉及复杂的统计量，但核心思想是：BN 通过标准化使得每层的输入分布稳定，从而：
+- 允许使用更大的学习率
+- 减少对初始化的敏感性
+- 提供轻微的正则化效果
+
+## 三. resnet的实践————动手用resnet分类物体
+
+### CIFAR-100 数据特性分析
+数据集包含 100 个类别的 32×32 彩色图像，理论上的信息容量为：
+- 每个像素：3 通道 × 8bit = 24bit 信息
+- 每张图像：32×32×24 ≈ 24.6kbit 原始信息
+- 有效信息量受限于图像内容和类别结构
+
+## 正在施工中
+
 ---
 ---
 # apple is __ ? __ 注意力是你所需要的

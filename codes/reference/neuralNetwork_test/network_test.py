@@ -4,7 +4,7 @@ import utils.createDataAndPlot as cp
 NETWORK_SHAPE = [2, 4, 4, 2]
 BATCH_SIZE = 32
 PATTERN = "circle"  # square, circle, triangle
-BACKPROPAGATION = "mbsgd"  # mbsgd, adam, rmsprop, adagrad
+BACKPROPAGATION = "adam"  # mbsgd, adam, rmsprop, adagrad
 
 # ----------------------------------
 def activation_ReLU(inputs):
