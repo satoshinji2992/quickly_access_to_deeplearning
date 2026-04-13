@@ -1,0 +1,110 @@
+<svg width="1200" height="540" viewBox="0 0 1200 540" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="100%" stop-color="#10284b"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#56c6ff"/>
+      <stop offset="100%" stop-color="#3dd9c5"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffd166"/>
+      <stop offset="100%" stop-color="#ff9f43"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 30px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #f6fbff; }
+      .subtitle { font: 600 20px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #9ec5f8; }
+      .label { font: 600 16px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #d9ecff; }
+      .note { font: 500 15px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #9fb6d8; }
+      .small { font: 600 14px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #07111f; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="540" rx="32" fill="url(#bg)"/>
+  <text x="70" y="64" class="title">为什么图像任务里 CNN 比 MLP 更自然</text>
+
+  <rect x="52" y="96" width="500" height="388" rx="28" fill="rgba(255,255,255,0.04)" stroke="rgba(86,198,255,0.22)"/>
+  <text x="82" y="136" class="subtitle">MLP：先拉平，再全连接</text>
+
+  <rect x="88" y="170" width="144" height="144" rx="20" fill="rgba(86,198,255,0.08)" stroke="#56c6ff"/>
+  <g fill="#56c6ff">
+    <rect x="104" y="186" width="30" height="30" rx="6"/>
+    <rect x="144" y="186" width="30" height="30" rx="6"/>
+    <rect x="184" y="186" width="30" height="30" rx="6"/>
+    <rect x="104" y="226" width="30" height="30" rx="6"/>
+    <rect x="144" y="226" width="30" height="30" rx="6"/>
+    <rect x="184" y="226" width="30" height="30" rx="6"/>
+    <rect x="104" y="266" width="30" height="30" rx="6"/>
+    <rect x="144" y="266" width="30" height="30" rx="6"/>
+    <rect x="184" y="266" width="30" height="30" rx="6"/>
+  </g>
+  <text x="104" y="336" class="label">32×32×3 图像</text>
+
+  <path d="M248 240 C286 240, 296 240, 332 240" stroke="#ffd166" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <polygon points="332,240 316,230 316,250" fill="#ffd166"/>
+
+  <rect x="344" y="196" width="84" height="88" rx="18" fill="rgba(255,209,102,0.14)" stroke="#ffd166"/>
+  <text x="365" y="236" class="small">拉平</text>
+  <text x="358" y="260" class="small">3072 维</text>
+
+  <path d="M440 240 C468 240, 484 240, 514 240" stroke="#ffd166" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <polygon points="514,240 498,230 498,250" fill="#ffd166"/>
+
+  <g>
+    <circle cx="536" cy="174" r="14" fill="#ff9f43"/>
+    <circle cx="536" cy="214" r="14" fill="#ff9f43"/>
+    <circle cx="536" cy="254" r="14" fill="#ff9f43"/>
+    <circle cx="536" cy="294" r="14" fill="#ff9f43"/>
+    <circle cx="536" cy="334" r="14" fill="#ff9f43"/>
+  </g>
+  <g stroke="rgba(255,209,102,0.28)" stroke-width="2">
+    <line x1="428" y1="210" x2="522" y2="174"/>
+    <line x1="428" y1="220" x2="522" y2="214"/>
+    <line x1="428" y1="230" x2="522" y2="254"/>
+    <line x1="428" y1="240" x2="522" y2="294"/>
+    <line x1="428" y1="250" x2="522" y2="334"/>
+  </g>
+  <text x="84" y="400" class="note">缺点：空间结构被打散，参数量很大，模型要自己硬记“相邻像素”的关系。</text>
+
+  <rect x="628" y="96" width="520" height="388" rx="28" fill="rgba(255,255,255,0.04)" stroke="rgba(61,217,197,0.24)"/>
+  <text x="658" y="136" class="subtitle">CNN：小卷积核在整张图上重复扫描</text>
+
+  <rect x="662" y="170" width="168" height="168" rx="20" fill="rgba(86,198,255,0.08)" stroke="#56c6ff"/>
+  <g fill="#56c6ff">
+    <rect x="678" y="186" width="24" height="24" rx="5"/>
+    <rect x="710" y="186" width="24" height="24" rx="5"/>
+    <rect x="742" y="186" width="24" height="24" rx="5"/>
+    <rect x="774" y="186" width="24" height="24" rx="5"/>
+    <rect x="678" y="218" width="24" height="24" rx="5"/>
+    <rect x="710" y="218" width="24" height="24" rx="5"/>
+    <rect x="742" y="218" width="24" height="24" rx="5"/>
+    <rect x="774" y="218" width="24" height="24" rx="5"/>
+    <rect x="678" y="250" width="24" height="24" rx="5"/>
+    <rect x="710" y="250" width="24" height="24" rx="5"/>
+    <rect x="742" y="250" width="24" height="24" rx="5"/>
+    <rect x="774" y="250" width="24" height="24" rx="5"/>
+    <rect x="678" y="282" width="24" height="24" rx="5"/>
+    <rect x="710" y="282" width="24" height="24" rx="5"/>
+    <rect x="742" y="282" width="24" height="24" rx="5"/>
+    <rect x="774" y="282" width="24" height="24" rx="5"/>
+  </g>
+  <rect x="710" y="218" width="72" height="72" rx="12" fill="none" stroke="#ffd166" stroke-width="4"/>
+  <text x="678" y="364" class="label">共享参数的 3×3 卷积核</text>
+
+  <path d="M846 254 C880 254, 900 254, 932 254" stroke="url(#blue)" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <polygon points="932,254 916,244 916,264" fill="#56c6ff"/>
+
+  <rect x="946" y="188" width="138" height="132" rx="20" fill="rgba(61,217,197,0.12)" stroke="#3dd9c5"/>
+  <g fill="#3dd9c5">
+    <rect x="970" y="210" width="24" height="24" rx="5"/>
+    <rect x="1002" y="210" width="24" height="24" rx="5"/>
+    <rect x="970" y="242" width="24" height="24" rx="5"/>
+    <rect x="1002" y="242" width="24" height="24" rx="5"/>
+    <rect x="1034" y="242" width="24" height="24" rx="5"/>
+    <rect x="1002" y="274" width="24" height="24" rx="5"/>
+  </g>
+  <text x="956" y="346" class="label">输出特征图</text>
+
+  <text x="660" y="400" class="note">优点：参数共享，保留局部结构，更容易学到边缘、纹理和局部部件。</text>
+</svg>
