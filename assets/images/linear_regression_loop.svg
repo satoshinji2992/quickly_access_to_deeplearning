@@ -1,0 +1,61 @@
+<svg width="1200" height="480" viewBox="0 0 1200 480" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="100%" stop-color="#16325e"/>
+    </linearGradient>
+    <linearGradient id="acc4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#56c6ff"/>
+      <stop offset="100%" stop-color="#31f0b9"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 30px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #f7fbff; }
+      .step { font: 700 18px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #eaf3ff; }
+      .note { font: 500 15px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #9eb7d8; }
+    </style>
+  </defs>
+  <rect width="1200" height="480" rx="30" fill="url(#bg4)"/>
+  <text x="60" y="64" class="title">任务一里最核心的训练闭环</text>
+
+  <g transform="translate(70 145)">
+    <rect width="170" height="130" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="32" y="54" class="step">1. 初始化参数</text>
+    <text x="32" y="88" class="note">随机给 a 和 b 一个起点</text>
+  </g>
+  <g transform="translate(290 145)">
+    <rect width="170" height="130" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="32" y="54" class="step">2. 前向传播</text>
+    <text x="32" y="88" class="note">算出每个点的预测值</text>
+  </g>
+  <g transform="translate(510 145)">
+    <rect width="170" height="130" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="32" y="54" class="step">3. 计算损失</text>
+    <text x="32" y="88" class="note">用 MSE 看当前有多偏</text>
+  </g>
+  <g transform="translate(730 145)">
+    <rect width="170" height="130" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="32" y="54" class="step">4. 计算梯度</text>
+    <text x="32" y="88" class="note">看 a 和 b 应该往哪调</text>
+  </g>
+  <g transform="translate(950 145)">
+    <rect width="170" height="130" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="32" y="54" class="step">5. 更新参数</text>
+    <text x="32" y="88" class="note">沿梯度反方向迈一步</text>
+  </g>
+
+  <g stroke="url(#acc4)" stroke-width="6" fill="none" stroke-linecap="round">
+    <path d="M240 210 C258 210, 272 210, 290 210"/>
+    <path d="M460 210 C478 210, 492 210, 510 210"/>
+    <path d="M680 210 C698 210, 712 210, 730 210"/>
+    <path d="M900 210 C918 210, 932 210, 950 210"/>
+    <path d="M1035 300 C1035 360, 140 360, 140 287"/>
+  </g>
+  <g fill="#56c6ff">
+    <polygon points="290,210 274,200 274,220"/>
+    <polygon points="510,210 494,200 494,220"/>
+    <polygon points="730,210 714,200 714,220"/>
+    <polygon points="950,210 934,200 934,220"/>
+    <polygon points="140,287 130,303 150,303"/>
+  </g>
+  <text x="76" y="410" class="note">只要这个闭环你真的看懂了，后面的 MLP、ResNet、Transformer 都只是把模型本身换复杂了，训练逻辑并没有变。</text>
+</svg>
