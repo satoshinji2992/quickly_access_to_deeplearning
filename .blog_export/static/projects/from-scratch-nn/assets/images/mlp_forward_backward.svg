@@ -1,0 +1,55 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="100%" stop-color="#17345e"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 30px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #f7fbff; }
+      .label { font: 700 18px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #eaf4ff; }
+      .note { font: 500 15px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #a4bddc; }
+    </style>
+  </defs>
+  <rect width="1200" height="520" rx="32" fill="url(#bg5)"/>
+  <text x="60" y="64" class="title">任务二：MLP 的前向传播和反向传播</text>
+
+  <text x="104" y="118" class="label">前向传播</text>
+  <text x="104" y="390" class="label">反向传播</text>
+
+  <g fill="rgba(86,198,255,0.18)" stroke="rgba(86,198,255,0.6)" stroke-width="2">
+    <circle cx="120" cy="180" r="20"/><circle cx="120" cy="250" r="20"/>
+    <circle cx="310" cy="145" r="18"/><circle cx="310" cy="215" r="18"/><circle cx="310" cy="285" r="18"/><circle cx="310" cy="355" r="18"/>
+    <circle cx="520" cy="145" r="18"/><circle cx="520" cy="215" r="18"/><circle cx="520" cy="285" r="18"/><circle cx="520" cy="355" r="18"/>
+    <circle cx="740" cy="190" r="20"/><circle cx="740" cy="260" r="20"/>
+  </g>
+
+  <g stroke="rgba(255,255,255,0.16)" stroke-width="2">
+    <line x1="140" y1="180" x2="292" y2="145"/><line x1="140" y1="180" x2="292" y2="215"/><line x1="140" y1="180" x2="292" y2="285"/><line x1="140" y1="180" x2="292" y2="355"/>
+    <line x1="140" y1="250" x2="292" y2="145"/><line x1="140" y1="250" x2="292" y2="215"/><line x1="140" y1="250" x2="292" y2="285"/><line x1="140" y1="250" x2="292" y2="355"/>
+    <line x1="328" y1="145" x2="502" y2="145"/><line x1="328" y1="145" x2="502" y2="215"/><line x1="328" y1="145" x2="502" y2="285"/><line x1="328" y1="145" x2="502" y2="355"/>
+    <line x1="328" y1="215" x2="502" y2="145"/><line x1="328" y1="215" x2="502" y2="215"/><line x1="328" y1="215" x2="502" y2="285"/><line x1="328" y1="215" x2="502" y2="355"/>
+    <line x1="328" y1="285" x2="502" y2="145"/><line x1="328" y1="285" x2="502" y2="215"/><line x1="328" y1="285" x2="502" y2="285"/><line x1="328" y1="285" x2="502" y2="355"/>
+    <line x1="328" y1="355" x2="502" y2="145"/><line x1="328" y1="355" x2="502" y2="215"/><line x1="328" y1="355" x2="502" y2="285"/><line x1="328" y1="355" x2="502" y2="355"/>
+    <line x1="538" y1="145" x2="720" y2="190"/><line x1="538" y1="145" x2="720" y2="260"/>
+    <line x1="538" y1="215" x2="720" y2="190"/><line x1="538" y1="215" x2="720" y2="260"/>
+    <line x1="538" y1="285" x2="720" y2="190"/><line x1="538" y1="285" x2="720" y2="260"/>
+    <line x1="538" y1="355" x2="720" y2="190"/><line x1="538" y1="355" x2="720" y2="260"/>
+  </g>
+
+  <g fill="#eaf4ff">
+    <text x="109" y="186" font-size="14">x</text><text x="109" y="256" font-size="14">y</text>
+    <text x="286" y="100" font-size="16">隐藏层 1</text>
+    <text x="496" y="100" font-size="16">隐藏层 2</text>
+    <text x="714" y="140" font-size="16">logit 0</text>
+    <text x="714" y="305" font-size="16">logit 1</text>
+  </g>
+
+  <g stroke="#ff9f43" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="10 10">
+    <path d="M760 224 C820 224, 868 224, 930 224"/>
+    <path d="M930 224 C880 308, 650 382, 520 382"/>
+    <path d="M520 382 C400 382, 250 382, 120 382"/>
+  </g>
+  <text x="948" y="230" class="note">loss</text>
+  <text x="646" y="404" class="note">梯度从输出层一路往回传</text>
+  <text x="92" y="438" class="note">前向传播负责“算出预测”，反向传播负责“告诉每一层该往哪调”。这两部分合起来，模型才真的开始学习。</text>
+</svg>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深度学习入门 · 全内容演示动画</title>
+    <style>
+        :root {
+            --bg: #040816;
+            --panel: rgba(10, 20, 44, 0.76);
+            --line: rgba(95, 160, 255, 0.24);
+            --text: #f5f9ff;
+            --muted: #9fb6db;
+            --cyan: #56c6ff;
+            --mint: #31f0b9;
+            --gold: #ffd166;
+            --rose: #ff7b8b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background:
+                radial-gradient(circle at 18% 80%, rgba(49, 240, 185, 0.12), transparent 26%),
+                radial-gradient(circle at 84% 14%, rgba(86, 198, 255, 0.18), transparent 24%),
+                radial-gradient(circle at 54% 48%, rgba(255, 209, 102, 0.08), transparent 28%),
+                #030714;
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+            opacity: 0.05;
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+
+        #particlesCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .topbar {
+            position: fixed;
+            top: 18px;
+            left: 22px;
+            right: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .brand, .pagechip {
+            background: rgba(7, 15, 34, 0.8);
+            border: 1px solid rgba(86, 198, 255, 0.18);
+            border-radius: 999px;
+            padding: 12px 18px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--cyan), var(--mint));
+            display: grid;
+            place-items: center;
+            color: #04131d;
+            font-weight: 900;
+        }
+
+        .brand strong { display: block; font-size: 14px; letter-spacing: 0.08em; }
+        .brand span, .pagechip { font-size: 12px; color: var(--muted); }
+
+        .deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            padding: 90px 72px 86px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(24px);
+            transition: opacity 0.55s ease, transform 0.55s ease, visibility 0.55s ease;
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .slide-inner {
+            width: min(1420px, 100%);
+            margin: 0 auto;
+            display: grid;
+            gap: 22px;
+        }
+
+        .animate-line {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .slide.active .animate-line {
+            animation: riseIn 0.7s ease forwards;
+        }
+
+        .slide.active .animate-line:nth-child(1) { animation-delay: 0.1s; }
+        .slide.active .animate-line:nth-child(2) { animation-delay: 0.18s; }
+        .slide.active .animate-line:nth-child(3) { animation-delay: 0.26s; }
+        .slide.active .animate-line:nth-child(4) { animation-delay: 0.34s; }
+        .slide.active .animate-line:nth-child(5) { animation-delay: 0.42s; }
+        .slide.active .animate-line:nth-child(6) { animation-delay: 0.50s; }
+        .slide.active .animate-line:nth-child(7) { animation-delay: 0.58s; }
+
+        @keyframes riseIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: fit-content;
+            border-radius: 999px;
+            padding: 8px 14px;
+            background: rgba(86, 198, 255, 0.12);
+            border: 1px solid rgba(86, 198, 255, 0.22);
+            color: var(--cyan);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: clamp(42px, 6vw, 82px);
+            line-height: 1.02;
+            letter-spacing: -0.05em;
+        }
+
+        h2 {
+            font-size: clamp(34px, 4vw, 54px);
+            line-height: 1.08;
+            letter-spacing: -0.04em;
+        }
+
+        .lead, p {
+            color: var(--muted);
+            font-size: 18px;
+            line-height: 1.85;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 28px;
+            align-items: center;
+        }
+
+        .hero-card, .panel, .mini-card, .image-card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 26px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+        }
+
+        .hero-card, .panel, .image-card {
+            padding: 24px;
+        }
+
+        .hero-orbit {
+            min-height: 430px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ring {
+            position: absolute;
+            inset: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(86, 198, 255, 0.18);
+            animation: spin 18s linear infinite;
+        }
+
+        .ring.r1 { width: 170px; height: 170px; }
+        .ring.r2 { width: 280px; height: 280px; animation-direction: reverse; }
+        .ring.r3 { width: 390px; height: 390px; animation-duration: 26s; }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyan), var(--mint));
+            box-shadow: 0 0 18px rgba(86, 198, 255, 0.7);
+        }
+
+        .dot.d1 { top: 88px; right: 92px; }
+        .dot.d2 { top: 150px; left: 88px; }
+        .dot.d3 { bottom: 92px; left: 140px; }
+        .dot.d4 { bottom: 120px; right: 130px; }
+
+        .orbit-copy {
+            position: relative;
+            z-index: 2;
+            margin-left: auto;
+            margin-top: 126px;
+            max-width: 360px;
+        }
+
+        .orbit-copy h3 { font-size: 30px; margin-bottom: 14px; }
+
+        .metrics, .grid-2, .grid-3, .grid-4 {
+            display: grid;
+            gap: 16px;
+        }
+
+        .metrics { grid-template-columns: repeat(3, 1fr); }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+        .mini-card { padding: 20px; }
+        .mini-card strong {
+            display: block;
+            font-size: 30px;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+        .mini-card span { color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+        .panel h3, .mini-card h3 { font-size: 24px; margin-bottom: 12px; }
+
+        ul {
+            list-style: none;
+            display: grid;
+            gap: 10px;
+        }
+
+        li {
+            color: var(--muted);
+            padding-left: 16px;
+            position: relative;
+            line-height: 1.7;
+        }
+
+        li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyan), var(--mint));
+        }
+
+        .pathbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .image-card img {
+            width: 100%;
+            border-radius: 18px;
+            display: block;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 0.95fr 1.05fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .footer-nav {
+            position: fixed;
+            right: 24px;
+            bottom: 22px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .navbtn {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            background: rgba(8, 16, 36, 0.84);
+            border: 1px solid rgba(86, 198, 255, 0.22);
+            color: var(--text);
+            cursor: pointer;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+        }
+
+        .progress {
+            position: fixed;
+            left: 24px;
+            right: 24px;
+            bottom: 24px;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+            z-index: 18;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--mint), var(--gold));
+            transition: width 0.35s ease;
+        }
+
+        @media (max-width: 1100px) {
+            .slide { padding: 88px 24px 86px; }
+            .hero, .grid-4, .grid-3, .grid-2, .split, .metrics { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particlesCanvas"></canvas>
+
+    <div class="topbar">
+        <div class="brand">
+            <div class="logo">DL</div>
+            <div>
+                <strong>深度学习入门</strong>
+                <span>AI-Animation 总演示页</span>
+            </div>
+        </div>
+        <div class="pagechip" id="pageChip">01 / 10</div>
+    </div>
+
+    <main class="deck">
+        <section class="slide active">
+            <div class="slide-inner hero">
+                <div>
+                    <div class="eyebrow animate-line">全内容演示动画</div>
+                    <h1 class="animate-line">从一条直线开始，<br>一路走到 <span style="background:linear-gradient(90deg,#56c6ff,#31f0b9,#ffd166);-webkit-background-clip:text;background-clip:text;color:transparent;">ResNet 和 Transformer</span></h1>
+                    <p class="lead animate-line">这套教程现在已经整理成清晰的章节结构，不再是一篇很长很长的主线文稿。你可以把这份 HTML 当成总览，也可以拿它直接做演示。</p>
+                    <div class="metrics animate-line">
+                        <div class="mini-card"><strong>6</strong><span>主线章节：导读、直线、MLP、小型库、ResNet、Transformer</span></div>
+                        <div class="mini-card"><strong>3</strong><span>实践与项目入口：线性回归、圆形分类、Transformer 文本生成</span></div>
+                        <div class="mini-card"><strong>6</strong><span>关键示意图：训练闭环、MLP、库地图、CNN vs MLP、残差块、ResNet 流程</span></div>
+                    </div>
+                </div>
+                <div class="hero-card hero-orbit animate-line">
+                    <div class="ring r1"></div>
+                    <div class="ring r2"></div>
+                    <div class="ring r3"></div>
+                    <div class="dot d1"></div>
+                    <div class="dot d2"></div>
+                    <div class="dot d3"></div>
+                    <div class="dot d4"></div>
+                    <div class="orbit-copy">
+                        <h3>主线一直没变</h3>
+                        <p>模型变得越来越复杂，但训练逻辑一直都还是：前向传播、计算损失、反向传播、更新参数。先把这个看明白，后面很多内容都会轻松得多。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="eyebrow animate-line">课程结构</div>
+                <h2 class="animate-line">主线已经拆成真正的章节</h2>
+                <div class="grid-3">
+                    <div class="panel animate-line">
+                        <h3>01 课程导读</h3>
+                        <p>负责说明怎么读、先学什么、实践文件在哪，不再承载全部正文。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>02 从直线到梯度下降</h3>
+                        <p>讲模型、参数、损失函数、梯度和学习率，让训练闭环先落地。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>03 圆形分类与 MLP</h3>
+                        <p>讲非线性、激活函数、交叉熵、多层感知机和反向传播。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>04 完善小型深度学习库</h3>
+                        <p>把零散代码整理成激活函数、优化器、归一化和正则化模块。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>05 ResNet 图像分类</h3>
+                        <p>讲卷积为什么适合图像、残差块为什么有用、训练流程怎么搭起来。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>06 Transformer 与文本生成</h3>
+                        <p>先把方向和项目入口接上，后面会继续补正文。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner split">
+                <div class="panel animate-line">
+                    <div class="eyebrow">第一部分</div>
+                    <h2 style="margin-top:10px;">先把训练闭环看懂</h2>
+                    <ul style="margin-top:18px;">
+                        <li>模型是什么：这里就是一条线 `y=ax+b`</li>
+                        <li>损失是什么：用 MSE 衡量预测有多差</li>
+                        <li>梯度是什么：告诉参数应该往哪边调</li>
+                        <li>学习率是什么：决定每次迈多大一步</li>
+                        <li>这五步组成后面所有训练的最小闭环</li>
+                    </ul>
+                </div>
+                <div class="image-card animate-line">
+                    <img src="../assets/images/linear_regression_loop.svg" alt="线性回归训练闭环">
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner split">
+                <div class="image-card animate-line">
+                    <img src="../assets/images/mlp_forward_backward.svg" alt="MLP 前向与反向传播">
+                </div>
+                <div class="panel animate-line">
+                    <div class="eyebrow">第二部分</div>
+                    <h2 style="margin-top:10px;">为什么一条线分不开圆</h2>
+                    <ul style="margin-top:18px;">
+                        <li>线性模型只能画直线边界，圆形边界必须靠非线性</li>
+                        <li>ReLU 让模型从“只能画直线”变成“能拼出折线和复杂边界”</li>
+                        <li>MLP 的前向传播负责算预测，反向传播负责算梯度</li>
+                        <li>分类任务通常用交叉熵，而不是继续用 MSE</li>
+                        <li>batch 和 epoch 让训练速度和组织方式都更合理</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner split">
+                <div class="panel animate-line">
+                    <div class="eyebrow">第三部分</div>
+                    <h2 style="margin-top:10px;">把零散代码整理成一套库</h2>
+                    <p style="margin-top:18px;">做到这里之后，目标就不再是“能不能跑起来”，而是“我写的这些能力能不能继续复用”。</p>
+                    <ul style="margin-top:16px;">
+                        <li>激活函数：ReLU、SiLU、GELU</li>
+                        <li>优化器：SGD、Adam、AdamW</li>
+                        <li>归一化：BN、LN</li>
+                        <li>正则化：Dropout、Weight Decay</li>
+                        <li>初始化：Xavier、He</li>
+                    </ul>
+                </div>
+                <div class="image-card animate-line">
+                    <img src="../assets/images/dl_library_map.svg" alt="小型深度学习库地图">
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner split">
+                <div class="image-card animate-line">
+                    <img src="../assets/images/cnn_vs_mlp.svg" alt="CNN 与 MLP 的区别">
+                </div>
+                <div class="panel animate-line">
+                    <div class="eyebrow">第四部分</div>
+                    <h2 style="margin-top:10px;">图像为什么要靠卷积</h2>
+                    <ul style="margin-top:18px;">
+                        <li>如果直接拉平成向量，图像的空间结构会被打散</li>
+                        <li>CNN 会用同一组卷积核在整张图上重复扫描</li>
+                        <li>这样参数更少，也更容易学到边缘、纹理和局部部件</li>
+                        <li>浅层看边缘，中层看部件，深层看整体结构</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner split">
+                <div class="panel animate-line">
+                    <div class="eyebrow">ResNet 核心</div>
+                    <h2 style="margin-top:10px;">残差块不是神秘新层，只是多了一条捷径</h2>
+                    <p style="margin-top:18px;">ResNet 的关键想法是：如果直接学习完整映射太难，那就让网络学“在原输入基础上改多少”。</p>
+                    <ul style="margin-top:16px;">
+                        <li>主分支负责学残差</li>
+                        <li>shortcut 尽量把输入原样送过去</li>
+                        <li>梯度因此也多了一条更短的回传路径</li>
+                        <li>深层网络不那么容易训崩</li>
+                    </ul>
+                </div>
+                <div class="image-card animate-line">
+                    <img src="../assets/images/residual_block_flow.svg" alt="残差块示意图">
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner split">
+                <div class="image-card animate-line">
+                    <img src="../assets/images/resnet_training_pipeline.svg" alt="ResNet 训练流程">
+                </div>
+                <div class="panel animate-line">
+                    <div class="eyebrow">ResNet 实验</div>
+                    <h2 style="margin-top:10px;">一个完整的图像分类流程应该长什么样</h2>
+                    <ul style="margin-top:18px;">
+                        <li>先配 CIFAR-100 和数据增强</li>
+                        <li>再写最小 `BasicBlock`</li>
+                        <li>再组简化版 ResNet</li>
+                        <li>再搭训练循环和验证循环</li>
+                        <li>最后盯住 train / val 的 loss 和 acc，而不是只看一个数字</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="eyebrow animate-line">第五部分</div>
+                <h2 class="animate-line">Transformer 这条线已经接上，但正文还会继续补</h2>
+                <div class="grid-2">
+                    <div class="panel animate-line">
+                        <h3>现在已经有什么</h3>
+                        <ul>
+                            <li>独立的 Transformer 文本生成项目</li>
+                            <li>《红楼梦》文本作为训练语料</li>
+                            <li>可运行的 `gpt_tutorial.py`</li>
+                            <li>生成结果说明和 README</li>
+                        </ul>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>后面会继续补什么</h3>
+                        <ul>
+                            <li>为什么 RNN 会遇到瓶颈</li>
+                            <li>注意力机制在解决什么</li>
+                            <li>Self-Attention 的最小计算过程</li>
+                            <li>Transformer block 和文本生成训练流程</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="eyebrow animate-line">仓库入口</div>
+                <h2 class="animate-line">现在所有内容都已经挂到统一结构下了</h2>
+                <div class="panel animate-line">
+                    <div class="pathbar">
+                        <div class="pill">README.md</div>
+                        <div class="pill">docs/学习路线.md</div>
+                        <div class="pill">lessons/</div>
+                        <div class="pill">exercises/</div>
+                        <div class="pill">solutions/</div>
+                        <div class="pill">assets/images/</div>
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="panel animate-line">
+                        <h3>lessons</h3>
+                        <p>课程主线和实践引导，负责解释“为什么”和“怎么做”。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>exercises</h3>
+                        <p>当前建议你直接运行和修改的练习代码与项目。</p>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>solutions</h3>
+                        <p>参考实现，最好自己先做，再回来对照。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="eyebrow animate-line">结尾</div>
+                <h2 class="animate-line">这套教程现在更像一条真正可走通的路径了</h2>
+                <div class="grid-2">
+                    <div class="panel animate-line">
+                        <h3>最推荐的学习顺序</h3>
+                        <ul>
+                            <li>先学直线和梯度下降</li>
+                            <li>再学圆形分类和 MLP</li>
+                            <li>再把零散代码整理成小型库</li>
+                            <li>然后进入图像里的 ResNet</li>
+                            <li>最后再去看 Transformer 和文本生成</li>
+                        </ul>
+                    </div>
+                    <div class="panel animate-line">
+                        <h3>为什么这样安排</h3>
+                        <ul>
+                            <li>先把训练逻辑看懂，再看复杂模型</li>
+                            <li>先有直觉，再补工程结构</li>
+                            <li>先能自己写，再去看框架里的高级模块</li>
+                            <li>这条线最适合真正建立底层理解</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="footer-nav">
+        <div class="navbtn" id="prevBtn">&#8592;</div>
+        <div class="navbtn" id="nextBtn">&#8594;</div>
+    </div>
+
+    <script>
+        const slides = Array.from(document.querySelectorAll('.slide'));
+        const pageChip = document.getElementById('pageChip');
+        const progressBar = document.getElementById('progressBar');
+        let current = 0;
+
+        function updateSlide(next) {
+            current = (next + slides.length) % slides.length;
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === current));
+            pageChip.textContent = `${String(current + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+            progressBar.style.width = `${((current + 1) / slides.length) * 100}%`;
+        }
+
+        document.getElementById('prevBtn').addEventListener('click', () => updateSlide(current - 1));
+        document.getElementById('nextBtn').addEventListener('click', () => updateSlide(current + 1));
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') updateSlide(current + 1);
+            if (e.key === 'ArrowLeft' || e.key === 'PageUp') updateSlide(current - 1);
+        });
+
+        const particleCanvas = document.getElementById('particlesCanvas');
+        const ctx = particleCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            particles = Array.from({ length: Math.min(90, Math.floor(window.innerWidth / 18)) }, () => ({
+                x: Math.random() * particleCanvas.width,
+                y: Math.random() * particleCanvas.height,
+                vx: (Math.random() - 0.5) * 0.28,
+                vy: (Math.random() - 0.5) * 0.28,
+                r: Math.random() * 1.8 + 0.6
+            }));
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            particles.forEach((p) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0) p.x = particleCanvas.width;
+                if (p.x > particleCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = particleCanvas.height;
+                if (p.y > particleCanvas.height) p.y = 0;
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(120, 190, 255, 0.42)';
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        resizeCanvas();
+        animateParticles();
+        updateSlide(0);
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>

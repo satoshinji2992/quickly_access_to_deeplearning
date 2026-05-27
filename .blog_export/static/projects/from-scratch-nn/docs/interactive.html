@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深度学习入门 · 交互式教程总览</title>
+    <style>
+        :root {
+            --bg: #050816;
+            --bg-soft: #0d1730;
+            --panel: rgba(10, 20, 42, 0.72);
+            --panel-strong: rgba(13, 26, 54, 0.9);
+            --line: rgba(105, 160, 255, 0.28);
+            --accent: #56c6ff;
+            --accent-2: #31f0b9;
+            --accent-3: #ffd166;
+            --danger: #ff6b81;
+            --text: #f4f8ff;
+            --muted: #9cb3d9;
+            --shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 18% 82%, rgba(38, 119, 255, 0.22) 0%, transparent 28%),
+                radial-gradient(circle at 84% 14%, rgba(49, 240, 185, 0.18) 0%, transparent 24%),
+                radial-gradient(circle at 50% 50%, rgba(255, 209, 102, 0.08) 0%, transparent 35%),
+                #040714;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+            opacity: 0.06;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        #particlesCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .chrome {
+            position: fixed;
+            top: 18px;
+            left: 22px;
+            right: 22px;
+            z-index: 30;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .brand,
+        .pager-chip {
+            pointer-events: auto;
+            background: rgba(8, 16, 36, 0.72);
+            border: 1px solid rgba(90, 140, 255, 0.22);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+            border-radius: 999px;
+            padding: 12px 18px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(86, 198, 255, 0.9), rgba(49, 240, 185, 0.95));
+            display: grid;
+            place-items: center;
+            color: #04111f;
+            font-weight: 900;
+        }
+
+        .brand strong {
+            display: block;
+            font-size: 14px;
+            letter-spacing: 0.08em;
+        }
+
+        .brand span,
+        .pager-chip {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .deck {
+            position: relative;
+            z-index: 5;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            padding: 92px 78px 88px;
+            display: grid;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.55s ease, transform 0.55s ease, visibility 0.55s ease;
+            transform: translateY(24px);
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .slide-inner {
+            width: min(1420px, 100%);
+            margin: 0 auto;
+            display: grid;
+            gap: 28px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(86, 198, 255, 0.12);
+            border: 1px solid rgba(86, 198, 255, 0.24);
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            width: fit-content;
+        }
+
+        .hero {
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 34px;
+        }
+
+        .hero h1 {
+            font-size: clamp(42px, 6vw, 82px);
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            margin-top: 8px;
+        }
+
+        .hero p.lead {
+            color: var(--muted);
+            font-size: clamp(18px, 2vw, 24px);
+            line-height: 1.8;
+            max-width: 820px;
+        }
+
+        .gradient-word {
+            background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            background-size: 200% auto;
+            animation: glowShift 6s linear infinite;
+        }
+
+        @keyframes glowShift {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .metric,
+        .card,
+        .mini-panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+        }
+
+        .metric {
+            padding: 22px 20px;
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 34px;
+            color: var(--accent-3);
+        }
+
+        .metric span {
+            display: block;
+            margin-top: 8px;
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .orbit-card {
+            position: relative;
+            min-height: 430px;
+            overflow: hidden;
+            padding: 30px;
+        }
+
+        .ring {
+            position: absolute;
+            border: 1px solid rgba(86, 198, 255, 0.2);
+            border-radius: 50%;
+            inset: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 22s linear infinite;
+        }
+
+        .ring.r1 { width: 180px; height: 180px; }
+        .ring.r2 { width: 290px; height: 290px; animation-direction: reverse; }
+        .ring.r3 { width: 410px; height: 410px; animation-duration: 34s; }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 18px rgba(86, 198, 255, 0.7);
+        }
+
+        .node.n1 { top: 88px; right: 88px; }
+        .node.n2 { bottom: 90px; right: 146px; }
+        .node.n3 { top: 140px; left: 94px; }
+        .node.n4 { bottom: 110px; left: 138px; }
+
+        .orbit-content {
+            position: relative;
+            z-index: 2;
+            max-width: 360px;
+            margin-top: 120px;
+            margin-left: auto;
+        }
+
+        .orbit-content h3 {
+            font-size: 30px;
+            margin-bottom: 14px;
+        }
+
+        .orbit-content p {
+            color: var(--muted);
+            line-height: 1.9;
+            font-size: 16px;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 18px;
+        }
+
+        .title-row h2 {
+            font-size: clamp(34px, 4vw, 54px);
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+        }
+
+        .title-row p {
+            max-width: 600px;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .grid-2,
+        .grid-3,
+        .grid-4 {
+            display: grid;
+            gap: 18px;
+        }
+
+        .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        .card {
+            padding: 24px;
+        }
+
+        .card h3,
+        .card h4 {
+            margin-bottom: 12px;
+        }
+
+        .card h3 {
+            font-size: 24px;
+        }
+
+        .card h4 {
+            font-size: 18px;
+            color: var(--accent);
+        }
+
+        .card p,
+        .card li,
+        .list li,
+        .note {
+            color: var(--muted);
+            line-height: 1.75;
+            font-size: 15px;
+        }
+
+        .list {
+            list-style: none;
+            display: grid;
+            gap: 10px;
+        }
+
+        .list li {
+            position: relative;
+            padding-left: 18px;
+        }
+
+        .list li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        }
+
+        .status-bad,
+        .status-mid,
+        .status-good {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-bottom: 14px;
+        }
+
+        .status-bad {
+            color: #ffd4db;
+            background: rgba(255, 107, 129, 0.14);
+            border: 1px solid rgba(255, 107, 129, 0.26);
+        }
+
+        .status-mid {
+            color: #ffe9bf;
+            background: rgba(255, 209, 102, 0.12);
+            border: 1px solid rgba(255, 209, 102, 0.22);
+        }
+
+        .status-good {
+            color: #cbfff0;
+            background: rgba(49, 240, 185, 0.12);
+            border: 1px solid rgba(49, 240, 185, 0.24);
+        }
+
+        .module-card {
+            min-height: 220px;
+        }
+
+        .module-card .number {
+            display: inline-flex;
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            align-items: center;
+            justify-content: center;
+            background: rgba(86, 198, 255, 0.14);
+            color: var(--accent);
+            margin-bottom: 18px;
+            font-weight: 800;
+        }
+
+        .repo-map {
+            display: grid;
+            grid-template-columns: 0.8fr 1.2fr;
+            gap: 18px;
+        }
+
+        pre.tree {
+            background: rgba(4, 9, 23, 0.72);
+            border: 1px solid rgba(86, 198, 255, 0.2);
+            border-radius: 20px;
+            padding: 22px;
+            color: #cce3ff;
+            font-size: 15px;
+            line-height: 1.75;
+            overflow: auto;
+        }
+
+        .label-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .label {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .algorithm-layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 20px;
+        }
+
+        .canvas-card {
+            padding: 20px;
+        }
+
+        canvas.demo-canvas {
+            width: 100%;
+            height: 420px;
+            display: block;
+            border-radius: 18px;
+            background:
+                linear-gradient(180deg, rgba(12, 25, 52, 0.9), rgba(5, 11, 25, 0.94)),
+                rgba(8, 15, 36, 0.95);
+            border: 1px solid rgba(86, 198, 255, 0.16);
+        }
+
+        .controls {
+            display: grid;
+            gap: 14px;
+        }
+
+        .control {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 14px 16px;
+        }
+
+        .control label {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .control span {
+            color: var(--accent-3);
+            font-weight: 700;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 14px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(86, 198, 255, 0.95), rgba(49, 240, 185, 0.95));
+            color: #06121e;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 14px 30px rgba(31, 140, 255, 0.22);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            box-shadow: none;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 22px;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+
+        .stat span {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .network-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .network-box {
+            min-height: 160px;
+        }
+
+        .network-svg {
+            width: 100%;
+            height: 260px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .tip-box {
+            border-left: 4px solid var(--accent-3);
+            padding-left: 16px;
+            color: var(--muted);
+            line-height: 1.85;
+            font-size: 15px;
+        }
+
+        .footer-nav {
+            position: fixed;
+            right: 24px;
+            bottom: 22px;
+            z-index: 30;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: rgba(8, 16, 36, 0.84);
+            border: 1px solid rgba(86, 198, 255, 0.22);
+            color: var(--text);
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        .progress-rail {
+            position: fixed;
+            left: 24px;
+            right: 24px;
+            bottom: 24px;
+            z-index: 20;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+            transition: width 0.4s ease;
+        }
+
+        @media (max-width: 1100px) {
+            .slide {
+                padding: 90px 26px 86px;
+                overflow-y: auto;
+            }
+
+            .hero,
+            .algorithm-layout,
+            .repo-map,
+            .network-panel,
+            .grid-4,
+            .grid-3,
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
+
+            canvas.demo-canvas {
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particlesCanvas"></canvas>
+
+    <div class="chrome">
+        <div class="brand">
+            <div class="brand-mark">DL</div>
+            <div>
+                <strong>深度学习入门</strong>
+                <span>交互式教程总览 · 仓库整理版</span>
+            </div>
+        </div>
+        <div class="pager-chip" id="pagerChip">01 / 08</div>
+    </div>
+
+    <main class="deck" id="deck">
+        <section class="slide active">
+            <div class="slide-inner hero">
+                <div>
+                    <div class="eyebrow">教程重构 + HTML 动画入口</div>
+                    <h1>把这个仓库<br><span class="gradient-word">变成一条清晰的学习路径</span></h1>
+                    <p class="lead">
+                        当前仓库最有价值的部分，是它真的在带初学者“手搓”深度学习：从
+                        <strong>线性回归</strong>、<strong>MLP</strong>、<strong>反向传播</strong>
+                        出发，再走向 <strong>ResNet</strong> 与 <strong>Transformer</strong>。
+                        问题不是内容不够好，而是入口分散、层级混杂、完成度不一致。
+                    </p>
+                    <div class="hero-grid">
+                        <div class="metric">
+                            <strong>3</strong>
+                            <span>已经规划出的主板块：从函数拟合、到视觉、再到文本生成。</span>
+                        </div>
+                        <div class="metric">
+                            <strong>8</strong>
+                            <span>本 HTML 用 8 页把当前内容、未来结构和交互演示统一起来。</span>
+                        </div>
+                        <div class="metric">
+                            <strong>2</strong>
+                            <span>内置算法交互：线性回归训练器、圆内分类网络前向可视化。</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card orbit-card">
+                    <div class="ring r1"></div>
+                    <div class="ring r2"></div>
+                    <div class="ring r3"></div>
+                    <div class="node n1"></div>
+                    <div class="node n2"></div>
+                    <div class="node n3"></div>
+                    <div class="node n4"></div>
+                    <div class="orbit-content">
+                        <h3>这不是简单的“改目录”</h3>
+                        <p>
+                            目标是让读者沿着一条连续主线前进：
+                            <strong>问题</strong> → <strong>直觉</strong> →
+                            <strong>公式</strong> → <strong>最小代码</strong> →
+                            <strong>可视化结果</strong> → <strong>下一章</strong>。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">现状判断</div>
+                        <h2>仓库已经有了很好的骨架，<br>但还缺一个统一的课程系统</h2>
+                    </div>
+                    <p>这里的核心问题不是“写得少”，而是“读者不知道怎么进入、怎么前进、怎么对照代码”。</p>
+                </div>
+                <div class="grid-4">
+                    <div class="card">
+                        <div class="status-good">完成度较高</div>
+                        <h3>板块一</h3>
+                        <p>从 `y=ax+b` 到 MLP 与小型神经网络库，已经有主教程、任务一代码、任务二代码和实践补充。</p>
+                    </div>
+                    <div class="card">
+                        <div class="status-mid">框架已有</div>
+                        <h3>板块二</h3>
+                        <p>ResNet 理论框架开始成形，但还缺卷积、数据集处理、训练脚本和完整实验流程。</p>
+                    </div>
+                    <div class="card">
+                        <div class="status-bad">基本未展开</div>
+                        <h3>板块三</h3>
+                        <p>Transformer 方向目前主要以独立 demo 存在，和主教程之间还没有自然衔接。</p>
+                    </div>
+                    <div class="card">
+                        <div class="status-mid">参考价值高</div>
+                        <h3>参考代码</h3>
+                        <p>参考实现本身不错，但现在与练习代码混在一起，容易让初学者不知道哪些该自己写。</p>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>当前最需要解决的 4 个问题</h4>
+                        <ul class="list">
+                            <li>统一入口缺失，读者进仓库后第一步不明确。</li>
+                            <li>教程正文、实践引导、参考代码没有形成层次。</li>
+                            <li>不同板块完成度差距较大，节奏断裂。</li>
+                            <li>工程目录更像作者工作区，而不是面向学习者的产品。</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>应该保留的优点</h4>
+                        <ul class="list">
+                            <li>切入点低，从最小任务出发，非常适合初学者。</li>
+                            <li>强调“手搓”，有助于建立训练和梯度的直觉。</li>
+                            <li>语气自然，不像教科书，学习阻力小。</li>
+                            <li>已经有可运行代码，说明这不是空泛规划。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">推荐主线</div>
+                        <h2>最顺的教学路径，不是堆热门名词，<br>而是让“训练闭环”被真正看懂</h2>
+                    </div>
+                    <p>建议把教程重构成一条逐章上升的路线，让每一章都回答一个明确问题。</p>
+                </div>
+                <div class="grid-3">
+                    <div class="card module-card">
+                        <div class="number">A</div>
+                        <h3>基础直觉</h3>
+                        <p>模型、参数、损失、梯度、学习率、前向传播和参数更新，用线性回归打通最小训练闭环。</p>
+                        <div class="label-row">
+                            <span class="label">MSE</span>
+                            <span class="label">Gradient Descent</span>
+                            <span class="label">Regression</span>
+                        </div>
+                    </div>
+                    <div class="card module-card">
+                        <div class="number">B</div>
+                        <h3>分类与 MLP</h3>
+                        <p>为什么直线分不开圆，为什么需要非线性层，如何从 ReLU、Sigmoid、Softmax 走到交叉熵。</p>
+                        <div class="label-row">
+                            <span class="label">ReLU</span>
+                            <span class="label">BCE / CE</span>
+                            <span class="label">Backprop</span>
+                        </div>
+                    </div>
+                    <div class="card module-card">
+                        <div class="number">C</div>
+                        <h3>小型深度学习库</h3>
+                        <p>把零散代码升级成统一接口，补齐激活函数、优化器、归一化、初始化、正则化。</p>
+                        <div class="label-row">
+                            <span class="label">Layer API</span>
+                            <span class="label">Adam</span>
+                            <span class="label">BatchNorm</span>
+                        </div>
+                    </div>
+                    <div class="card module-card">
+                        <div class="number">D</div>
+                        <h3>视觉模型</h3>
+                        <p>从卷积为什么适合图像开始，循序渐进引到深层网络困难、残差连接和简化版 ResNet。</p>
+                        <div class="label-row">
+                            <span class="label">CNN</span>
+                            <span class="label">Residual</span>
+                            <span class="label">CIFAR</span>
+                        </div>
+                    </div>
+                    <div class="card module-card">
+                        <div class="number">E</div>
+                        <h3>注意力与 Transformer</h3>
+                        <p>从序列建模需求到 Self-Attention、多头注意力、位置编码，再进入文本生成任务。</p>
+                        <div class="label-row">
+                            <span class="label">Attention</span>
+                            <span class="label">Decoder</span>
+                            <span class="label">Text Gen</span>
+                        </div>
+                    </div>
+                    <div class="card module-card">
+                        <div class="number">F</div>
+                        <h3>进阶专题</h3>
+                        <p>最后再谈 Mamba、论文阅读和工程化训练技巧，而不是一开始就并列放进主线。</p>
+                        <div class="label-row">
+                            <span class="label">Mamba</span>
+                            <span class="label">Scaling</span>
+                            <span class="label">Papers</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">内容整理</div>
+                        <h2>把当前材料重新挂到一棵更清晰的树上</h2>
+                    </div>
+                    <p>保留现有内容的价值，但要重新定义“正文、练习、参考答案、独立 demo”之间的关系。</p>
+                </div>
+                <div class="repo-map">
+                    <pre class="tree">深度学习入门/
+├── README.md                  ← 统一入口
+├── docs/
+│   ├── 学习路线.md
+│   ├── 教程重构规划.md
+│   └── 深度学习入门_交互教程.html
+├── lessons/
+│   ├── 01-从y=ax+b到梯度下降.md
+│   ├── 02-从直线到分类边界.md
+│   ├── 03-手搓MLP与反向传播.md
+│   ├── 04-完善你的小型深度学习库.md
+│   ├── 05-卷积网络与ResNet.md
+│   └── 06-Transformer基础与文本生成.md
+├── exercises/
+│   ├── task_00_linear_regression/
+│   ├── task_01_circle_classifier/
+│   ├── task_02_mini_nn_library/
+│   ├── task_03_resnet_cifar/
+│   └── task_04_transformer_textgen/
+├── solutions/
+│   └── 对应参考实现
+└── references/
+    └── 图片、论文、额外阅读</pre>
+                    <div class="grid-2">
+                        <div class="card">
+                            <h4>当前内容应该如何映射</h4>
+                            <ul class="list">
+                                <li>主教程已经收束到 `lessons/` 目录。</li>
+                                <li>任务一和任务二的代码已经整理进 `exercises/`。</li>
+                                <li>参考实现已经单独整理进 `solutions/`。</li>
+                                <li>Transformer 项目已经并入文本生成练习目录。</li>
+                                <li>图片资源已经统一收进 `assets/images/`。</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>每一章的统一模板</h4>
+                            <ul class="list">
+                                <li>问题：这章到底在解决什么。</li>
+                                <li>直觉：先让读者理解为什么需要它。</li>
+                                <li>数学式：只保留关键公式，不堆导数墙。</li>
+                                <li>最小代码：能直接运行，变量名与公式统一。</li>
+                                <li>结果图：loss 曲线、决策边界或生成样例。</li>
+                                <li>练习：读者知道自己该动手写什么。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">交互 01</div>
+                        <h2>任务一：线性回归训练器</h2>
+                    </div>
+                    <p>这个交互把“前向传播 → 计算损失 → 计算梯度 → 更新参数”变成可视化过程。调一下学习率和噪声，看看线是怎么一点点贴近数据的。</p>
+                </div>
+                <div class="algorithm-layout">
+                    <div class="card canvas-card">
+                        <canvas class="demo-canvas" id="lineCanvas" width="760" height="420"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="controls">
+                            <div class="control">
+                                <label>学习率 <span id="lrValue">0.050</span></label>
+                                <input id="lrSlider" type="range" min="0.005" max="0.2" step="0.005" value="0.05">
+                            </div>
+                            <div class="control">
+                                <label>数据噪声 <span id="noiseValue">0.30</span></label>
+                                <input id="noiseSlider" type="range" min="0" max="1.2" step="0.05" value="0.3">
+                            </div>
+                            <div class="control">
+                                <label>每次训练步数 <span id="stepValue">20</span></label>
+                                <input id="stepSlider" type="range" min="1" max="80" step="1" value="20">
+                            </div>
+                            <div class="button-row">
+                                <button id="lineStepBtn">训练一轮</button>
+                                <button id="lineAutoBtn">自动训练</button>
+                                <button id="lineResetBtn" class="secondary">重置数据</button>
+                            </div>
+                            <div class="stat-grid">
+                                <div class="stat">
+                                    <strong id="lineEpoch">0</strong>
+                                    <span>Epoch</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="lineLoss">0.000</strong>
+                                    <span>MSE Loss</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="lineA">0.000</strong>
+                                    <span>斜率 a</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="lineB">0.000</strong>
+                                    <span>偏置 b</span>
+                                </div>
+                            </div>
+                            <div class="tip-box">
+                                观察重点：当学习率太小，线会移动得很慢；当学习率过大，Loss 可能震荡。这里你看到的，就是教程里最核心的“训练闭环”。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">交互 02</div>
+                        <h2>任务二：为什么需要非线性层</h2>
+                    </div>
+                    <p>这个交互不是完整训练器，而是一个“前向传播可视化”。你可以拖动平面上的点，观察隐藏层如何把二维输入变成对“圆内 / 圆外”的判断。</p>
+                </div>
+                <div class="algorithm-layout">
+                    <div class="card canvas-card">
+                        <canvas class="demo-canvas" id="circleCanvas" width="760" height="420"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="controls">
+                            <div class="control">
+                                <label>隐藏层单元数 <span id="hiddenValue">8</span></label>
+                                <input id="hiddenSlider" type="range" min="4" max="16" step="2" value="8">
+                            </div>
+                            <div class="control">
+                                <label>边界半径 <span id="radiusValue">1.00</span></label>
+                                <input id="radiusSlider" type="range" min="0.6" max="1.4" step="0.05" value="1.0">
+                            </div>
+                            <div class="control">
+                                <label>示例点 x / y <span id="pointValue">(0.25, 0.25)</span></label>
+                                <input id="pointXSlider" type="range" min="-1.5" max="1.5" step="0.01" value="0.25">
+                                <input id="pointYSlider" type="range" min="-1.5" max="1.5" step="0.01" value="0.25" style="margin-top:10px;">
+                            </div>
+                            <div class="stat-grid">
+                                <div class="stat">
+                                    <strong id="circleLogit">0.000</strong>
+                                    <span>输出 logit</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="circleProb">0.000</strong>
+                                    <span>圆内概率</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="circlePred">外部</strong>
+                                    <span>模型判断</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="circleTruth">外部</strong>
+                                    <span>真实标签</span>
+                                </div>
+                            </div>
+                            <div class="tip-box">
+                                这里用一组固定权重模拟“隐藏层学会了半平面与折线边界”的效果。隐藏单元越多，近似圆形的能力越强，这正是教程里从线性模型过渡到 MLP 的关键直觉。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="network-panel">
+                    <div class="card network-box">
+                        <h4>输入 → 隐藏层</h4>
+                        <svg class="network-svg" id="networkSvg" viewBox="0 0 520 260"></svg>
+                    </div>
+                    <div class="card network-box">
+                        <h4>你希望读者在这页学会什么</h4>
+                        <ul class="list">
+                            <li>线性分类器只能画一条线，无法直接分开圆形边界。</li>
+                            <li>隐藏层中的多个神经元可以组合出复杂边界。</li>
+                            <li>最终输出层给出的是一个 logit，再经过 Sigmoid 变成概率。</li>
+                            <li>这页负责建立直觉，下一步再进入损失函数和反向传播。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">后续章节</div>
+                        <h2>现在最值得继续补完的章节</h2>
+                    </div>
+                    <p>下一阶段不建议同时平推很多主题，而是先把学习闭环补齐，再进入视觉和文本。</p>
+                </div>
+                <div class="grid-3">
+                    <div class="card">
+                        <h4>1. 板块一补完整</h4>
+                        <ul class="list">
+                            <li>把任务三改成完整的小型深度学习库章节。</li>
+                            <li>补准确率、损失曲线、决策边界可视化。</li>
+                            <li>把“类封装”与“数学公式”一一对应。</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>2. 再写 ResNet</h4>
+                        <ul class="list">
+                            <li>先加卷积与池化，不要直接跳残差块。</li>
+                            <li>给出 CIFAR 数据处理、训练脚本、实验结果。</li>
+                            <li>把理论和代码对齐成同一节奏。</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>3. 最后接 Transformer</h4>
+                        <ul class="list">
+                            <li>先讲注意力为何出现，再引出 Transformer。</li>
+                            <li>把现有《红楼梦》 demo 升级成章节化项目。</li>
+                            <li>增加显存、时长、输入输出格式说明。</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h4>推荐的两周改造优先级</h4>
+                        <ul class="list">
+                            <li>统一 `README` 和学习路线。</li>
+                            <li>完成目录重组和章节拆分。</li>
+                            <li>把任务一和任务二包装成标准练习。</li>
+                            <li>明确参考答案与独立 demo 的位置。</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h4>不要急着做的事</h4>
+                        <ul class="list">
+                            <li>不要同时写 ResNet、Transformer、Mamba 三条大线。</li>
+                            <li>不要在正文里塞过多“施工中”片段。</li>
+                            <li>不要让读者在练习和答案之间反复跳目录找文件。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="slide-inner">
+                <div class="title-row">
+                    <div>
+                        <div class="eyebrow">最终目标</div>
+                        <h2>把仓库从“个人学习记录”<br>升级成“可复用的入门教程”</h2>
+                    </div>
+                    <p>真正的终态不是目录更整齐，而是读者打开仓库后，会自然沿着一条主线不断前进。</p>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>理想中的学习体验</h3>
+                        <ul class="list">
+                            <li>读者先在总入口看到路线图和预计时间。</li>
+                            <li>每一章都知道“本章学什么、代码在哪、练习是什么”。</li>
+                            <li>每个任务都能跑起来，并得到可视化反馈。</li>
+                            <li>读者写完后，再去看参考答案做对照。</li>
+                            <li>最后自然进入卷积、ResNet 和 Transformer。</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>这份 HTML 的作用</h3>
+                        <ul class="list">
+                            <li>作为当前仓库的统一展示入口。</li>
+                            <li>把现有内容压缩成清楚的课程地图。</li>
+                            <li>用交互代替部分抽象解释，降低理解门槛。</li>
+                            <li>将来可以继续扩展成真正的课程首页或网页课件。</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>最推荐保留下来的主线</h3>
+                    <p class="note">
+                        <strong>线性回归 → 非线性分类 → 手搓 MLP → 完善小型深度学习库 → 卷积与 ResNet → 注意力与 Transformer</strong>
+                    </p>
+                    <p class="note" style="margin-top:10px;">
+                        这条线一旦理顺，仓库的价值会非常高，因为它真正补上了很多“会调库，但没看懂训练过程”的初学者缺的那一步。
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="progress-rail"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="footer-nav">
+        <div class="nav-btn" id="prevBtn">&#8592;</div>
+        <div class="nav-btn" id="nextBtn">&#8594;</div>
+    </div>
+
+    <script>
+        const slides = Array.from(document.querySelectorAll('.slide'));
+        const pagerChip = document.getElementById('pagerChip');
+        const progressBar = document.getElementById('progressBar');
+        let currentSlide = 0;
+
+        function updateSlide(index) {
+            currentSlide = (index + slides.length) % slides.length;
+            slides.forEach((slide, i) => slide.classList.toggle('active', i === currentSlide));
+            pagerChip.textContent = `${String(currentSlide + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+            progressBar.style.width = `${((currentSlide + 1) / slides.length) * 100}%`;
+        }
+
+        document.getElementById('prevBtn').addEventListener('click', () => updateSlide(currentSlide - 1));
+        document.getElementById('nextBtn').addEventListener('click', () => updateSlide(currentSlide + 1));
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') updateSlide(currentSlide + 1);
+            if (event.key === 'ArrowLeft' || event.key === 'PageUp') updateSlide(currentSlide - 1);
+        });
+
+        const particleCanvas = document.getElementById('particlesCanvas');
+        const particleCtx = particleCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeParticleCanvas() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            particles = Array.from({ length: Math.min(80, Math.floor(window.innerWidth / 18)) }, () => ({
+                x: Math.random() * particleCanvas.width,
+                y: Math.random() * particleCanvas.height,
+                vx: (Math.random() - 0.5) * 0.25,
+                vy: (Math.random() - 0.5) * 0.25,
+                r: Math.random() * 1.8 + 0.6
+            }));
+        }
+
+        function drawParticles() {
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0) p.x = particleCanvas.width;
+                if (p.x > particleCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = particleCanvas.height;
+                if (p.y > particleCanvas.height) p.y = 0;
+
+                particleCtx.beginPath();
+                particleCtx.fillStyle = 'rgba(120, 190, 255, 0.45)';
+                particleCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                particleCtx.fill();
+            }
+            requestAnimationFrame(drawParticles);
+        }
+
+        resizeParticleCanvas();
+        drawParticles();
+        window.addEventListener('resize', resizeParticleCanvas);
+
+        const lineCanvas = document.getElementById('lineCanvas');
+        const lineCtx = lineCanvas.getContext('2d');
+        const lrSlider = document.getElementById('lrSlider');
+        const noiseSlider = document.getElementById('noiseSlider');
+        const stepSlider = document.getElementById('stepSlider');
+        const lrValue = document.getElementById('lrValue');
+        const noiseValue = document.getElementById('noiseValue');
+        const stepValue = document.getElementById('stepValue');
+        const lineEpoch = document.getElementById('lineEpoch');
+        const lineLoss = document.getElementById('lineLoss');
+        const lineA = document.getElementById('lineA');
+        const lineB = document.getElementById('lineB');
+        let lineData = [];
+        let lineModel = { a: -1.2, b: 1.6, epoch: 0, loss: 0 };
+        let lineAuto = null;
+
+        function randn() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function resetLineData() {
+            const noise = Number(noiseSlider.value);
+            lineData = [];
+            for (let i = 0; i < 28; i++) {
+                const x = -3 + (6 * i) / 27;
+                const y = 1.8 * x + 0.5 + randn() * noise;
+                lineData.push({ x, y });
+            }
+            lineModel = {
+                a: -1.2 + Math.random() * 1.4,
+                b: 1.2 - Math.random() * 2.0,
+                epoch: 0,
+                loss: 0
+            };
+            updateLineStats();
+            drawLineDemo();
+        }
+
+        function trainLine(steps) {
+            const lr = Number(lrSlider.value);
+            for (let s = 0; s < steps; s++) {
+                let gradA = 0;
+                let gradB = 0;
+                let loss = 0;
+                for (const point of lineData) {
+                    const pred = lineModel.a * point.x + lineModel.b;
+                    const err = pred - point.y;
+                    loss += err * err;
+                    gradA += 2 * err * point.x;
+                    gradB += 2 * err;
+                }
+                gradA /= lineData.length;
+                gradB /= lineData.length;
+                loss /= lineData.length;
+                lineModel.a -= lr * gradA;
+                lineModel.b -= lr * gradB;
+                lineModel.epoch += 1;
+                lineModel.loss = loss;
+            }
+            updateLineStats();
+            drawLineDemo();
+        }
+
+        function toLineCanvasX(x) {
+            return 70 + ((x + 3.5) / 7) * (lineCanvas.width - 130);
+        }
+
+        function toLineCanvasY(y) {
+            return lineCanvas.height - 50 - ((y + 6) / 12) * (lineCanvas.height - 100);
+        }
+
+        function drawAxes(ctx, width, height, xZero, yZero) {
+            ctx.strokeStyle = 'rgba(140, 170, 220, 0.22)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+                const x = 70 + ((width - 130) / 7) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, 28);
+                ctx.lineTo(x, height - 50);
+                ctx.stroke();
+            }
+            for (let i = 0; i < 7; i++) {
+                const y = 30 + ((height - 80) / 6) * i;
+                ctx.beginPath();
+                ctx.moveTo(70, y);
+                ctx.lineTo(width - 60, y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = 'rgba(220, 235, 255, 0.45)';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(70, yZero);
+            ctx.lineTo(width - 60, yZero);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(xZero, 30);
+            ctx.lineTo(xZero, height - 50);
+            ctx.stroke();
+        }
+
+        function drawLineDemo() {
+            lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+            drawAxes(lineCtx, lineCanvas.width, lineCanvas.height, toLineCanvasX(0), toLineCanvasY(0));
+
+            lineCtx.fillStyle = 'rgba(86, 198, 255, 0.95)';
+            for (const point of lineData) {
+                lineCtx.beginPath();
+                lineCtx.arc(toLineCanvasX(point.x), toLineCanvasY(point.y), 4.5, 0, Math.PI * 2);
+                lineCtx.fill();
+            }
+
+            const x1 = -3.3;
+            const x2 = 3.3;
+            const y1 = lineModel.a * x1 + lineModel.b;
+            const y2 = lineModel.a * x2 + lineModel.b;
+            lineCtx.strokeStyle = '#ffd166';
+            lineCtx.lineWidth = 3.2;
+            lineCtx.beginPath();
+            lineCtx.moveTo(toLineCanvasX(x1), toLineCanvasY(y1));
+            lineCtx.lineTo(toLineCanvasX(x2), toLineCanvasY(y2));
+            lineCtx.stroke();
+
+            lineCtx.fillStyle = 'rgba(244, 248, 255, 0.8)';
+            lineCtx.font = '14px PingFang SC, Microsoft YaHei, sans-serif';
+            lineCtx.fillText('x', lineCanvas.width - 74, toLineCanvasY(0) - 10);
+            lineCtx.fillText('y', toLineCanvasX(0) + 10, 40);
+        }
+
+        function updateLineStats() {
+            lrValue.textContent = Number(lrSlider.value).toFixed(3);
+            noiseValue.textContent = Number(noiseSlider.value).toFixed(2);
+            stepValue.textContent = stepSlider.value;
+            lineEpoch.textContent = lineModel.epoch;
+            lineLoss.textContent = Number(lineModel.loss).toFixed(3);
+            lineA.textContent = Number(lineModel.a).toFixed(3);
+            lineB.textContent = Number(lineModel.b).toFixed(3);
+        }
+
+        lrSlider.addEventListener('input', updateLineStats);
+        stepSlider.addEventListener('input', updateLineStats);
+        noiseSlider.addEventListener('input', () => {
+            updateLineStats();
+            resetLineData();
+        });
+
+        document.getElementById('lineStepBtn').addEventListener('click', () => trainLine(Number(stepSlider.value)));
+        document.getElementById('lineResetBtn').addEventListener('click', () => {
+            clearInterval(lineAuto);
+            lineAuto = null;
+            document.getElementById('lineAutoBtn').textContent = '自动训练';
+            resetLineData();
+        });
+        document.getElementById('lineAutoBtn').addEventListener('click', () => {
+            if (lineAuto) {
+                clearInterval(lineAuto);
+                lineAuto = null;
+                document.getElementById('lineAutoBtn').textContent = '自动训练';
+            } else {
+                lineAuto = setInterval(() => trainLine(Number(stepSlider.value)), 240);
+                document.getElementById('lineAutoBtn').textContent = '暂停训练';
+            }
+        });
+
+        const circleCanvas = document.getElementById('circleCanvas');
+        const circleCtx = circleCanvas.getContext('2d');
+        const hiddenSlider = document.getElementById('hiddenSlider');
+        const radiusSlider = document.getElementById('radiusSlider');
+        const pointXSlider = document.getElementById('pointXSlider');
+        const pointYSlider = document.getElementById('pointYSlider');
+        const hiddenValue = document.getElementById('hiddenValue');
+        const radiusValue = document.getElementById('radiusValue');
+        const pointValue = document.getElementById('pointValue');
+        const circleLogit = document.getElementById('circleLogit');
+        const circleProb = document.getElementById('circleProb');
+        const circlePred = document.getElementById('circlePred');
+        const circleTruth = document.getElementById('circleTruth');
+        const networkSvg = document.getElementById('networkSvg');
+
+        function sigmoid(x) {
+            return 1 / (1 + Math.exp(-x));
+        }
+
+        function circleForward(x, y, hiddenCount, radius) {
+            const activations = [];
+            const margin = 0.85;
+            for (let i = 0; i < hiddenCount; i++) {
+                const angle = (Math.PI * 2 * i) / hiddenCount;
+                const nx = Math.cos(angle);
+                const ny = Math.sin(angle);
+                const boundary = radius * margin;
+                const pre = boundary - (nx * x + ny * y);
+                activations.push(Math.max(0, pre));
+            }
+            const meanAct = activations.reduce((sum, item) => sum + item, 0) / activations.length;
+            const logit = meanAct * 6 - 2.3;
+            const prob = sigmoid(logit);
+            return { activations, logit, prob };
+        }
+
+        function toCircleCanvasX(x) {
+            return 70 + ((x + 1.8) / 3.6) * (circleCanvas.width - 130);
+        }
+
+        function toCircleCanvasY(y) {
+            return circleCanvas.height - 48 - ((y + 1.8) / 3.6) * (circleCanvas.height - 96);
+        }
+
+        function drawCircleDemo() {
+            const hiddenCount = Number(hiddenSlider.value);
+            const radius = Number(radiusSlider.value);
+            const px = Number(pointXSlider.value);
+            const py = Number(pointYSlider.value);
+            hiddenValue.textContent = hiddenSlider.value;
+            radiusValue.textContent = radius.toFixed(2);
+            pointValue.textContent = `(${px.toFixed(2)}, ${py.toFixed(2)})`;
+
+            const forward = circleForward(px, py, hiddenCount, radius);
+            const truthInside = px * px + py * py <= radius * radius;
+
+            circleLogit.textContent = forward.logit.toFixed(3);
+            circleProb.textContent = forward.prob.toFixed(3);
+            circlePred.textContent = forward.prob >= 0.5 ? '内部' : '外部';
+            circleTruth.textContent = truthInside ? '内部' : '外部';
+
+            circleCtx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+            drawAxes(circleCtx, circleCanvas.width, circleCanvas.height, toCircleCanvasX(0), toCircleCanvasY(0));
+
+            for (let gx = -1.6; gx <= 1.6; gx += 0.08) {
+                for (let gy = -1.6; gy <= 1.6; gy += 0.08) {
+                    const f = circleForward(gx, gy, hiddenCount, radius);
+                    circleCtx.fillStyle = f.prob >= 0.5 ? 'rgba(49, 240, 185, 0.08)' : 'rgba(255, 107, 129, 0.05)';
+                    circleCtx.fillRect(toCircleCanvasX(gx) - 5, toCircleCanvasY(gy) - 5, 10, 10);
+                }
+            }
+
+            circleCtx.strokeStyle = 'rgba(255, 209, 102, 0.85)';
+            circleCtx.lineWidth = 2.4;
+            circleCtx.beginPath();
+            circleCtx.arc(toCircleCanvasX(0), toCircleCanvasY(0), radius * ((circleCanvas.width - 130) / 3.6), 0, Math.PI * 2);
+            circleCtx.stroke();
+
+            circleCtx.strokeStyle = 'rgba(86, 198, 255, 0.35)';
+            circleCtx.lineWidth = 1.2;
+            for (let i = 0; i < hiddenCount; i++) {
+                const angle = (Math.PI * 2 * i) / hiddenCount;
+                const nx = Math.cos(angle);
+                const ny = Math.sin(angle);
+                const bx = nx * radius * 0.85;
+                const by = ny * radius * 0.85;
+                circleCtx.beginPath();
+                circleCtx.moveTo(toCircleCanvasX(bx), toCircleCanvasY(by));
+                circleCtx.lineTo(toCircleCanvasX(bx - ny * 1.4), toCircleCanvasY(by + nx * 1.4));
+                circleCtx.stroke();
+            }
+
+            circleCtx.fillStyle = truthInside ? 'rgba(49, 240, 185, 0.96)' : 'rgba(255, 107, 129, 0.96)';
+            circleCtx.beginPath();
+            circleCtx.arc(toCircleCanvasX(px), toCircleCanvasY(py), 6.5, 0, Math.PI * 2);
+            circleCtx.fill();
+
+            circleCtx.fillStyle = 'rgba(244, 248, 255, 0.82)';
+            circleCtx.font = '14px PingFang SC, Microsoft YaHei, sans-serif';
+            circleCtx.fillText('x', circleCanvas.width - 74, toCircleCanvasY(0) - 10);
+            circleCtx.fillText('y', toCircleCanvasX(0) + 10, 42);
+
+            drawNetworkSvg(forward.activations, forward.prob);
+        }
+
+        function drawNetworkSvg(activations, prob) {
+            const hiddenCount = activations.length;
+            const maxVisible = Math.min(hiddenCount, 8);
+            const shownActs = activations.slice(0, maxVisible);
+            let svg = '';
+
+            for (let i = 0; i < 2; i++) {
+                const cy = 80 + i * 100;
+                svg += `<circle cx="70" cy="${cy}" r="18" fill="rgba(86,198,255,0.16)" stroke="rgba(86,198,255,0.55)" stroke-width="2"></circle>`;
+                svg += `<text x="70" y="${cy + 5}" fill="#eaf4ff" font-size="13" text-anchor="middle">${i === 0 ? 'x' : 'y'}</text>`;
+            }
+
+            shownActs.forEach((act, idx) => {
+                const cy = 30 + idx * (200 / (Math.max(1, maxVisible - 1)));
+                const opacity = Math.min(0.95, 0.18 + act * 0.8);
+                svg += `<circle cx="255" cy="${cy + 30}" r="15" fill="rgba(49,240,185,${opacity})" stroke="rgba(49,240,185,0.65)" stroke-width="2"></circle>`;
+                svg += `<text x="255" y="${cy + 35}" fill="#04131a" font-size="11" text-anchor="middle">${idx + 1}</text>`;
+                svg += `<line x1="88" y1="80" x2="240" y2="${cy + 30}" stroke="rgba(120,160,255,0.22)" stroke-width="1.2"></line>`;
+                svg += `<line x1="88" y1="180" x2="240" y2="${cy + 30}" stroke="rgba(120,160,255,0.22)" stroke-width="1.2"></line>`;
+                svg += `<text x="320" y="${cy + 35}" fill="#b6c9e8" font-size="12">ReLU=${act.toFixed(2)}</text>`;
+            });
+
+            svg += `<circle cx="450" cy="130" r="22" fill="rgba(255,209,102,0.16)" stroke="rgba(255,209,102,0.7)" stroke-width="2"></circle>`;
+            svg += `<text x="450" y="135" fill="#ffe7aa" font-size="14" text-anchor="middle">σ</text>`;
+            shownActs.forEach((_, idx) => {
+                const cy = 30 + idx * (200 / (Math.max(1, maxVisible - 1)));
+                svg += `<line x1="270" y1="${cy + 30}" x2="428" y2="130" stroke="rgba(255,209,102,0.24)" stroke-width="1.2"></line>`;
+            });
+            svg += `<text x="450" y="172" fill="#ffd166" font-size="14" text-anchor="middle">p=${prob.toFixed(2)}</text>`;
+            networkSvg.innerHTML = svg;
+        }
+
+        [hiddenSlider, radiusSlider, pointXSlider, pointYSlider].forEach((el) => {
+            el.addEventListener('input', drawCircleDemo);
+        });
+
+        resetLineData();
+        drawCircleDemo();
+        updateSlide(0);
+    </script>
+</body>
+</html>
