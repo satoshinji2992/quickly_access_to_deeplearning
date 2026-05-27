@@ -1,0 +1,80 @@
+<svg width="1200" height="500" viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07101d"/>
+      <stop offset="100%" stop-color="#17365d"/>
+    </linearGradient>
+    <linearGradient id="accent3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#56c6ff"/>
+      <stop offset="100%" stop-color="#31f0b9"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 30px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #f7fbff; }
+      .boxTitle { font: 700 19px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #eef7ff; }
+      .note { font: 500 15px 'PingFang SC', 'Microsoft YaHei', sans-serif; fill: #a5bddb; }
+    </style>
+  </defs>
+  <rect width="1200" height="500" rx="32" fill="url(#bg3)"/>
+  <text x="62" y="64" class="title">一个完整的 ResNet 图像分类实验流程</text>
+
+  <g transform="translate(58 132)">
+    <rect width="190" height="220" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="26" y="44" class="boxTitle">1. 数据准备</text>
+    <text x="26" y="82" class="note">CIFAR-100</text>
+    <text x="26" y="112" class="note">RandomCrop</text>
+    <text x="26" y="142" class="note">HorizontalFlip</text>
+    <text x="26" y="172" class="note">Normalize</text>
+  </g>
+
+  <g transform="translate(292 132)">
+    <rect width="190" height="220" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="26" y="44" class="boxTitle">2. 模型构建</text>
+    <text x="26" y="82" class="note">stem 卷积层</text>
+    <text x="26" y="112" class="note">BasicBlock</text>
+    <text x="26" y="142" class="note">layer1 ~ layer4</text>
+    <text x="26" y="172" class="note">AvgPool + FC</text>
+  </g>
+
+  <g transform="translate(526 132)">
+    <rect width="190" height="220" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="26" y="44" class="boxTitle">3. 训练循环</text>
+    <text x="26" y="82" class="note">forward</text>
+    <text x="26" y="112" class="note">CrossEntropyLoss</text>
+    <text x="26" y="142" class="note">backward</text>
+    <text x="26" y="172" class="note">optimizer.step()</text>
+  </g>
+
+  <g transform="translate(760 132)">
+    <rect width="190" height="220" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="26" y="44" class="boxTitle">4. 验证评估</text>
+    <text x="26" y="82" class="note">model.eval()</text>
+    <text x="26" y="112" class="note">val loss</text>
+    <text x="26" y="142" class="note">val acc</text>
+    <text x="26" y="172" class="note">保存最优结果</text>
+  </g>
+
+  <g transform="translate(994 132)">
+    <rect width="148" height="220" rx="24" fill="rgba(255,255,255,0.05)" stroke="rgba(86,198,255,0.22)"/>
+    <text x="22" y="44" class="boxTitle">5. 复盘</text>
+    <text x="22" y="82" class="note">看曲线</text>
+    <text x="22" y="112" class="note">调学习率</text>
+    <text x="22" y="142" class="note">调增强</text>
+    <text x="22" y="172" class="note">记实验</text>
+  </g>
+
+  <g stroke="url(#accent3)" stroke-width="6" fill="none" stroke-linecap="round">
+    <path d="M248 242 C262 242, 276 242, 292 242"/>
+    <path d="M482 242 C498 242, 512 242, 526 242"/>
+    <path d="M716 242 C732 242, 744 242, 760 242"/>
+    <path d="M950 242 C966 242, 980 242, 994 242"/>
+  </g>
+  <g fill="#56c6ff">
+    <polygon points="292,242 276,232 276,252"/>
+    <polygon points="526,242 510,232 510,252"/>
+    <polygon points="760,242 744,232 744,252"/>
+    <polygon points="994,242 978,232 978,252"/>
+  </g>
+
+  <rect x="60" y="394" width="1080" height="62" rx="18" fill="rgba(255,255,255,0.04)" stroke="rgba(49,240,185,0.22)"/>
+  <text x="86" y="432" class="note">先跑通最小版本，再逐步加学习率调度器、权重保存、曲线绘制和更完整的数据增强，这样最不容易把自己绕进去。</text>
+</svg>
