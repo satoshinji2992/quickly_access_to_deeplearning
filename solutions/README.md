@@ -12,6 +12,7 @@
 
 - `block_01_basics/linear_regression_solution.py`
 - `block_01_basics/mini_network_reference.py`
+- `block_02_resnet/resnet_numpy_solution.py`
+- `block_03_transformer/minimind_solution.py`
 
-ResNet 和 Transformer 的完整参考实现会随着任务推进逐步补齐。
-
+这里的参考实现不是唯一答案。它们主要用来对照 shape、forward/backward 写法和训练闭环。建议先做 `exercises/`，卡住后再回来翻。

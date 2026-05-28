@@ -15,8 +15,8 @@ class Linear:
         return x @ self.W + self.b
 
     def backward(self, dout):
-        self.dW = self.x.T @ dout / self.x.shape[0]
-        self.db = np.mean(dout, axis=0, keepdims=True)
+        self.dW[...] = self.x.T @ dout
+        self.db[...] = np.sum(dout, axis=0, keepdims=True)
         return dout @ self.W.T
 
     def parameters(self):
@@ -114,4 +114,3 @@ class Momentum:
         for idx, (value, grad) in enumerate(self.parameters):
             self.velocity[idx] = self.beta * self.velocity[idx] + (1 - self.beta) * grad
             value -= self.lr * self.velocity[idx]
-

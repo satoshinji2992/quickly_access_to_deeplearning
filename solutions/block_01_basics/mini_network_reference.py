@@ -1,10 +1,44 @@
 import numpy as np
-import utils.createDataAndPlot as cp
+
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    plt = None
 
 NETWORK_SHAPE = [2, 4, 4, 2]
 BATCH_SIZE = 32
 PATTERN = "circle"  # square, circle, triangle
 BACKPROPAGATION = "adam"  # mbsgd, adam, rmsprop, adagrad
+
+# ----------------------------------
+def create_data(n, pattern="circle", seed=42):
+    rng = np.random.default_rng(seed)
+    xy = rng.uniform(-1.5, 1.5, size=(n, 2))
+    x, y = xy[:, 0], xy[:, 1]
+    if pattern == "circle":
+        labels = (x**2 + y**2 <= 1.0).astype(float)
+    elif pattern == "square":
+        labels = ((np.abs(x) <= 0.8) & (np.abs(y) <= 0.8)).astype(float)
+    elif pattern == "triangle":
+        labels = ((y > -0.8) & (y < x + 0.8) & (y < -x + 0.8)).astype(float)
+    else:
+        raise ValueError("pattern must be circle, square, or triangle")
+    return np.column_stack((x, y, labels))
+
+
+def plot_data(original, predicted, title):
+    if plt is None:
+        print("matplotlib is not installed; skip plotting.")
+        return
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    axes[0].scatter(original[:, 0], original[:, 1], c=original[:, 2], s=8, cmap="coolwarm")
+    axes[0].set_title("target")
+    axes[1].scatter(predicted[:, 0], predicted[:, 1], c=predicted[:, 2], s=8, cmap="coolwarm")
+    axes[1].set_title("prediction")
+    fig.suptitle(title)
+    plt.tight_layout()
+    plt.show()
+
 
 # ----------------------------------
 def activation_ReLU(inputs):
@@ -218,7 +252,7 @@ class Network:
 
 # ----------------------------------
 def test():
-    data = cp.create_data(2048, PATTERN)
+    data = create_data(2048, PATTERN)
     data1 = np.copy(data)
     inputs = data[:, (0, 1)]
     targets = np.column_stack((1 - data[:, 2], data[:, 2]))
@@ -231,7 +265,7 @@ def test():
     print("Classification:", classification)
     print("Targets:", targets[:, 1])
     print("Loss:", precise_loss_function(outputs[-1], targets))
-    cp.plot_data(data1, data2, "training")
+    plot_data(data1, data2, "training")
 
 
 if __name__ == "__main__":
