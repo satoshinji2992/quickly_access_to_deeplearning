@@ -23,14 +23,26 @@ def one_hot(labels, num_classes=10):
 
 
 def load_mnist(sample_size=5000):
-    from torchvision import datasets, transforms
+    try:
+        from torchvision import datasets, transforms
 
-    dataset = datasets.MNIST(
-        root="./data", train=True, download=True, transform=transforms.ToTensor()
-    )
-    x = dataset.data.numpy().reshape(-1, 784).astype("float32") / 255.0
-    labels = dataset.targets.numpy()
-    return x[:sample_size], one_hot(labels[:sample_size]), labels[:sample_size]
+        dataset = datasets.MNIST(
+            root="./data", train=True, download=True, transform=transforms.ToTensor()
+        )
+        x = dataset.data.numpy().reshape(-1, 784).astype("float32") / 255.0
+        labels = dataset.targets.numpy()
+        return x[:sample_size], one_hot(labels[:sample_size]), labels[:sample_size]
+    except ModuleNotFoundError:
+        from sklearn.datasets import load_digits
+
+        print("torchvision is not installed; using sklearn digits as a small fallback.")
+        digits = load_digits()
+        images = digits.images.astype("float32") / 16.0
+        padded = np.zeros((images.shape[0], 28, 28), dtype="float32")
+        padded[:, 10:18, 10:18] = images
+        labels = digits.target.astype("int64")
+        x = padded.reshape(-1, 784)
+        return x[:sample_size], one_hot(labels[:sample_size]), labels[:sample_size]
 
 
 def main():
@@ -50,4 +62,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

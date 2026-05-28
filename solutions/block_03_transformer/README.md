@@ -1,11 +1,25 @@
 # Block 3 参考实现
 
-这里后续放 Transformer 与 MiniMind Core 的完整参考实现。
+这里放 Transformer 与 MiniMind Core 的参考实现。
 
-练习代码已经给出一部分可运行 starter。参考实现应当在 starter 基础上补齐：
+当前文件：
 
-- RoPE + MHA/GQA。
-- RMSNorm + SwiGLU。
-- Decoder-only MiniMind Core。
-- 预训练和 SFT smoke run。
+- [minimind_solution.py](./minimind_solution.py)
 
+它包含：
+
+- RMSNorm
+- RoPE cache 与 `apply_rope`
+- GQA 风格 causal self-attention
+- SwiGLU
+- decoder block
+- MiniMind 风格语言模型
+- 简单 `generate`
+
+运行 smoke test：
+
+```bash
+python solutions/block_03_transformer/minimind_solution.py
+```
+
+这个脚本只用随机 token 跑几步训练，主要检查结构和 loss 是否通。
