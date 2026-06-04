@@ -30,6 +30,8 @@ $$
 
 再加 causal mask, softmax, 乘 V.
 
+![Causal Mask](assets/causal_mask.png)
+
 ## 二. 为什么要多头?
 
 一个 head 只能从一个子空间看上下文.
@@ -41,6 +43,8 @@ dim = n_heads * head_dim
 ```
 
 每个 head 各自算 attention, 最后 concat 回来, 再过一个输出投影.
+
+![MHA](assets/mha.png)
 
 ## 三. GQA 是什么?
 
@@ -58,6 +62,8 @@ n_kv_heads = 2
 这样推理时 KV cache 更小, 速度和显存都会舒服一点.
 
 当前 `mha.py` 先给了普通 MHA 版本. 后面 MiniMind Core 会把 GQA 接进去.
+
+![GQA](assets/gqa.png)
 
 ## 四. 检查什么?
 

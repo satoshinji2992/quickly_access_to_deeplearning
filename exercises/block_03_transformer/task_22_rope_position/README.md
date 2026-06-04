@@ -10,6 +10,8 @@ MiniMind/LLaMA 风格模型通常不用这种加法, 而是用 RoPE.
 
 RoPE 的做法是: 让 Q 和 K 按位置旋转.
 
+![RoPE](assets/rope.png)
+
 ## 一. 为什么作用在 Q/K?
 
 Attention score 来自:

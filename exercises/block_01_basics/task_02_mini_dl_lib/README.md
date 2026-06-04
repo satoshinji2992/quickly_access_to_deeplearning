@@ -2,6 +2,8 @@
 
 你现在已经完成前两个任务了, 但是目前模型收敛速度和效果还不够好.
 
+![小型深度学习库拆分](assets/mini_dl_lib_split.png)
+
 你将完善你的深度学习小库, 依次引入: 新的激活函数(SiLU/GELU) -> 优化器(mini-batch SGD、Momentum、Adagrad、RMSProp、Adam) -> 归一化(BatchNorm/LayerNorm) -> 正则化(Dropout) -> 模型初始化.
 
 我们先看你会遇到的典型现象:
@@ -56,7 +58,7 @@ $$\mathrm{GELU}(x) \approx 0.5x \left(1 + \tanh\left(\sqrt{\frac{2}{\pi}}(x + 0.
 
 GELU 的灵感来源于高斯分布, 因此它在处理输入时具有一定的概率特性.
 
-![SiLU 和 GELU](../../../assets/images/silu_gelu.png)
+![SiLU 和 GELU](assets/silu_gelu.png)
 
 [更多激活函数和数学原理](https://zhuanlan.zhihu.com/p/364620596)
 

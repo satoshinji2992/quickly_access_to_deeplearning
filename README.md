@@ -1,25 +1,44 @@
 # 快速入门深度学习
 
-你可能已经上过人工智能导论, 也可能已经把作业文档丢给 AI 生成过一份看起来很完美的代码. 但代码能跑和你真的理解它, 中间差得还挺远.
+你可能已经上过人工智能导论,也可能已经把作业文档丢给 AI 生成过一份看起来很完美的代码. 但代码能跑和你真的理解它,中间差得还挺远.
 
-这个教程会带你从拟合一条直线开始，逐步搭出一个小型深度学习库，再到 ResNet 图像分类和 Transformer。
+这个教程会带你从拟合一条直线开始,逐步搭出一个小型深度学习库,再到 ResNet 图像分类和 Transformer.Block2和Block3的内容有待精修,有愿意帮忙的小伙伴可以联系我.
+
+[一些推荐的教学视频](推荐教学视频.md)
 
 ## 目录
 
 ```text
-lessons/      # 大纲
+chapters/     # 章节
 exercises/    # 练习代码
 solutions/    # 参考实现
-assets/       # 图片
+assets/       # 共享图片
+tools/        # 小工具，比如手动裁图器
 old/          # 旧稿
 ```
 
 ## 课程路线
 
-1. [课程总览](lessons/00-课程总览.md)
-2. [Block 1: 基础知识](lessons/01-基础知识.md) — 直线拟合 → 圆形分类 → 小型 NumPy DL 库 → MNIST
-3. [Block 2: ResNet 图像分类](lessons/02-ResNet图像分类.md) — 卷积、池化、残差块、训练
-4. [Block 3: Transformer 与 MiniMind](lessons/03-Transformer与MiniMind.md) — Attention、位置编码、Decoder、生成
+1. [课程总览](chapters/00-课程总览.md)
+2. [Block 1: 基础知识](chapters/01-基础知识.md) — 直线拟合 → 圆形分类 → 小型 NumPy DL 库 → MNIST
+3. [Block 2: ResNet 图像分类](chapters/02-ResNet图像分类.md) — 卷积、池化、残差块、训练
+4. [Block 3: Transformer 与 MiniMind](chapters/03-Transformer与MiniMind.md) — Attention、位置编码、Decoder、生成
+
+## 小工具
+
+如果你要把一张大图手动裁成各个章节和任务里要用的小图，可以直接用这个工具：
+
+```bash
+python tools/image_cropper.py
+```
+
+也可以在启动时顺手打开一张图：
+
+```bash
+python tools/image_cropper.py path/to/big_image.png
+```
+
+裁好的图片可以一次保存到多个位置，任务页和共享图片会一起对上。
 
 ### Block 1: y = ax + b! 神经网络到底是什么?
 
@@ -37,7 +56,7 @@ old/          # 旧稿
 - [task_14: NumPy ResNet 训练](exercises/block_02_resnet/task_14_numpy_resnet_train/README.md)
 - [task_15: 实验记录](exercises/block_02_resnet/task_15_experiment_notes/README.md)
 
-### Block 3: apple is __ ? __ 注意力是你所需要的 (施工中)
+### Block 3: apple is __ ? __ 注意力是你所需要的
 
 - [task_20: Transformer 理论](exercises/block_03_transformer/task_20_transformer_theory/README.md)
 - [task_21: Sinusoidal 位置编码](exercises/block_03_transformer/task_21_sinusoidal_position/README.md)
@@ -51,9 +70,9 @@ old/          # 旧稿
 - [task_29: Generate 与采样](exercises/block_03_transformer/task_29_generate_sampling/README.md)
 - [task_30: KV Cache](exercises/block_03_transformer/task_30_kv_cache/README.md)
 
-## 拓展主题 
+## 拓展主题
 
-`exercises/ComingSoon.../` 
+`exercises/ComingSoon.../`
 
 ```text
 CrossAttention
@@ -67,7 +86,6 @@ MoE
 Mamba / StateSpaceModels
 RL
 ```
----
 
 教程随时可能更新,使用这个命令同步:
 

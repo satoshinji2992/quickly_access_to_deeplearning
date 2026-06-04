@@ -10,6 +10,8 @@ MLP 看一张图片时, 会把所有像素摊平成一个长向量. 卷积不这
 
 你可以把它想成一个很小的检测器. 有的卷积核可能对竖直边缘敏感, 有的可能对颜色变化敏感, 有的可能对某种纹理敏感. 当然, 它一开始什么都不会, 这些权重还是靠训练学出来的.
 
+![卷积在算什么](assets/conv2d_explained.png)
+
 ---
 
 ## 一. 卷积层在算什么?
@@ -68,6 +70,8 @@ for n in N:
 这样写当然能懂, 但很慢, 反向传播也麻烦.
 
 `im2col` 的想法是: 把图片里每个要参与卷积的小窗口都展开成一行.
+
+![im2col](assets/im2col_explained.png)
 
 比如一个窗口原本形状是:
 
@@ -130,6 +134,8 @@ out_w = compute_output_size(w, kernel_size, stride, padding)
 ```
 
 不要在循环里凭感觉写范围.
+
+![padding 和 stride](assets/padding_stride.png)
 
 ---
 

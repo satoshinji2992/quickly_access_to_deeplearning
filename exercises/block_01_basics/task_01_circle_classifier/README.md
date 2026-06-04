@@ -8,7 +8,7 @@
 
 想象一下, 你在纸上画了一个圆, 然后在上面撒了很多点. 点如果在圆里面就标 1, 在外面就标 0. 你的任务就是让电脑自动判断点的归属.
 
-![圆形分类数据](../../../assets/images/data_circle.png)
+![圆形分类数据](assets/data_circle.png)
 
 看起来像是图形分类, 对吧? 那我们先看看能不能用上次的思路来解决.
 
@@ -40,7 +40,7 @@
 
   它会把小于 0 的数都变成 0, 让模型产生折线的效果.
 
-  ![ReLU](../../../assets/images/relu.png)
+  ![ReLU](assets/relu.png)
 
 - Sigmoid:
 
@@ -48,7 +48,7 @@
 
   它把输入压缩到 0 到 1 之间, 通常用于分类任务.
 
-  ![Sigmoid](../../../assets/images/sigmoid.png)
+  ![Sigmoid](assets/sigmoid.png)
 
 - Softmax:
 
@@ -66,9 +66,9 @@
 
 这是一个有一层隐藏层、神经元数量为 5 的简单神经网络结构:
 
-![ReLU 网络结构](../../../assets/images/relu_network_structure.png)
+![ReLU 网络结构](assets/relu_network_structure.png)
 
-![ReLU 近似曲线](../../../assets/images/relu_approximation.png)
+![ReLU 近似曲线](assets/relu_approximation.png)
 
 这条曲线看起来就不像直线了, 而是有折角的曲线.
 

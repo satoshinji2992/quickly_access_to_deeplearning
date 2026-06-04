@@ -12,6 +12,8 @@
 - GlobalAvgPool: 把整张特征图汇聚成一个向量.
 - BatchNorm: 让训练更稳.
 
+![BatchNorm](assets/batchnorm.png)
+
 这些层看起来不像卷积那么“主角”, 但 ResNet 训练不起来时, 问题经常就藏在这里.
 
 ---
@@ -19,6 +21,8 @@
 ## 一. MaxPool: 只留下局部最强响应
 
 MaxPool 的想法很粗暴.
+
+![MaxPool](assets/maxpool.png)
 
 在一个小窗口里, 只保留最大值.
 
@@ -81,6 +85,8 @@ $$
 但这样参数很多, 也容易过拟合.
 
 Global Average Pooling 更简单: 对每个通道的整张特征图求平均.
+
+![Global Average Pooling](assets/globalavgpool.png)
 
 如果输入是:
 

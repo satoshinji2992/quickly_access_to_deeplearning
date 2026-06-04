@@ -4,6 +4,8 @@
 
 接下来要把它们组成 decoder block.
 
+![Decoder Block](assets/decoder_block.png)
+
 MiniMind/LLaMA 风格一般用 Pre-Norm:
 
 ```text

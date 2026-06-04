@@ -4,6 +4,8 @@
 
 你要先知道 Transformer 到底在解决什么问题, 以及 MiniMind 为什么只取其中一部分.
 
+![Self-Attention](assets/self_attention.png)
+
 ## 一. RNN 的麻烦
 
 在 Transformer 之前, 很多序列模型靠 RNN 一步一步读 token.
@@ -65,6 +67,8 @@ Attention Is All You Need 原论文是 encoder-decoder.
 ```
 
 所以主线会重点实现 causal self-attention. Cross-attention 属于 encoder-decoder 和多模态方向, 可以作为拓展主题单独看.
+
+![Encoder-Decoder 与 Decoder-Only](assets/encoder_decoder_vs_decoder_only.png)
 
 ## 五. 接下来怎么走?
 

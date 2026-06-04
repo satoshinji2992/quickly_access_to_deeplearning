@@ -6,6 +6,8 @@ Attention 负责让 token 之间交换信息.
 
 这就是 FFN.
 
+![SwiGLU](assets/swiglu.png)
+
 MiniMind/LLaMA 风格模型里常见的是 SwiGLU, 而不是最普通的 GELU FFN.
 
 ## 一. 普通 FFN
