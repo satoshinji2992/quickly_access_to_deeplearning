@@ -4,6 +4,8 @@
 
 先用随机 token 或很小的文本跑通训练闭环.
 
+![Shifted Labels](assets/shifted_labels.png)
+
 ```text
 input_ids -> model -> logits/loss -> backward -> optimizer.step
 ```

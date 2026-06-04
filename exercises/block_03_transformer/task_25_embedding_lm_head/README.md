@@ -4,6 +4,8 @@
 
 它处理的是 token id.
 
+![Embedding 与 LM Head](assets/embedding_lm_head.png)
+
 比如:
 
 ```text

@@ -6,6 +6,8 @@
 
 训练模型时最怕的不是结果差, 而是你完全不知道自己改了什么.
 
+![分错样例](assets/misclassified_examples.png)
+
 昨天 learning rate 是多少? 有没有开数据增强? BatchNorm 是不是 eval 了? 小样本能不能过拟合? 这些东西不记, 过两天就忘.
 
 所以这一关更像实验草稿本.

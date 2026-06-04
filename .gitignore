@@ -1,3 +1,5 @@
 .DS_Store
 __pycache__/
 *.pyc
+教材配图清单.md
+tools/

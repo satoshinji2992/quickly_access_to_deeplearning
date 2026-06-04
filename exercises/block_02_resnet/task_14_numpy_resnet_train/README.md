@@ -10,6 +10,8 @@
 
 先让模型在小数据上过拟合.
 
+![ResNet 总图](assets/resnet.png)
+
 ---
 
 ## 一. 先别急着跑完整 CIFAR-100

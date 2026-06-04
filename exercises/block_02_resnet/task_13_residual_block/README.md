@@ -12,6 +12,8 @@ ResNet 的想法很直接:
 
 于是有了 shortcut.
 
+![残差块](assets/residual_block.png)
+
 ---
 
 ## 一. 残差块在算什么?
@@ -87,6 +89,8 @@ $$\frac{\partial y}{\partial x} = \frac{\partial F(x)}{\partial x} + 1$$
 它意味着梯度不只要穿过卷积分支, 还可以沿着 shortcut 直接传回来.
 
 深层网络里, 梯度一层层乘下去很容易变小. shortcut 给了梯度一条更短的路.
+
+![梯度通路](assets/residual_gradient_path.png)
 
 这就是 ResNet 能训练得更深的关键原因之一.
 

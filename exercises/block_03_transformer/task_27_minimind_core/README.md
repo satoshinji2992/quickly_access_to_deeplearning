@@ -6,6 +6,8 @@
 
 它不一定大, 但结构要对.
 
+![MiniMind 总图](assets/minimind_overview.png)
+
 ## 一. 配置类
 
 先用一个 config 管住模型规模:

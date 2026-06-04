@@ -4,6 +4,8 @@
 
 它能跑, 但那毕竟是灰度图, 还是很干净的手写数字. 现在我们要处理 CIFAR-100 这种彩色图片, 事情马上变麻烦.
 
+![图像数据管线](assets/image_data_pipeline.png)
+
 图片不是一个二维点, 也不是一条直线. 一张 CIFAR 图片通常长这样:
 
 ```text
@@ -55,6 +57,8 @@ images.transpose(0, 3, 1, 2)
 
 这一步看起来只是换了个顺序, 但非常重要. 后面的卷积默认吃的就是 `NCHW`.
 
+![NHWC 与 NCHW](assets/nhwc_nchw.png)
+
 ---
 
 ## 二. 为什么要标准化?
@@ -105,6 +109,8 @@ random_crop_with_padding(images, padding=4, crop_size=32)
 ```
 
 注意, 增强一般只在训练集上做. 验证集和测试集不要随机增强, 不然你每次评估的东西都不一样.
+
+![数据增强](assets/data_augmentation.png)
 
 还有一个小细节: 如果你想复现实验, 就给随机数生成器固定 seed.
 
@@ -165,3 +171,5 @@ for xb, yb in iterate_minibatches(x, labels, batch_size=4):
 这一关不需要训练模型. 它只负责一件事: 让图片干干净净地进入后面的网络.
 
 下一关我们开始写卷积.
+
+![任务路线](assets/resnet_task_route.png)

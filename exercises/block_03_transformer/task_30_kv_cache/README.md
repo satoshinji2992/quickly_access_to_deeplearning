@@ -10,6 +10,8 @@ Generate 最浪费的地方在哪里?
 
 KV Cache 就是把历史 token 的 key 和 value 存下来.
 
+![KV Cache](assets/kv_cache.png)
+
 ## 一. 为什么只缓存 K/V?
 
 Self-attention 里:

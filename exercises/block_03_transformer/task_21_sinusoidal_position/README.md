@@ -8,6 +8,8 @@ Attention 本身不知道顺序.
 
 它不是训练出来的参数, 而是一张按公式算出来的位置表.
 
+![Sinusoidal Position Encoding](assets/sinusoidal_position.png)
+
 ## 一. 公式长什么样?
 
 对位置 $pos$ 和维度 $i$:
@@ -40,6 +42,8 @@ token_embedding : (batch, seq_len, dim)
 ```
 
 取前 `seq_len` 个位置后, 广播加到 batch 上.
+
+![位置编码接入模型](assets/embedding_plus_position.png)
 
 ## 三. 为什么它是 RoPE 的前置知识?
 

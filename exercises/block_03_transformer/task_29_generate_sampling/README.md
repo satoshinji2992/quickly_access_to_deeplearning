@@ -12,6 +12,8 @@ prompt -> next token -> append -> next token -> append -> ...
 
 但这里马上会遇到一个问题: 模型输出的是整个词表上的 logits, 你到底选哪个 token?
 
+![采样方法](assets/sampling_methods.png)
+
 ## 一. 最朴素的做法: greedy
 
 每一步都选概率最大的 token.
