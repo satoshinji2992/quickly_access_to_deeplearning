@@ -24,22 +24,6 @@ old/          # 旧稿
 3. [Block 2: ResNet 图像分类](chapters/02-ResNet图像分类.md) — 卷积、池化、残差块、训练
 4. [Block 3: Transformer 与 MiniMind](chapters/03-Transformer与MiniMind.md) — Attention、位置编码、Decoder、生成
 
-## 小工具
-
-如果你要把一张大图手动裁成各个章节和任务里要用的小图，可以直接用这个工具：
-
-```bash
-python tools/image_cropper.py
-```
-
-也可以在启动时顺手打开一张图：
-
-```bash
-python tools/image_cropper.py path/to/big_image.png
-```
-
-裁好的图片可以一次保存到多个位置，任务页和共享图片会一起对上。
-
 ### Block 1: y = ax + b! 神经网络到底是什么?
 
 - [task_00: 拟合一条直线](exercises/block_01_basics/task_00_linear_regression/README.md)
