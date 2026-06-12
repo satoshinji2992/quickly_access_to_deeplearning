@@ -95,5 +95,5 @@ git pull origin main
 ```bash
 python solutions/block_01_basics/linear_regression_solution.py
 python solutions/block_01_basics/mini_network_reference.py
-python solutions/block_02_resnet/train_cifar100_solution.py --overfit 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
+python solutions/block_02_resnet/train_cifar100_solution.py --subset-size 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
 ```

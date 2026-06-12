@@ -165,7 +165,7 @@ def parse_args():
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--train-limit", type=int, default=None)
     parser.add_argument("--val-limit", type=int, default=1000)
-    parser.add_argument("--overfit", type=int, default=None)
+    parser.add_argument("--subset-size", type=int, default=None)
     parser.add_argument("--no-augment", action="store_true")
     parser.add_argument("--checkpoint", type=Path, default=REPO_ROOT / "checkpoints" / "cifar100_numpy_resnet.npz")
     parser.add_argument("--resume", action="store_true")
@@ -178,9 +178,10 @@ def main():
     args = parse_args()
     np.random.seed(args.seed)
 
-    if args.overfit is not None:
-        train_images, train_labels = load_cifar100(args.data_dir, train=True, limit=args.overfit)
-        val_images, val_labels = train_images, train_labels
+    if args.subset_size is not None:
+        train_images, train_labels = load_cifar100(args.data_dir, train=True, limit=args.subset_size)
+        val_limit = min(args.val_limit, args.subset_size)
+        val_images, val_labels = load_cifar100(args.data_dir, train=False, limit=val_limit)
         augment = False
     else:
         train_images, train_labels = load_cifar100(args.data_dir, train=True, limit=args.train_limit)

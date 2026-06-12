@@ -8,7 +8,7 @@
 
 所以这一关不要一上来追准确率.
 
-先让模型在小数据上过拟合.
+先让模型在小数据上完成一轮稳定训练.
 
 ![ResNet 总图](assets/resnet.png)
 
@@ -22,17 +22,17 @@
 
 这时候你不知道问题在哪里. 可能是卷积 backward 错了, 可能是 BN eval 模式错了, 可能是标签打乱了, 也可能只是学习率太大.
 
-更好的办法是先做小样本过拟合:
+更好的办法是先做小样本训练:
 
 ```text
 拿 100 到 500 张图片
 关闭或减少随机增强
 训练很多轮
 看 train loss 能不能明显下降
-看 train acc 能不能接近 100%
+看 train acc 有没有明显上升
 ```
 
-如果小样本都过拟合不了, 说明模型或训练循环有 bug.
+如果小样本训练 loss 都不下降, 说明模型或训练循环可能有 bug.
 
 不要跳过这一步. 它能省很多时间.
 
@@ -152,7 +152,7 @@ epoch=10 train_loss=1.82 train_acc=0.46 val_loss=2.30 val_acc=0.31
 
 ```python
 print("TODO: assemble your NumPy ResNet and train CIFAR-100.")
-print("Start with a 500-image overfit test before full training.")
+print("Start with a 500-image subset before full training.")
 ```
 
 你可以按这个顺序做:
@@ -160,18 +160,18 @@ print("Start with a 500-image overfit test before full training.")
 1. 先导入前面几关的层: Conv2D、BatchNorm2D、BasicBlock、GlobalAvgPool2D.
 2. 写一个小的 ResNet 类, 提供 `forward`、`backward`、`parameters`、`train`、`eval`.
 3. 接入 task_10 的数据管线.
-4. 先跑 100 到 500 张图片的小样本过拟合.
-5. 小样本能学住以后, 再跑更多数据.
+4. 先跑 100 到 500 张图片的小样本训练.
+5. 小样本训练稳定以后, 再跑更多数据.
 6. 保存日志和 checkpoint.
 
-如果完整 CIFAR-100 训练太慢, 没关系. 先把小样本过拟合跑通, 这比一个随机准确率的大训练更有价值.
+如果完整 CIFAR-100 训练太慢, 没关系. 先把小样本训练跑通, 这比一个随机准确率的大训练更有价值.
 
 下一关不要求写正式报告, 只是把关键现象记下来.
 
 参考实现可以对照:
 
 ```bash
-python solutions/block_02_resnet/train_cifar100_solution.py --overfit 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
+python solutions/block_02_resnet/train_cifar100_solution.py --subset-size 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
 ```
 
 它会下载 CIFAR-100, 训练一个轻量 NumPy ResNet, 并保存 checkpoint 到 `checkpoints/`.
