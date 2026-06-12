@@ -28,7 +28,7 @@ def load_cifar100(data_dir, train=True, limit=None):
         from torchvision.datasets import CIFAR100
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError(
-            "torchvision is required for CIFAR-100. Run: conda env create -f environment.yml"
+            "torchvision is required for CIFAR-100. Run: pip install -r requirements.txt"
         ) from exc
 
     dataset = CIFAR100(root=str(data_dir), train=train, download=True)

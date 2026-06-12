@@ -2,17 +2,18 @@
 
 你可能已经上过人工智能导论,也可能已经把作业文档丢给 AI 生成过一份看起来很完美的代码. 但代码能跑和你真的理解它,中间差得还挺远.
 
-这个教程会带你从拟合一条直线开始,逐步搭出一个小型深度学习库,再到 ResNet 图像分类和 Transformer.Block2和Block3的内容有待精修,有愿意帮忙的小伙伴可以联系我.
+这个教程会带你从拟合一条直线开始,逐步搭出一个小型深度学习库,再到 ResNet 图像分类和 Transformer.
 
 [一些推荐的教学视频](推荐教学视频.md)
 
 ## 环境准备
 
-推荐使用 conda 管理环境. 这个环境默认覆盖完整教程, 包括 NumPy、MNIST、Transformer 和图片裁剪工具:
+推荐使用 conda 管理 Python 环境, 用 `requirements.txt` 管理项目依赖. 这个依赖文件默认覆盖完整教程, 包括 NumPy、MNIST、Transformer 和图片裁剪工具:
 
 ```bash
-conda env create -f environment.yml
-conda activate deep-learning-intro
+conda create -n dl_tutorial python=3.10
+conda activate dl_tutorial
+pip install -r requirements.txt
 ```
 
 如果只学习 Block 1 和 Block 2 的 NumPy 部分,核心依赖是 `numpy`、`pandas`、`matplotlib` 和 `scikit-learn`. `torch` / `torchvision` 主要用于 MNIST 与 Transformer 相关任务.
@@ -26,7 +27,7 @@ solutions/    # 参考实现
 common/       # task_02 之后共享的小型 NumPy 深度学习库完整实现
 assets/       # 共享图片
 tools/        # 小工具，比如手动裁图器
-old/          # 旧稿
+legacy/       # 归档资料
 ```
 
 ## 课程路线

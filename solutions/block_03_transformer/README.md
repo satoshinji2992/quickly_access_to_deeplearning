@@ -1,12 +1,10 @@
 # Block 3 参考实现
 
-这里放 Transformer 与 MiniMind Core 的参考实现。
-
-当前文件：
+文件：
 
 - [minimind_solution.py](./minimind_solution.py)
 
-它包含：
+`minimind_solution.py` 包含：
 
 - RMSNorm
 - RoPE cache 与 `apply_rope`
@@ -22,4 +20,4 @@
 python solutions/block_03_transformer/minimind_solution.py
 ```
 
-这个脚本只用随机 token 跑几步训练，展示 MiniMind 参考实现的基本训练流程。
+这个脚本使用随机 token 运行几步训练，展示 MiniMind 的基本训练流程。
