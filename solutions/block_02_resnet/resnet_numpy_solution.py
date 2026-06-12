@@ -1,8 +1,35 @@
+import sys
+from pathlib import Path
+
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(REPO_ROOT))
+
+from common.my_dl_lib import CrossEntropyLoss, Linear, Momentum, ReLU  # noqa: E402
+
+
+def _parameters(layer):
+    if hasattr(layer, "parameters"):
+        return layer.parameters()
+    return []
+
+
+def _train(layer):
+    if hasattr(layer, "train"):
+        layer.train()
+
+
+def _eval(layer):
+    if hasattr(layer, "eval"):
+        layer.eval()
 
 
 def compute_output_size(size, kernel_size, stride, padding):
-    return (size + 2 * padding - kernel_size) // stride + 1
+    out = (size + 2 * padding - kernel_size) // stride + 1
+    if out <= 0:
+        raise ValueError("kernel_size, stride, and padding produce an empty output")
+    return out
 
 
 def to_nchw(images):
@@ -33,23 +60,14 @@ def im2col(x, kernel_size, stride=1, padding=0):
     out_h = compute_output_size(h, kernel_size, stride, padding)
     out_w = compute_output_size(w, kernel_size, stride, padding)
     x_padded = np.pad(x, ((0, 0), (0, 0), (padding, padding), (padding, padding)))
-    cols = np.empty((n * out_h * out_w, c * kernel_size * kernel_size), dtype=x.dtype)
-
-    row = 0
-    for sample in range(n):
-        for i in range(out_h):
-            top = i * stride
-            for j in range(out_w):
-                left = j * stride
-                window = x_padded[
-                    sample,
-                    :,
-                    top : top + kernel_size,
-                    left : left + kernel_size,
-                ]
-                cols[row] = window.reshape(-1)
-                row += 1
-    return cols
+    windows = np.lib.stride_tricks.sliding_window_view(
+        x_padded, (kernel_size, kernel_size), axis=(2, 3)
+    )
+    windows = windows[:, :, ::stride, ::stride, :, :]
+    windows = windows[:, :, :out_h, :out_w, :, :]
+    return windows.transpose(0, 2, 3, 1, 4, 5).reshape(
+        n * out_h * out_w, c * kernel_size * kernel_size
+    )
 
 
 def col2im(cols, x_shape, kernel_size, stride=1, padding=0):
@@ -59,46 +77,19 @@ def col2im(cols, x_shape, kernel_size, stride=1, padding=0):
     h_padded = h + 2 * padding
     w_padded = w + 2 * padding
     x_padded = np.zeros((n, c, h_padded, w_padded), dtype=cols.dtype)
+    windows = cols.reshape(n, out_h, out_w, c, kernel_size, kernel_size).transpose(
+        0, 3, 1, 2, 4, 5
+    )
 
-    row = 0
-    for sample in range(n):
-        for i in range(out_h):
-            top = i * stride
-            for j in range(out_w):
-                left = j * stride
-                window = cols[row].reshape(c, kernel_size, kernel_size)
-                x_padded[
-                    sample,
-                    :,
-                    top : top + kernel_size,
-                    left : left + kernel_size,
-                ] += window
-                row += 1
+    for kh in range(kernel_size):
+        h_slice = slice(kh, kh + stride * out_h, stride)
+        for kw in range(kernel_size):
+            w_slice = slice(kw, kw + stride * out_w, stride)
+            x_padded[:, :, h_slice, w_slice] += windows[:, :, :, :, kh, kw]
 
     if padding == 0:
         return x_padded
     return x_padded[:, :, padding:-padding, padding:-padding]
-
-
-class ReLU:
-    def __init__(self):
-        self.mask = None
-
-    def forward(self, x):
-        self.mask = x > 0
-        return np.maximum(x, 0)
-
-    def backward(self, dout):
-        return dout * self.mask
-
-    def parameters(self):
-        return []
-
-    def train(self):
-        pass
-
-    def eval(self):
-        pass
 
 
 class Conv2D:
@@ -118,7 +109,7 @@ class Conv2D:
         self.x = x
         self.cols = im2col(x, self.kernel_size, self.stride, self.padding)
         w_col = self.W.reshape(self.W.shape[0], -1).T
-        out = self.cols @ w_col + self.b
+        out = np.dot(self.cols, w_col) + self.b
         n, _, h, w = x.shape
         out_h = compute_output_size(h, self.kernel_size, self.stride, self.padding)
         out_w = compute_output_size(w, self.kernel_size, self.stride, self.padding)
@@ -128,9 +119,9 @@ class Conv2D:
         n, out_c, out_h, out_w = dout.shape
         dout_col = dout.transpose(0, 2, 3, 1).reshape(n * out_h * out_w, out_c)
         self.db[...] = np.sum(dout_col, axis=0)
-        self.dW[...] = (self.cols.T @ dout_col).T.reshape(self.W.shape)
+        self.dW[...] = np.dot(self.cols.T, dout_col).T.reshape(self.W.shape)
         w_col = self.W.reshape(out_c, -1)
-        dx_cols = dout_col @ w_col
+        dx_cols = np.dot(dout_col, w_col)
         return col2im(dx_cols, self.x.shape, self.kernel_size, self.stride, self.padding)
 
     def parameters(self):
@@ -172,6 +163,8 @@ class MaxPool2D:
         n, c, h, w = self.x_shape
         _, _, out_h, out_w = dout.shape
         dx = np.zeros((n, c, h, w), dtype=dout.dtype)
+        sample_idx = np.arange(n)[:, None]
+        channel_idx = np.arange(c)[None, :]
         for i in range(out_h):
             top = i * self.stride
             for j in range(out_w):
@@ -179,11 +172,11 @@ class MaxPool2D:
                 arg = self.argmax[:, :, i, j]
                 row = arg // self.kernel_size
                 col = arg % self.kernel_size
-                for sample in range(n):
-                    for ch in range(c):
-                        dx[sample, ch, top + row[sample, ch], left + col[sample, ch]] += dout[
-                            sample, ch, i, j
-                        ]
+                np.add.at(
+                    dx,
+                    (sample_idx, channel_idx, top + row, left + col),
+                    dout[:, :, i, j],
+                )
         return dx
 
     def parameters(self):
@@ -267,62 +260,6 @@ class BatchNorm2D:
         return [(self.gamma, self.dgamma), (self.beta, self.dbeta)]
 
 
-class Linear:
-    def __init__(self, in_features, out_features):
-        scale = np.sqrt(2.0 / in_features)
-        self.W = np.random.randn(in_features, out_features) * scale
-        self.b = np.zeros((1, out_features))
-        self.dW = np.zeros_like(self.W)
-        self.db = np.zeros_like(self.b)
-
-    def forward(self, x):
-        self.x = x
-        return x @ self.W + self.b
-
-    def backward(self, dout):
-        self.dW[...] = self.x.T @ dout
-        self.db[...] = np.sum(dout, axis=0, keepdims=True)
-        return dout @ self.W.T
-
-    def parameters(self):
-        return [(self.W, self.dW), (self.b, self.db)]
-
-    def train(self):
-        pass
-
-    def eval(self):
-        pass
-
-
-class CrossEntropyLoss:
-    def forward(self, logits, labels):
-        self.labels = labels
-        shifted = logits - np.max(logits, axis=1, keepdims=True)
-        exp = np.exp(shifted)
-        self.probs = exp / np.sum(exp, axis=1, keepdims=True)
-        return -np.mean(np.log(self.probs[np.arange(labels.shape[0]), labels] + 1e-12))
-
-    def backward(self):
-        grad = self.probs.copy()
-        grad[np.arange(self.labels.shape[0]), self.labels] -= 1.0
-        return grad / self.labels.shape[0]
-
-
-class MomentumSGD:
-    def __init__(self, parameters, lr=0.01, beta=0.9, weight_decay=0.0):
-        self.parameters = list(parameters)
-        self.lr = lr
-        self.beta = beta
-        self.weight_decay = weight_decay
-        self.velocity = [np.zeros_like(value) for value, _ in self.parameters]
-
-    def step(self):
-        for i, (value, grad) in enumerate(self.parameters):
-            update = grad + self.weight_decay * value
-            self.velocity[i] = self.beta * self.velocity[i] + update
-            value -= self.lr * self.velocity[i]
-
-
 class BasicBlock:
     def __init__(self, in_channels, out_channels, stride=1):
         self.conv1 = Conv2D(in_channels, out_channels, 3, stride=stride, padding=1)
@@ -375,11 +312,11 @@ class BasicBlock:
 
     def train(self):
         for layer in self._layers():
-            layer.train()
+            _train(layer)
 
     def eval(self):
         for layer in self._layers():
-            layer.eval()
+            _eval(layer)
 
     def _layers(self):
         layers = [self.conv1, self.bn1, self.relu1, self.conv2, self.bn2, self.relu2]
@@ -389,14 +326,18 @@ class BasicBlock:
 
 
 class SmallResNet:
-    def __init__(self, num_classes=100, channels=(16, 32, 64)):
+    def __init__(self, num_classes=100, channels=(16, 32, 64), blocks_per_stage=(2, 2, 2)):
         c1, c2, c3 = channels
         self.stem = [Conv2D(3, c1, 3, padding=1), BatchNorm2D(c1), ReLU()]
-        self.blocks = [
-            BasicBlock(c1, c1),
-            BasicBlock(c1, c2, stride=2),
-            BasicBlock(c2, c3, stride=2),
-        ]
+        self.blocks = []
+        in_channels = c1
+        for stage_idx, (out_channels, block_count) in enumerate(
+            zip(channels, blocks_per_stage)
+        ):
+            for block_idx in range(block_count):
+                stride = 2 if stage_idx > 0 and block_idx == 0 else 1
+                self.blocks.append(BasicBlock(in_channels, out_channels, stride=stride))
+                in_channels = out_channels
         self.pool = GlobalAvgPool2D()
         self.fc = Linear(c3, num_classes)
 
@@ -420,22 +361,22 @@ class SmallResNet:
     def parameters(self):
         params = []
         for layer in self.stem:
-            params.extend(layer.parameters())
+            params.extend(_parameters(layer))
         for block in self.blocks:
             params.extend(block.parameters())
-        params.extend(self.pool.parameters())
+        params.extend(_parameters(self.pool))
         params.extend(self.fc.parameters())
         return params
 
     def train(self):
         for layer in self.stem:
-            layer.train()
+            _train(layer)
         for block in self.blocks:
             block.train()
 
     def eval(self):
         for layer in self.stem:
-            layer.eval()
+            _eval(layer)
         for block in self.blocks:
             block.eval()
 
@@ -444,7 +385,7 @@ def accuracy(logits, labels):
     return np.mean(np.argmax(logits, axis=1) == labels)
 
 
-def make_toy_images(n=24, num_classes=3, seed=0):
+def make_training_images(n=24, num_classes=3, seed=0):
     rng = np.random.default_rng(seed)
     images = rng.normal(0, 0.15, size=(n, 3, 16, 16)).astype("float32")
     labels = np.arange(n) % num_classes
@@ -453,20 +394,27 @@ def make_toy_images(n=24, num_classes=3, seed=0):
     return images, labels.astype("int64")
 
 
-def smoke_train():
+def one_hot(labels, num_classes):
+    y = np.zeros((labels.shape[0], num_classes))
+    y[np.arange(labels.shape[0]), labels] = 1
+    return y
+
+
+def train():
     np.random.seed(0)
-    x, y = make_toy_images()
+    x, y = make_training_images()
     model = SmallResNet(num_classes=3, channels=(4, 8, 8))
     loss_fn = CrossEntropyLoss()
-    optimizer = MomentumSGD(model.parameters(), lr=0.03, beta=0.9)
+    optimizer = Momentum(model.parameters(), lr=0.3, beta=0.9)
+    targets = one_hot(y, num_classes=3)
     for step in range(8):
         model.train()
         logits = model.forward(x)
-        loss = loss_fn.forward(logits, y)
+        loss = loss_fn.forward(logits, targets)
         model.backward(loss_fn.backward())
         optimizer.step()
         print(f"step={step} loss={loss:.4f} acc={accuracy(logits, y):.3f}")
 
 
 if __name__ == "__main__":
-    smoke_train()
+    train()

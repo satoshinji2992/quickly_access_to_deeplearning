@@ -10,10 +10,10 @@ from pathlib import Path
 
 import numpy as np
 
-TASK_02 = Path(__file__).resolve().parents[1] / "task_02_mini_dl_lib"
-sys.path.append(str(TASK_02))
+REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.append(str(REPO_ROOT))
 
-from my_dl_lib import CrossEntropyLoss, Linear, Momentum, ReLU, Sequential  # noqa: E402
+from common.my_dl_lib import CrossEntropyLoss, Linear, Momentum, ReLU, Sequential  # noqa: E402
 
 
 def one_hot(labels, num_classes=10):
@@ -26,8 +26,9 @@ def load_mnist(sample_size=5000):
     try:
         from torchvision import datasets, transforms
 
+        data_root = Path(__file__).resolve().parent / "data"
         dataset = datasets.MNIST(
-            root="./data", train=True, download=True, transform=transforms.ToTensor()
+            root=str(data_root), train=True, download=True, transform=transforms.ToTensor()
         )
         x = dataset.data.numpy().reshape(-1, 784).astype("float32") / 255.0
         labels = dataset.targets.numpy()

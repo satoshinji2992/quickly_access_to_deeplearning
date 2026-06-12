@@ -9,7 +9,7 @@ sys.path.append(str(CORE))
 from minimind_core import MiniMindConfig, MiniMindCore  # noqa: E402
 
 
-def make_toy_batch(batch_size=8, seq_len=32, vocab_size=128, device="cpu"):
+def make_training_batch(batch_size=8, seq_len=32, vocab_size=128, device="cpu"):
     x = torch.randint(0, vocab_size, (batch_size, seq_len), device=device)
     return x[:, :-1], x[:, 1:]
 
@@ -21,7 +21,7 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
 
     for step in range(20):
-        input_ids, labels = make_toy_batch(device=device)
+        input_ids, labels = make_training_batch(device=device)
         _, loss = model(input_ids, labels)
         optimizer.zero_grad()
         loss.backward()

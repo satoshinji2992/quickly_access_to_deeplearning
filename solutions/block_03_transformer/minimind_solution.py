@@ -167,12 +167,12 @@ class MiniMindModel(nn.Module):
         return sum(p.numel() for p in self.parameters())
 
 
-def make_toy_batch(batch_size=4, seq_len=16, vocab_size=64, device="cpu"):
+def make_training_batch(batch_size=4, seq_len=16, vocab_size=64, device="cpu"):
     x = torch.randint(0, vocab_size, (batch_size, seq_len), device=device)
     return x[:, :-1], x[:, 1:]
 
 
-def smoke_train():
+def train():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config = MiniMindConfig(
         vocab_size=64,
@@ -186,7 +186,7 @@ def smoke_train():
     model = MiniMindModel(config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
     for step in range(5):
-        input_ids, labels = make_toy_batch(device=device)
+        input_ids, labels = make_training_batch(device=device)
         _, loss = model(input_ids, labels)
         optimizer.zero_grad()
         loss.backward()
@@ -197,4 +197,4 @@ def smoke_train():
 
 
 if __name__ == "__main__":
-    smoke_train()
+    train()

@@ -10,7 +10,7 @@
 input_ids -> model -> logits/loss -> backward -> optimizer.step
 ```
 
-## 一. toy batch
+## 一. 训练 batch
 
 当前 `train.py` 用的是随机 token:
 

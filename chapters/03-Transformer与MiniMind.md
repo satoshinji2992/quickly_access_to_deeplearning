@@ -61,7 +61,7 @@ RMSNorm -> SwiGLU FFN -> Residual
 | [task_25](../exercises/block_03_transformer/task_25_embedding_lm_head/README.md)   | token 怎么进出模型                       | embedding、LM head、weight tying |
 | [task_26](../exercises/block_03_transformer/task_26_decoder_blocks/README.md)      | block 怎么堆                             | RMSNorm、残差、Pre-Norm          |
 | [task_27](../exercises/block_03_transformer/task_27_minimind_core/README.md)       | MiniMind Core 怎么搭                     | config、decoder-only、小模型     |
-| [task_28](../exercises/block_03_transformer/task_28_next_token_training/README.md) | 怎么训练它                               | next-token loss、toy training    |
+| [task_28](../exercises/block_03_transformer/task_28_next_token_training/README.md) | 怎么训练它                               | next-token loss、训练循环        |
 | [task_29](../exercises/block_03_transformer/task_29_generate_sampling/README.md)   | 怎么让它生成                             | temperature、top-k               |
 | [task_30](../exercises/block_03_transformer/task_30_kv_cache/README.md)            | 推理怎么加速                             | KV cache                         |
 

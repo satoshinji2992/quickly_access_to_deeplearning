@@ -378,7 +378,7 @@ Momentum
 - 损失函数: 负责比较预测和标签, 并给出最后一层梯度.
 - 模型容器: 把多层 forward 和 backward 串起来.
 
-旧稿里提到的 Adagrad、RMSProp、Adam、AdamW、BatchNorm、LayerNorm、Dropout、L2 正则化, 你现在不一定都要写完. 但至少要知道它们分别在解决什么问题.
+`common/my_dl_lib.py` 中会给出这些组件的完整参考实现. 但在本关练习里, 你可以先从最小可运行版本开始, 再逐步补全 Adagrad、RMSProp、Adam、AdamW、BatchNorm、LayerNorm、Dropout、L2 正则化等扩展功能.
 
 后面到 ResNet 时, 你会再碰 BatchNorm. 到 Transformer 时, 你会再碰 LayerNorm、GELU、AdamW.
 
@@ -390,7 +390,7 @@ Momentum
 
 请在当前文件夹中完成:
 
-- `my_dl_lib.py`: 保存你的小型深度学习库.
+- `my_dl_lib.py`: 保存你在本关自己实现的小型深度学习库.
 - `mission_2.py`: 调用小库重新完成圆形分类实验.
 
 运行方式:
@@ -402,4 +402,4 @@ python mission_2.py
 
 做到这里, 你就拥有了一套能训练、能稳定、能继续扩展的小型深度学习库雏形.
 
-下一步, 我们将使用它来处理 MNIST, 再进入经典的 ResNet 网络, 识别图片中的物体.
+下一步开始, 后续 exercises 和 solutions 会使用仓库根目录下的 `common/my_dl_lib.py` 作为共享实现. 你可以把自己在本关写出的版本和 common 里的完整版本对照起来看.
