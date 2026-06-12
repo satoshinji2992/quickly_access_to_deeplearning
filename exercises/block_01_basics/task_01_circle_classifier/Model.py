@@ -9,7 +9,7 @@ class MLPClassifier:
         self.y_full = pd.get_dummies(self.train_set['label']).values
         self.X = None
         self.y = None
-        self.W1 = np.random.randn(2, 4) * np.sqrt(2. / 4) # He初始化
+        self.W1 = np.random.randn(2, 4) * np.sqrt(2. / 2) # He初始化
         self.b1 = np.zeros((1, 4))
         self.W2 = np.random.randn(4, 4) * np.sqrt(2. / 4)
         self.b2 = np.zeros((1, 4))
@@ -37,23 +37,24 @@ class MLPClassifier:
     def CE(self,M_pred,M_true):
         epsilon = 1e-10
         M_pred = np.clip(M_pred, epsilon, 1. - epsilon)
-        M_CE = -(M_true*np.log(M_pred))
+        M_CE = -np.sum(M_true*np.log(M_pred), axis=1)
         return M_CE
     def compute_loss(self):
-        return np.sum(np.mean(self.CE(self.softmax(),self.y),axis=1))
+        return np.mean(self.CE(self.softmax(),self.y))
     
     def forward(self):
-        self.H1 = self.relu(self.X @self.W1 + self.b1)
-        self.H2 = self.relu(self.H1 @self.W2 + self.b2)
-        self.logits = self.H2 @self.W3 + self.b3
+        self.H1 = self.relu(np.dot(self.X, self.W1) + self.b1)
+        self.H2 = self.relu(np.dot(self.H1, self.W2) + self.b2)
+        self.logits = np.dot(self.H2, self.W3) + self.b3
 
     def backward(self):
-        self.dL_dlogits = self.softmax() - self.y
-        self.dL_dH2 = self.dL_dlogits @ self.W3.T * self.deriv_relu(self.H2)
-        self.dL_dH1 = self.dL_dH2 @ self.W2.T * self.deriv_relu(self.H1)
-        self.dL_dW3 = self.H2.T @ self.dL_dlogits
-        self.dL_dW2 = self.H1.T @ self.dL_dH2
-        self.dL_dW1 = self.X.T @ self.dL_dH1
+        batch_size = self.X.shape[0]
+        self.dL_dlogits = (self.softmax() - self.y) / batch_size
+        self.dL_dH2 = np.dot(self.dL_dlogits, self.W3.T) * self.deriv_relu(self.H2)
+        self.dL_dH1 = np.dot(self.dL_dH2, self.W2.T) * self.deriv_relu(self.H1)
+        self.dL_dW3 = np.dot(self.H2.T, self.dL_dlogits)
+        self.dL_dW2 = np.dot(self.H1.T, self.dL_dH2)
+        self.dL_dW1 = np.dot(self.X.T, self.dL_dH1)
         self.dL_db3 = np.sum(self.dL_dlogits, axis=0, keepdims=True)
         self.dL_db2 = np.sum(self.dL_dH2, axis=0, keepdims=True)
         self.dL_db1 = np.sum(self.dL_dH1, axis=0, keepdims=True)

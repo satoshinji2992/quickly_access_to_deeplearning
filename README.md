@@ -6,12 +6,24 @@
 
 [一些推荐的教学视频](推荐教学视频.md)
 
+## 环境准备
+
+推荐使用 conda 管理环境. 这个环境默认覆盖完整教程, 包括 NumPy、MNIST、Transformer 和图片裁剪工具:
+
+```bash
+conda env create -f environment.yml
+conda activate deep-learning-intro
+```
+
+如果只学习 Block 1 和 Block 2 的 NumPy 部分,核心依赖是 `numpy`、`pandas`、`matplotlib` 和 `scikit-learn`. `torch` / `torchvision` 主要用于 MNIST 与 Transformer 相关任务.
+
 ## 目录
 
 ```text
 chapters/     # 章节
 exercises/    # 练习代码
 solutions/    # 参考实现
+common/       # task_02 之后共享的小型 NumPy 深度学习库完整实现
 assets/       # 共享图片
 tools/        # 小工具，比如手动裁图器
 old/          # 旧稿
@@ -75,4 +87,13 @@ RL
 
 ```bash
 git pull origin main
+```
+
+运行参考实现:
+
+```bash
+python solutions/block_01_basics/linear_regression_solution.py
+python solutions/block_01_basics/mini_network_reference.py
+python solutions/block_02_resnet/resnet_numpy_solution.py
+python solutions/block_02_resnet/train_cifar100_solution.py --overfit 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
 ```

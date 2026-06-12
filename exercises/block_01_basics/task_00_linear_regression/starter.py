@@ -6,7 +6,7 @@ import pandas as pd
 a  = np.random.randn(2)
 
 df = pd.read_csv('Salary_Data.csv') #你可以通过pandas读取本文件夹内的数据，也可以自行构建数据或是使用kaggle的数据集，教程在实践引导中
-learning_rate = 0.001 #学习率
+learning_rate = 0.01 #学习率
 epochs = 2000 #迭代次数
 
 if_normalize=1 #如果x和y都进行标准化，则设置if_normalize=1
@@ -31,8 +31,14 @@ for i in range(epochs):
         print(f'Epoch {i}, Loss: {loss}')
 
 if if_normalize==1: #如果x和y都进行标准化，则需要将参数a进行还原
-    a[0] = a[0] * df_unnormalized['YearsExperience'].std() + df_unnormalized['YearsExperience'].mean()
-    a[1] = a[1] * df_unnormalized['Salary'].std() + df_unnormalized['Salary'].mean()
+    x_mean = df_unnormalized['YearsExperience'].mean()
+    x_std = df_unnormalized['YearsExperience'].std()
+    y_mean = df_unnormalized['Salary'].mean()
+    y_std = df_unnormalized['Salary'].std()
+
+    a_normalized = a.copy()
+    a[0] = a_normalized[0] * y_std / x_std
+    a[1] = a_normalized[1] * y_std + y_mean - a[0] * x_mean
 
 print(a)
 print(loss)

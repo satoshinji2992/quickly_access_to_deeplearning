@@ -11,64 +11,37 @@ class Linear:
         self.x = None
 
     def forward(self, x):
-        self.x = x
-        return x @ self.W + self.b
+        raise NotImplementedError("implement Linear.forward")
 
     def backward(self, dout):
-        self.dW[...] = self.x.T @ dout
-        self.db[...] = np.sum(dout, axis=0, keepdims=True)
-        return dout @ self.W.T
+        raise NotImplementedError("implement Linear.backward")
 
     def parameters(self):
         return [(self.W, self.dW), (self.b, self.db)]
 
 
 class ReLU:
-    def __init__(self):
-        self.mask = None
-
     def forward(self, x):
-        self.mask = x > 0
-        return np.maximum(0, x)
+        raise NotImplementedError("implement ReLU.forward")
 
     def backward(self, dout):
-        return dout * self.mask
+        raise NotImplementedError("implement ReLU.backward")
 
 
 class GELU:
-    def __init__(self):
-        self.x = None
-
     def forward(self, x):
-        self.x = x
-        c = np.sqrt(2.0 / np.pi)
-        return 0.5 * x * (1.0 + np.tanh(c * (x + 0.044715 * x**3)))
+        raise NotImplementedError("implement GELU.forward")
 
     def backward(self, dout):
-        x = self.x
-        c = np.sqrt(2.0 / np.pi)
-        u = c * (x + 0.044715 * x**3)
-        tanh_u = np.tanh(u)
-        du = c * (1.0 + 3.0 * 0.044715 * x**2)
-        grad = 0.5 * (1.0 + tanh_u) + 0.5 * x * (1.0 - tanh_u**2) * du
-        return dout * grad
+        raise NotImplementedError("implement GELU.backward")
 
 
 class CrossEntropyLoss:
-    def __init__(self):
-        self.probs = None
-        self.targets = None
-
     def forward(self, logits, targets):
-        self.targets = targets
-        shifted = logits - np.max(logits, axis=1, keepdims=True)
-        exp = np.exp(shifted)
-        self.probs = exp / np.sum(exp, axis=1, keepdims=True)
-        eps = 1e-12
-        return -np.mean(np.sum(targets * np.log(self.probs + eps), axis=1))
+        raise NotImplementedError("implement CrossEntropyLoss.forward")
 
     def backward(self):
-        return (self.probs - self.targets) / self.targets.shape[0]
+        raise NotImplementedError("implement CrossEntropyLoss.backward")
 
 
 class Sequential:
@@ -76,14 +49,10 @@ class Sequential:
         self.layers = list(layers)
 
     def forward(self, x):
-        for layer in self.layers:
-            x = layer.forward(x)
-        return x
+        raise NotImplementedError("implement Sequential.forward")
 
     def backward(self, dout):
-        for layer in reversed(self.layers):
-            dout = layer.backward(dout)
-        return dout
+        raise NotImplementedError("implement Sequential.backward")
 
     def parameters(self):
         params = []
@@ -99,8 +68,7 @@ class SGD:
         self.lr = lr
 
     def step(self):
-        for value, grad in self.parameters:
-            value -= self.lr * grad
+        raise NotImplementedError("implement SGD.step")
 
 
 class Momentum:
@@ -111,6 +79,4 @@ class Momentum:
         self.velocity = [np.zeros_like(value) for value, _ in self.parameters]
 
     def step(self):
-        for idx, (value, grad) in enumerate(self.parameters):
-            self.velocity[idx] = self.beta * self.velocity[idx] + (1 - self.beta) * grad
-            value -= self.lr * self.velocity[idx]
+        raise NotImplementedError("implement Momentum.step")

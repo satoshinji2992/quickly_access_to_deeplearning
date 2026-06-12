@@ -37,7 +37,8 @@ def plot_data(original, predicted, title):
     axes[1].set_title("prediction")
     fig.suptitle(title)
     plt.tight_layout()
-    plt.show()
+    if plt.get_backend().lower() != "agg":
+        plt.show()
 
 
 # ----------------------------------
@@ -68,20 +69,18 @@ def normalize(inputs):
 
 # ----------------------------------
 def create_weights(n_inputs, n_neurons):
-    return np.random.randn(n_inputs, n_neurons)
+    return np.random.randn(n_inputs, n_neurons) * np.sqrt(2.0 / n_inputs)
 
 
 def create_biases(n_neurons):
-    return np.random.randn(n_neurons)
+    return np.zeros(n_neurons)
 
 
 # ----------------------------------
 def precise_loss_function(predicted, real):
     epsilon = 1e-12
     predicted = np.clip(predicted, epsilon, 1.0 - epsilon)
-    ce_loss = -np.sum(
-        real * np.log(predicted) + (1 - real) * np.log(1 - predicted), axis=1
-    )
+    ce_loss = -np.sum(real * np.log(predicted), axis=1)
     return np.mean(ce_loss)
 
 
@@ -221,13 +220,14 @@ class Network:
         for i in range(len(self.layers) - 1, -1, -1):
             layer = self.layers[i]
             preWeights_values = outputs[i]
+            weights_before_update = layer.weights.copy()
             layer.layer_backward(preWeights_values, demands, learning_rate)
             if i > 0:
-                demands = np.dot(demands, layer.weights.T) * (outputs[i] > 0)
+                demands = np.dot(demands, weights_before_update.T) * (outputs[i] > 0)
 
     def train(self, inputs, targets, learning_rate, epochs):
         num_samples = inputs.shape[0]
-        num_batches = num_samples // BATCH_SIZE
+        num_batches = int(np.ceil(num_samples / BATCH_SIZE))
 
         for epoch in range(epochs):
             indices = np.random.permutation(num_samples)
@@ -236,7 +236,7 @@ class Network:
 
             for batch in range(num_batches):
                 start_index = batch * BATCH_SIZE
-                end_index = (batch + 1) * BATCH_SIZE
+                end_index = min((batch + 1) * BATCH_SIZE, num_samples)
                 batch_inputs = inputs_shuffled[start_index:end_index]
                 batch_targets = targets_shuffled[start_index:end_index]
 

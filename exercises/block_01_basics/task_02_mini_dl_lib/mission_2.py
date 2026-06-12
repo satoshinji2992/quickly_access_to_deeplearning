@@ -20,7 +20,7 @@ def main():
     x, y, labels = make_circle_data()
     model = Sequential(Linear(2, 16), ReLU(), Linear(16, 16), ReLU(), Linear(16, 2))
     loss_fn = CrossEntropyLoss()
-    optimizer = Momentum(model.parameters(), lr=0.2)
+    optimizer = Momentum(model.parameters(), lr=0.1)
 
     for epoch in range(500):
         logits = model.forward(x)
@@ -33,4 +33,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

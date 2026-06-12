@@ -16,10 +16,10 @@
 - MiniMind 风格语言模型
 - 简单 `generate`
 
-运行 smoke test：
+运行训练：
 
 ```bash
 python solutions/block_03_transformer/minimind_solution.py
 ```
 
-这个脚本只用随机 token 跑几步训练，主要检查结构和 loss 是否通。
+这个脚本只用随机 token 跑几步训练，展示 MiniMind 参考实现的基本训练流程。

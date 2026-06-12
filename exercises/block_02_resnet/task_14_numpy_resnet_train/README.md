@@ -167,3 +167,11 @@ print("Start with a 500-image overfit test before full training.")
 如果完整 CIFAR-100 训练太慢, 没关系. 先把小样本过拟合跑通, 这比一个随机准确率的大训练更有价值.
 
 下一关不要求写正式报告, 只是把关键现象记下来.
+
+参考实现可以对照:
+
+```bash
+python solutions/block_02_resnet/train_cifar100_solution.py --overfit 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
+```
+
+它会下载 CIFAR-100, 训练一个轻量 NumPy ResNet, 并保存 checkpoint 到 `checkpoints/`.
