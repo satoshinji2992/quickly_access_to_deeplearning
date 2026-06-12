@@ -32,14 +32,6 @@ pip install -r requirements.txt
 - `Momentum`
 - `AdamW`
 
-运行训练:
-
-```bash
-python solutions/block_02_resnet/resnet_numpy_solution.py
-```
-
-这个脚本使用小规模图像数据，展示 ResNet 的完整 forward/backward/update 训练流程。
-
 训练 CIFAR-100:
 
 ```bash

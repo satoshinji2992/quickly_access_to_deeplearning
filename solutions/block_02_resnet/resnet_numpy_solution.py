@@ -385,36 +385,7 @@ def accuracy(logits, labels):
     return np.mean(np.argmax(logits, axis=1) == labels)
 
 
-def make_training_images(n=24, num_classes=3, seed=0):
-    rng = np.random.default_rng(seed)
-    images = rng.normal(0, 0.15, size=(n, 3, 16, 16)).astype("float32")
-    labels = np.arange(n) % num_classes
-    for i, label in enumerate(labels):
-        images[i, label % 3, 3 + label : 8 + label, 3 + label : 8 + label] += 1.0
-    return images, labels.astype("int64")
-
-
 def one_hot(labels, num_classes):
     y = np.zeros((labels.shape[0], num_classes))
     y[np.arange(labels.shape[0]), labels] = 1
     return y
-
-
-def train():
-    np.random.seed(0)
-    x, y = make_training_images()
-    model = SmallResNet(num_classes=3, channels=(4, 8, 8))
-    loss_fn = CrossEntropyLoss()
-    optimizer = Momentum(model.parameters(), lr=0.3, beta=0.9)
-    targets = one_hot(y, num_classes=3)
-    for step in range(8):
-        model.train()
-        logits = model.forward(x)
-        loss = loss_fn.forward(logits, targets)
-        model.backward(loss_fn.backward())
-        optimizer.step()
-        print(f"step={step} loss={loss:.4f} acc={accuracy(logits, y):.3f}")
-
-
-if __name__ == "__main__":
-    train()
