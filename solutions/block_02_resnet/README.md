@@ -43,7 +43,7 @@ python solutions/block_02_resnet/train_cifar100_solution.py --epochs 5 --batch-s
 小样本训练:
 
 ```bash
-python solutions/block_02_resnet/train_cifar100_solution.py --overfit 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
+python solutions/block_02_resnet/train_cifar100_solution.py --subset-size 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
 ```
 
 中断后继续训练:
