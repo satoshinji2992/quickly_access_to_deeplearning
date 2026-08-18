@@ -1,41 +1,14 @@
 # MoE
 
-MoE 是 Mixture of Experts, 专家混合.
-
-普通 FFN 每次都会使用全部参数.
-
-MoE 不一样. 它准备很多个 expert, 每个 token 只选择其中几个 expert 计算.
-
-## 为什么参数多但计算不等比例变大?
-
-假设有 8 个 expert.
-
-每个 token 只走 2 个:
+Mixture of Experts（MoE）通常用多个 expert FFN 替换密集 FFN。Router 为每个 token 计算 expert 分数，只激活 top-k 个 expert，再按路由权重合并输出。
 
 ```text
-top_k = 2
+8 experts, top_k = 2
+token -> router -> 2 selected experts -> weighted sum
 ```
 
-那模型总参数很多, 但每个 token 实际激活的参数只是一部分.
+这种稀疏激活可以在每个 token 计算量增长较慢的情况下增加总参数容量。不过，实际速度还受 token dispatch、all-to-all 通信、expert capacity 和硬件利用率影响，不能只由 top-k 推断。
 
-这叫 sparse activation.
+常见失效模式是路由过度集中：少数 experts 过载，其余 experts 得不到训练。因此训练中往往需要 load-balancing 目标，并记录每个 expert 的 token 数和丢弃率。
 
-## Router
-
-MoE 需要一个 router 决定 token 交给哪些 expert.
-
-router 输出每个 expert 的分数, 选 top-k.
-
-问题也在这里:
-
-- 有些 expert 可能太忙.
-- 有些 expert 可能几乎没人用.
-- 训练时要加 load balancing loss.
-
-## MoE 的直觉
-
-不是每个 token 都需要同一套 FFN.
-
-代码 token、数学 token、聊天 token, 可能适合不同 expert.
-
-MoE 让模型容量变大, 但不让每次计算都变得同样大.
+本页尚未提供 router、dispatch 或分布式通信实现。

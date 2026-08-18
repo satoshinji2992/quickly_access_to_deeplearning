@@ -1,88 +1,137 @@
-# Attention Is All You Need 到 MiniMind
+# 从 Attention 到微型语言模型
 
-第三块进入文本生成。前面我们处理的是数字和图片, 输入长度基本固定, 输出也比较明确; 到文本这里, 问题会变得不一样。一个 token 的含义往往取决于它前后出现了什么, 而模型生成时又必须一个 token 一个 token 往后写, 不能提前看到答案。
+Block 3 围绕一个能按上下文预测下一个 token 的 PyTorch 小模型展开，再向外连接训练、采样和缓存推理。
 
-这一块先看 Attention Is All You Need 里的基本想法: token 怎么互相读取信息, 为什么需要位置编码, 为什么要多头, decoder 为什么要 mask。然后再把这些想法收束到 MiniMind/LLaMA 这一类 decoder-only 小模型: RoPE、GQA、RMSNorm、SwiGLU、next-token training、generate 和 KV cache。
+这里的“微型”是认真的。默认模型只有两层，语料是一小段内置中文，tokenizer 也只是字符表。它适合拆开检查 Transformer 的数据流，不足以训练出通用对话模型。
 
-这一章中我们会先介绍最经典Attention is all you need 然后从头训练一个比较现代的decoder式的llm MiniMind
-
-![Transformer 注意力基础](../assets/images/block3_attention_overview.png)
+![Block 3 概览：因果注意力、RoPE、GQA 与 KV Cache](../assets/images/block3_attention_overview.png)
 
 ---
 
-## 一. 原始 Transformer
+## Decoder-only Transformer 在算什么
 
-Attention Is All You Need 做的事, 可以先粗略理解成: 让每个 token 都能根据当前上下文去“看”别的 token。以前处理序列常用 RNN, 信息要一步一步往后传; self-attention 则允许序列中的位置直接建立联系。对语言来说, 这件事很有吸引力, 因为一个词该怎么理解, 经常取决于离它很远的词。
+给定 hidden states `X: (B,T,D)`，self-attention 先投影出 Q、K、V。单个 head 的计算是：
 
-原始 Transformer 里还有几个必须补上的东西。第一是位置编码, 因为 attention 本身不天然知道顺序, “我喜欢你”和“你喜欢我”如果没有位置信息, 就会少掉很关键的区别。第二是 multi-head attention, 它让模型可以从多个子空间看上下文, 有的头可能更关注局部搭配, 有的头可能更关注长距离关系。第三是 causal mask, decoder 生成第 $t$ 个 token 时不能偷看第 $t+1$ 个 token, 否则训练就变成作弊了。
+$$
+\operatorname{Attention}(Q,K,V)
+=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_{head}}}+M\right)V.
+$$
 
-原论文里的 Transformer 是 encoder-decoder 结构, 机器翻译场景里很自然。但 MiniMind 主线更接近 GPT/LLaMA 这类 decoder-only 模型, 所以后面的实现会往这个方向收。
+`QKᵀ` 决定每个位置从哪里取信息，`V` 提供被取回的内容。$M$ 是 mask：decoder-only 模型用下三角 causal mask，位置 $t$ 只能读取 `0..t`。因此训练时虽然整段序列一次进入模型，前面的表示仍看不到后面的答案。
 
----
+原始 Transformer 是 encoder-decoder 架构。本章只实现 decoder：没有 encoder，也没有 cross-attention，Q/K/V 都来自同一段序列。Task 20 先对比这两种结构，后面再进入代码。
 
-## 二. MiniMind
+Attention 本身没有顺序概念。Task 21 用原论文的正弦位置编码建立频率直觉；Task 22 改为本章主线使用的 RoPE。RoPE 不把位置向量加到 embedding，而是旋转 Q/K。每对维度使用不同频率，旋转后的 Q/K 点积会显式依赖位置差 $n-m$。
 
-MiniMind 风格的小模型可以先写成这样:
+Task 23 再加入 GQA。若 `n_heads=8, n_kv_heads=2`，每 4 个 query heads 共享一组 K/V；attention 仍产生 8 个 query-head 输出，只是 K/V 投影和缓存少了。
+
+## 一层 Decoder Block
+
+![Pre-RMSNorm Decoder Block](../assets/images/decoder_block.png)
+
+本章统一使用 Pre-RMSNorm：
 
 ```text
-token -> embedding -> decoder blocks -> logits -> next token
+x = x + CausalRoPEGQA(RMSNorm(x))
+x = x + SwiGLU(RMSNorm(x))
 ```
 
-每个 decoder block 里大致是:
+两条支路最后都回到 `(B,T,D)`，所以能与输入相加。SwiGLU 先做两次独立的上投影：
+
+$$
+\operatorname{SwiGLU}(x)
+=W_{down}\bigl(\operatorname{SiLU}(W_{gate}x)\odot W_{up}x\bigr).
+$$
+
+完整模型的数据流如下：
 
 ```text
-RMSNorm -> Causal Attention + RoPE/GQA -> Residual
-RMSNorm -> SwiGLU FFN -> Residual
+input_ids (B,T)
+  -> token embedding
+  -> N × decoder block
+  -> final RMSNorm
+  -> LM head
+  -> logits (B,T,V)
 ```
 
-你会用 PyTorch 写这些模块。可以用 `nn.Linear`、`nn.Embedding` 这种基础层, 但不要直接调用一个现成的大 Transformer 模块糊过去。这里真正要练的是看懂每个 shape: token id 进来以后怎么变成 embedding, Q/K/V 怎么拆 head, attention score 为什么是 `(batch, heads, seq, seq)`, logits 又怎么回到词表大小。
+Embedding 与 LM head 共用同一个 `(V,D)` 参数矩阵。代码用对象身份确认两处引用的是同一参数：
 
-语言模型训练的目标也很直接: 给定前面的 token, 预测下一个 token。比如输入是:
+```python
+model.lm_head.weight is model.token_embedding.weight
+```
+
+## 训练目标和两种 mask
+
+Next-token 训练把同一段 token 错开一位：
 
 ```text
-我 喜欢 深度
+tokens: [BOS, t0, t1, t2, EOS, PAD]
+input:  [BOS, t0, t1, t2, EOS]
+label:  [t0,  t1, t2, EOS, PAD]
 ```
 
-模型要学会预测下一个词可能是“学习”。训练时把一段文本错开一位, 前半段做输入, 后半段做标签, 这就是 next-token training。听起来简单, 但大模型的很多能力都是从这个目标里长出来的。
+![Next-token 标签错位与 mask](../assets/images/shifted_labels.png)
 
-![MiniMind 模型结构](../assets/images/block3_model_overview.png)
+Padding 牵涉两处，不能只处理 loss：
 
----
+- attention mask 屏蔽 PAD key，防止有效 token 读取填充值；
+- loss mask 把 PAD target 变成 `-100`，交给 cross-entropy 忽略。
 
-## 三. 任务路线
+Task 28 先切分 train/validation 文本，再只用训练文本建立字符词表。训练脚本保存模型配置、参数、优化器、tokenizer、step 和 validation loss。它可以验证数据、反向传播和 checkpoint 是否接通，但一次有限的 validation loss 并不代表模型已经有语言能力。
 
-| 任务                                                                               | 问题                                     | 重点                             |
-| ---------------------------------------------------------------------------------- | ---------------------------------------- | -------------------------------- |
-| [task_20](../exercises/block_03_transformer/task_20_transformer_theory/README.md)  | Attention Is All You Need 到底发明了什么 | token、QKV、self-attention、mask |
-| [task_21](../exercises/block_03_transformer/task_21_sinusoidal_position/README.md) | 原始 Transformer 怎么表示位置            | sinusoidal position encoding     |
-| [task_22](../exercises/block_03_transformer/task_22_rope_position/README.md)       | MiniMind 为什么换成 RoPE                 | 旋转 Q/K、相对位置               |
-| [task_23](../exercises/block_03_transformer/task_23_causal_attention/README.md)    | token 怎么看前文                         | causal self-attention、MHA、GQA  |
-| [task_24](../exercises/block_03_transformer/task_24_swiglu_ffn/README.md)          | attention 后还要什么                     | SwiGLU FFN                       |
-| [task_25](../exercises/block_03_transformer/task_25_embedding_lm_head/README.md)   | token 怎么进出模型                       | embedding、LM head、weight tying |
-| [task_26](../exercises/block_03_transformer/task_26_decoder_blocks/README.md)      | block 怎么堆                             | RMSNorm、残差、Pre-Norm          |
-| [task_27](../exercises/block_03_transformer/task_27_minimind_core/README.md)       | MiniMind Core 怎么搭                     | config、decoder-only、小模型     |
-| [task_28](../exercises/block_03_transformer/task_28_next_token_training/README.md) | 怎么训练它                               | next-token loss、训练循环        |
-| [task_29](../exercises/block_03_transformer/task_29_generate_sampling/README.md)   | 怎么让它生成                             | temperature、top-k               |
-| [task_30](../exercises/block_03_transformer/task_30_kv_cache/README.md)            | 推理怎么加速                             | KV cache                         |
+```bash
+python exercises/block_03_transformer/task_28_next_token_training/train.py \
+  --steps 80 --checkpoint /tmp/minimind_demo.pt
+```
 
----
+## 从 logits 到连续生成
 
-## 四. 最容易误解的地方
+生成时只使用最后位置的 `logits[:, -1]`。Task 29 实现四种选择方式：
 
-第一个误解是把 attention 当成“注意力权重图”来背。权重图当然能画, 但实现时更重要的是 Q、K、V 的矩阵乘法。Q 像是在问“我需要什么信息”, K 像是在描述“我这里有什么信息”, V 才是真正被加权汇总的内容。这个比喻不完美, 但写代码时很有用。
+- greedy：直接取最大 logit；
+- temperature：改变概率分布的尖锐程度；
+- top-k：只在最高的一小组候选中采样；
+- top-p：保留累计概率达到阈值的最小候选集。
 
-第二个误解是以为位置编码只是给 embedding 加一串数字。Sinusoidal position encoding 是原始 Transformer 的做法, RoPE 则把位置信息放进 Q/K 的旋转里, 这会影响 attention 分数本身。理解 RoPE 之前先看 sinusoidal, 会顺很多。
+未缓存生成每次都会重算当前窗口。Task 30 保存每一层尚未展开的 K/V：
 
-第三个误解是低估 mask。decoder-only 模型训练时, 第一个 token 只能看自己, 第二个 token 只能看前两个, 以此类推。mask 一错, loss 可能很好看, 但模型学到的是偷看答案。
+```text
+K, V: (B, n_kv_heads, past_len, head_dim)
+```
 
-第四个误解是生成时每一步都重新算全部上下文。这样当然能生成, 但会越来越慢。KV cache 缓存的是历史 token 已经算好的 K/V, 新 token 来了以后只需要补上新的一段, 推理速度会好很多。
+新 token 仍要计算自己的 Q/K/V，也仍要让新 Q 与所有可见 K 做 attention；省掉的是旧 token 的层计算和 K/V 投影。RoPE 的位置从 `past_len` 接着走，mask 也要覆盖缓存前缀与当前 token。实现是否正确，最终由 cached/full logits 的数值误差和 greedy token 序列共同判断。
 
-![训练与生成](../assets/images/block3_training_overview.png)
+```bash
+python exercises/block_03_transformer/task_30_kv_cache/kv_cache.py \
+  --checkpoint /tmp/minimind_demo.pt --prompt "清晨，"
+```
 
----
+## 章节索引
 
-## 五. 做完以后
+| 小节 | 内容 | 可观察的性质 |
+| --- | --- | --- |
+| [task_20](../exercises/block_03_transformer/task_20_transformer_theory/README.md) | Attention 与 decoder-only | Q/K/V 来源、causal mask |
+| [task_21](../exercises/block_03_transformer/task_21_sinusoidal_position/README.md) | 正弦位置编码 | shape、第 0 行、偶数维约束 |
+| [task_22](../exercises/block_03_transformer/task_22_rope_position/README.md) | RoPE | 分维度频率、相对位移、`start_pos` |
+| [task_23](../exercises/block_03_transformer/task_23_causal_attention/README.md) | Causal GQA | 未来不影响过去，KV heads 确实减少 |
+| [task_24](../exercises/block_03_transformer/task_24_swiglu_ffn/README.md) | SwiGLU | gate/up 双分支，shape 保持 |
+| [task_25](../exercises/block_03_transformer/task_25_embedding_lm_head/README.md) | Embedding 与 LM head | weight tying、PAD loss |
+| [task_26](../exercises/block_03_transformer/task_26_decoder_blocks/README.md) | Decoder block | Pre-RMSNorm、两条 residual |
+| [task_27](../exercises/block_03_transformer/task_27_minimind_core/README.md) | MiniMind Core | causal、上下文敏感、梯度与 cache shape |
+| [task_28](../exercises/block_03_transformer/task_28_next_token_training/README.md) | 训练闭环 | train/val 隔离、过拟合小 batch、checkpoint round-trip |
+| [task_29](../exercises/block_03_transformer/task_29_generate_sampling/README.md) | 自回归采样 | greedy、temperature、top-k、top-p |
+| [task_30](../exercises/block_03_transformer/task_30_kv_cache/README.md) | 缓存推理 | cached/full 等价 |
 
-做完这一块, 你应该能说清楚 self-attention 为什么能让 token 互相读信息, sinusoidal position encoding 和 RoPE 分别在解决什么, decoder-only 模型为什么需要 causal mask, MHA 和 GQA 的区别在哪里, RMSNorm 和 SwiGLU 在 MiniMind 里分别做什么。
+上述性质都集中在 Block 3 的回归测试中：
 
-最后, 你应该能把 embedding、decoder blocks、LM head、next-token loss 和 generate 串成一条完整链路。到了这一步, 再去看更大的语言模型, 至少不会只剩下“好多层 Transformer”这一种印象。
+```bash
+python -m unittest discover -s tests -p 'test_block3.py' -v
+```
+
+## 参考
+
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+- [RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864)
+- [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245)
+- [PyTorch `scaled_dot_product_attention`](https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html)
+- [Hugging Face：Caching](https://huggingface.co/docs/transformers/main/cache_explanation)

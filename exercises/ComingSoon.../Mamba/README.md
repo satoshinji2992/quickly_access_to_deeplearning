@@ -1,22 +1,13 @@
 # Mamba
 
-Mamba 是 State Space Model 路线里很有代表性的模型.
+Mamba 把 SSM 的部分参数设为当前输入的函数，使模型能够按 token 选择地保留或抑制信息。这一改动破坏了固定卷积核的直接形式，因此论文另外设计了 hardware-aware selective scan。
 
-它试图解决 Transformer 在长序列上 attention 成本高的问题.
+阅读时可把问题拆成三层：
 
-## 关键词
+1. SSM 的状态更新和离散化。
+2. 输入依赖的选择参数如何改变信息保留。
+3. selective scan 如何在硬件上执行该递推。
 
-- selective scan
-- state space model
-- 线性复杂度序列建模
-- 长上下文
+Mamba 与 causal attention 都可用于自回归序列建模，但二者的状态、并行方式和缓存语义不同。不应只用复杂度口号判断实际效果。
 
-## 先怎么理解?
-
-Transformer 像是在每一层都让 token 开会.
-
-Mamba 更像维护一个会更新的状态, 让序列从左到右流过去.
-
-这只是直觉, 但足够说明两者思路不同.
-
-真正理解 Mamba 需要补 SSM、离散化、scan 并行化这些内容.
+详见 [Mamba 原论文](https://arxiv.org/abs/2312.00752)。本目录尚未包含可运行实现。

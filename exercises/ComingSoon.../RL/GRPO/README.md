@@ -1,25 +1,11 @@
 # GRPO
 
-GRPO 可以理解为 PPO 之后的一类简化思路.
-
-它常见于需要可验证奖励的任务, 比如数学、代码、推理.
-
-## 粗略直觉
-
-对同一个问题采样多条回答.
-
-这些回答之间可以互相比较:
+GRPO（Group Relative Policy Optimization）对同一 prompt 采样一组回答，再用组内 reward 的相对值构造 advantage。这样可以不训练一个与 policy 同规模的 value model。
 
 ```text
-哪条答对了?
-哪条更好?
-哪条格式更符合要求?
+one prompt -> G completions -> G rewards -> group-relative advantages
 ```
 
-GRPO 利用组内相对表现来估计优势, 减少对 value model 的依赖.
+组内标准化并不会自动解决 reward hacking，还会受组大小、reward 并列、全部答错或全部答对等边界情况影响。复现实验时需要记录采样策略、reward 定义、KL 项与每个 prompt 的有效样本数。
 
-## 先记住什么?
-
-GRPO 不是预训练方法.
-
-它更像是在模型已经具备一定能力之后, 用奖励继续把某些行为拉强.
+本页尚未提供训练实现。GRPO 的原始描述见 [DeepSeekMath](https://arxiv.org/abs/2402.03300)。
