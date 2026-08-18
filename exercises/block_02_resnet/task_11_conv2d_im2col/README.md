@@ -1,200 +1,277 @@
-# task_11: Conv2D 与 im2col
+# task_11：Conv2D 与 im2col
 
-现在图片已经能以 `NCHW` 的形状进入训练循环了.
+卷积层从局部窗口计算特征，并在所有空间位置复用同一组权重。本节用 NumPy 实现 NCHW 卷积，代码入口是 [`conv2d.py`](./conv2d.py)。
 
-接下来要解决真正的图像模型问题: 怎么让模型看局部区域?
+深度学习框架通常不翻转 kernel，因此本文沿用惯例，把计算称为卷积层，实现的运算则是二维互相关（cross-correlation）。
 
-MLP 看一张图片时, 会把所有像素摊平成一个长向量. 卷积不这样做. 卷积会拿一个小窗口, 比如 $3\times 3$, 在图片上滑动.
-
-这个小窗口就是卷积核(kernel).
-
-你可以把它想成一个很小的检测器. 有的卷积核可能对竖直边缘敏感, 有的可能对颜色变化敏感, 有的可能对某种纹理敏感. 当然, 它一开始什么都不会, 这些权重还是靠训练学出来的.
-
-![卷积在算什么](assets/conv2d_explained.png)
+![一个可手算的互相关例子](assets/conv2d_explained.png)
 
 ---
 
-## 一. 卷积层在算什么?
+## 核对一个输出元素
 
-假设输入是一批图片:
+图中的输入和 kernel 为：
+
+$$
+X=
+\begin{bmatrix}
+1&0&2&1&0\\
+0&1&1&0&2\\
+2&1&0&1&1\\
+0&2&1&0&1\\
+1&0&1&2&0
+\end{bmatrix},
+\qquad
+K=
+\begin{bmatrix}
+1&0&-1\\
+1&0&-1\\
+1&0&-1
+\end{bmatrix}.
+$$
+
+`stride=1, padding=0` 时，中心输出使用输入的第 2～4 行、第 2～4 列：
+
+$$
+\begin{aligned}
+y_{1,1}
+&=1\cdot1+1\cdot0+0\cdot(-1)\\
+&\quad+1\cdot1+0\cdot0+1\cdot(-1)\\
+&\quad+2\cdot1+1\cdot0+0\cdot(-1)\\
+&=3.
+\end{aligned}
+$$
+
+完整输出是：
+
+$$
+Y=
+\begin{bmatrix}
+0&0&0\\
+0&3&-2\\
+1&0&0
+\end{bmatrix}.
+$$
+
+这组数字也写在 `scripts/validate_figure_content.py` 中，用于独立验算配图。
+
+---
+
+## 多通道卷积的 shape
+
+接口约定：
 
 ```text
 X.shape = (N, C_in, H, W)
-```
-
-卷积核参数是:
-
-```text
-W.shape = (C_out, C_in, K, K)
+W.shape = (C_out, C_in, K_h, K_w)
 b.shape = (C_out,)
+Y.shape = (N, C_out, H_out, W_out)
 ```
 
-这里:
+对一个输出位置，先在 `C_in × K_h × K_w` 个元素上求加权和，再加该输出通道的 bias：
 
-- `C_in` 是输入通道数.
-- `C_out` 是输出通道数, 也就是卷积核的个数.
-- `K` 是卷积核大小, 常见是 3.
+$$
+Y_{n,o,i,j}
+=b_o+
+\sum_c\sum_u\sum_v
+X_{n,c,iS_h+u-P_h,jS_w+v-P_w}W_{o,c,u,v}.
+$$
 
-一个输出通道对应一个卷积核. 每个卷积核会同时看输入的所有通道, 在空间上取一个 $K\times K$ 的窗口, 做一次加权求和.
+越过原图边界的 $X$ 按零处理。输出空间尺寸为：
 
-输出大小由这个公式决定:
+$$
+H_{out}=\left\lfloor\frac{H+2P_h-K_h}{S_h}\right\rfloor+1,
+\qquad
+W_{out}=\left\lfloor\frac{W+2P_w-K_w}{S_w}\right\rfloor+1.
+$$
 
-$$H_{out} = \left\lfloor \frac{H + 2P - K}{S} \right\rfloor + 1$$
+![padding、stride 与输出大小](assets/padding_stride.png)
 
-$$W_{out} = \left\lfloor \frac{W + 2P - K}{S} \right\rfloor + 1$$
+例如 $H=W=5$、$K=3$：
 
-其中:
+| padding | stride | 输出空间 |
+| ---: | ---: | ---: |
+| 0 | 1 | $3\times3$ |
+| 1 | 1 | $5\times5$ |
+| 0 | 2 | $2\times2$ |
+| 1 | 2 | $3\times3$ |
 
-- $P$ 是 padding.
-- $S$ 是 stride.
-- $K$ 是 kernel size.
-
-如果输入是 $32\times 32$, 卷积核是 $3\times 3$, stride=1, padding=1, 那输出仍然是 $32\times 32$.
-
-这就是很多 ResNet 里常见的 3x3 卷积.
+`compute_output_size()` 会拒绝非正的输入、kernel、stride，以及产生空输出的组合。`kernel_size`、`stride`、`padding` 在 `Conv2D` 中都可以传整数或二元组。
 
 ---
 
-## 二. 为什么要 im2col?
+## im2col 的行表示窗口
 
-最直接的卷积写法是四五层循环:
-
-```text
-for n in N:
-  for out_c in C_out:
-    for i in H_out:
-      for j in W_out:
-        取窗口, 点乘, 加 bias
-```
-
-这样写当然能懂, 但很慢, 反向传播也麻烦.
-
-`im2col` 的想法是: 把图片里每个要参与卷积的小窗口都展开成一行.
-
-![im2col](assets/im2col_explained.png)
-
-比如一个窗口原本形状是:
+直接实现卷积通常需要对样本、输出通道、输出行和输出列循环。`im2col` 将每个感受野展成一行，使核心计算变为矩阵乘法。
 
 ```text
-(C_in, K, K)
+X_col.shape = (N * H_out * W_out, C_in * K_h * K_w)
+W_col.shape = (C_in * K_h * K_w, C_out)
+Y_col.shape = (N * H_out * W_out, C_out)
 ```
 
-展开以后长度就是:
+$$
+Y_{col}=X_{col}W_{col}+b.
+$$
+
+行顺序是“样本 → 输出行 → 输出列”，一行内部是“通道 → kernel 行 → kernel 列”。
+
+![四个 3×3 窗口展开为 4×9 矩阵](assets/im2col_explained.png)
+
+图中的 $4\times4$ 输入为：
+
+$$
+\begin{bmatrix}
+1&2&3&4\\
+5&6&7&8\\
+9&10&11&12\\
+13&14&15&16
+\end{bmatrix}.
+$$
+
+使用 $3\times3$ kernel、`stride=1, padding=0`，合法窗口只有四个：
+
+$$
+X_{col}=
+\begin{bmatrix}
+1&2&3&5&6&7&9&10&11\\
+2&3&4&6&7&8&10&11&12\\
+5&6&7&9&10&11&13&14&15\\
+6&7&8&10&11&12&14&15&16
+\end{bmatrix}.
+$$
+
+所以 shape 是 `(4,9)`，不是 `(9,4)`。将上面的 kernel 按行展开为 `(9,1)` 后：
 
 ```text
-C_in * K * K
+(4, 9) @ (9, 1) -> (4, 1)
 ```
 
-所有窗口排起来, 得到:
+四个输出都是 `-6`，reshape 后为：
 
-```text
-cols.shape = (N * H_out * W_out, C_in * K * K)
-```
+$$
+\begin{bmatrix}
+-6&-6\\
+-6&-6
+\end{bmatrix}.
+$$
 
-卷积核也展开:
-
-```text
-W_col.shape = (C_in * K * K, C_out)
-```
-
-然后卷积就变成一次矩阵乘法:
-
-$$Y_{col} = X_{col}W_{col} + b$$
-
-最后再 reshape 回:
-
-```text
-(N, C_out, H_out, W_out)
-```
-
-这就是 `Conv2D.forward()` 里那几行代码在做的事.
+这里没有 padding，所有窗口都完整落在输入内部，不需要补位符号。
 
 ---
 
-## 三. padding 和 stride 不要靠感觉写
+## col2im 对重叠位置累加
 
-padding 是在图片边缘补 0.
+一个输入像素可能同时属于多个窗口。`im2col` 会在多行中复制它；反向传播时，这些副本对原像素的梯度都要相加。
 
-如果没有 padding, 一个 $3\times 3$ 卷积每卷一次, 高和宽都会变小. 层数多了以后, 空间尺寸会掉得很快.
+因此：
 
-stride 是窗口每次移动几格.
+```text
+col2im(im2col(X)) != X              # 一般不相等
+col2im(im2col(X)) == X * coverage   # coverage 是覆盖次数
+```
 
-- stride=1: 每次挪一格, 输出比较大.
-- stride=2: 每次挪两格, 输出尺寸大约减半.
+`col2im()` 的职责是 scatter-add，不是求 `im2col()` 的普通逆变换。这一性质在测试 `test_im2col_rows_are_windows_and_col2im_accumulates_overlap` 中直接检查。
 
-ResNet 里常用 stride=2 来降采样, 比如从 $32\times 32$ 变成 $16\times 16$.
+---
 
-写 `im2col` 时最容易错的就是边界.
+## 用矩阵乘法求梯度
 
-建议你每次都先算:
+将 `dY` 调整成 `dY_col` 后：
+
+$$
+dW_{col}=X_{col}^{\mathsf T}dY_{col},
+$$
+
+$$
+dX_{col}=dY_{col}W_{col}^{\mathsf T},
+$$
+
+$$
+db=\sum_{n,i,j}dY_{n,:,i,j}.
+$$
+
+最后用 `col2im(dX_col, ...)` 得到 `dX`。三个梯度保持与原数组相同的 shape：
+
+```text
+dX.shape == X.shape
+dW.shape == W.shape
+db.shape == b.shape
+```
+
+### 梯度数组采用原位更新
+
+仓库中的 optimizer 在创建时保存 `(parameter, gradient)` 数组引用。如果 backward 写成：
 
 ```python
-out_h = compute_output_size(h, kernel_size, stride, padding)
-out_w = compute_output_size(w, kernel_size, stride, padding)
+self.dW = computed_gradient
 ```
 
-不要在循环里凭感觉写范围.
-
-![padding 和 stride](assets/padding_stride.png)
-
----
-
-## 四. 反向传播怎么想?
-
-卷积 forward 经过 `im2col` 后是:
-
-$$Y_{col} = X_{col}W_{col} + b$$
-
-这看起来就回到了任务一和任务二里熟悉的线性层.
-
-所以反向传播也可以先按矩阵乘法理解:
-
-$$dW_{col} = X_{col}^\top dY_{col}$$
-
-$$dX_{col} = dY_{col} W_{col}^\top$$
-
-$$db = \text{sum}(dY_{col})$$
-
-区别在于 $dX_{col}$ 不是最终的输入梯度. 因为同一个输入像素可能出现在多个滑动窗口里, 所以你需要用 `col2im` 把这些窗口里的梯度加回原图位置.
-
-这就是 `col2im` 的意义.
-
-它不是 `im2col` 的简单逆变换. 更准确地说, 它要把重叠窗口产生的梯度累加回去.
-
----
-
-## 五. 你要完成什么?
-
-请完成 `conv2d.py` 里的:
-
-```text
-im2col
-col2im
-Conv2D.forward
-Conv2D.backward
-```
-
-当前 `Conv2D.forward` 和 `backward` 的主体已经写好了, 但 `im2col` 和 `col2im` 还需要你实现.
-
-建议先从很小的输入开始:
+optimizer 仍指向旧数组，`step()` 看不到新梯度。实现使用：
 
 ```python
-x = np.arange(1 * 1 * 4 * 4).reshape(1, 1, 4, 4)
-cols = im2col(x, kernel_size=3, stride=1, padding=0)
-print(cols.shape)
-print(cols)
+self.dW[...] = computed_gradient
+self.db[...] = computed_bias_gradient
 ```
 
-你应该能亲眼看到每个 $3\times 3$ 窗口被拉成了一行.
+自动测试在 backward 之前创建 optimizer，然后比较：
 
-再做一个更重要的检查: 数值梯度.
+- `id(layer.dW)` 保持不变；
+- `dW` 与中心有限差分一致；
+- `optimizer.step()` 后 `W` 确实改变。
 
-随便挑 `W` 里的一个元素, 手动加一个很小的 $\epsilon$, 看 loss 变化量和 `backward` 里的梯度是否接近.
+---
 
-```text
-numerical_grad ≈ (loss(W + eps) - loss(W - eps)) / (2 * eps)
+## Conv2D 接口
+
+```python
+layer = Conv2D(
+    in_channels,
+    out_channels,
+    kernel_size,
+    stride=1,
+    padding=0,
+)
 ```
 
-卷积反向传播第一次写错很正常. 真正重要的是你知道怎么查.
+主要方法：
 
-下一关我们补上 CNN 里另外几个常用层: 池化、GlobalAvgPool 和 BatchNorm.
+| 方法 | 作用 |
+| --- | --- |
+| `forward(x)` | 缓存 `x`、`cols` 和输出 shape |
+| `backward(dout)` | 计算 `dX/dW/db` |
+| `parameters()` | 返回 `(W,dW)`、`(b,db)` |
+| `named_parameters(prefix)` | 返回稳定的参数名称 |
+| `named_buffers(prefix)` | Conv2D 没有 buffer，返回空列表 |
+| `train()` / `eval()` | 保持统一的层接口 |
+
+`backward()` 依赖前一次 `forward()` 留下的缓存；通道数或 `dout.shape` 不匹配时会抛出异常。
+
+---
+
+## 运行与核对
+
+```bash
+python exercises/block_02_resnet/task_11_conv2d_im2col/conv2d.py
+python -m unittest discover -s tests -p 'test_block2.py' -v
+python tests/test_im2col_figure.py -v
+```
+
+第一条命令成功时不打印内容。后两条测试正常结束时显示 `OK`。
+
+测试覆盖以下性质：
+
+- 整数和二元组形式的 kernel/stride/padding 都得到正确 shape；
+- `im2col` 每行对应一个窗口，示例矩阵为 `4×9`；
+- `col2im` 对重叠位置累加；
+- `dW` 通过有限差分；
+- optimizer 创建在 backward 之前仍能更新权重；
+- 配图中的卷积输出和四个 `-6` 通过独立数值检查。
+
+[task_12：池化与 BatchNorm](../task_12_pooling_and_bn/README.md) 继续使用相同的 NCHW 层接口。
+
+## 参考资料
+
+- [Dive into Deep Learning: Convolutions for Images](https://d2l.ai/chapter_convolutional-neural-networks/conv-layer.html)
+- [Dive into Deep Learning: Padding and Stride](https://d2l.ai/chapter_convolutional-neural-networks/padding-and-strides.html)
+- [Stanford CS231n: Convolutional Networks](https://cs231n.github.io/convolutional-networks/)

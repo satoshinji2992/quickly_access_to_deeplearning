@@ -4,5 +4,3 @@ __pycache__/
 data/
 checkpoints/
 exercises/block_01_basics/task_03_mnist_mlp/data/
-教材配图清单.md
-tools/

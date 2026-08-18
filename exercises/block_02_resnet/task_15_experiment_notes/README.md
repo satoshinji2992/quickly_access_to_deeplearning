@@ -1,116 +1,169 @@
-# task_15: ResNet 实验记录
+# task_15：实验记录与结果分析
 
-先说清楚: 这里不用写正式报告.
+这一节不增加网络层，而是说明如何保留可复跑的实验上下文。仓库中的 [`NOTES.md`](./NOTES.md) 是一份参考格式。
 
-不要把这件事搞得像交论文. 你只需要留下几条自己以后能看懂的记录.
-
-训练模型时最怕的不是结果差, 而是你完全不知道自己改了什么.
-
-![分错样例](assets/misclassified_examples.png)
-
-昨天 learning rate 是多少? 有没有开数据增强? BatchNorm 是不是 eval 了? 小样本训练有没有下降? 这些东西不记, 过两天就忘.
-
-所以这一关更像实验草稿本.
+运行命令、数据划分、seed、模型配置和训练/验证指标，构成了一次实验的基本上下文。比起“效果不错”或“loss 不降”，这些信息更能支持复现和排查。
 
 ---
 
-## 一. 先记一次训练
+## 从一个具体问题开始
 
-打开 [NOTES.md](./NOTES.md), 随手填几项:
+一次实验通常围绕一个小问题展开，例如：
+
+- 关闭随机增强后，100 张训练图片能否被拟合？
+- learning rate 从 `0.01` 改为 `0.03`，前五轮 loss 怎样变化？
+- 同一配置从 checkpoint 恢复后，下一轮结果是否连续？
+
+只改变一个相关变量时，结果更容易解释。如果模型宽度、学习率、batch size、optimizer 和增强同时变化，即使验证准确率提高，也很难分辨主要因素。
+
+记录的开头可以用四个简短字段概括：
 
 ```text
-日期:
-我改了什么:
-训练设置:
-看到的现象:
-我的猜测:
-下次想试:
+问题：
+基线：
+本次只改：
+其余保持：
 ```
 
-不用写满. 一两句就行.
+---
 
-比如:
+## 命令与配置
+
+下面是一条无需下载数据的示例命令：
+
+```bash
+python exercises/block_02_resnet/task_14_numpy_resnet_train/train_resnet.py \
+  --synthetic --epochs 2 --channels 2 4 8 --blocks 1 1 1 --seed 0
+```
+
+输出格式为两轮训练/验证指标和一行测试指标：
 
 ```text
-我把 lr 从 0.01 改到 0.1, loss 前几轮下降更快, 但后面开始抖.
-下次先试 0.03, 不改别的.
+epoch=1 train_loss=... train_acc=... val_loss=... val_acc=...
+epoch=2 train_loss=... train_acc=... val_loss=... val_acc=...
+test_loss=... test_acc=...
 ```
 
-这比“模型效果不好”有用多了.
+完整命令和输出比单独的最终准确率保留了更多上下文。CIFAR-100 运行还涉及：
+
+```text
+train_limit / val_limit / test_limit
+val_size
+是否增强
+channels / blocks
+batch_size / optimizer / lr
+seed
+```
+
+task 14 的日志不记录 wall-clock time。总耗时和硬件信息可用于比较不同运行的成本。
 
 ---
 
-## 二. 小样本训练记录
+## 用小样本拟合检查实现
 
-每次搭新模型, 我都会建议先做小样本训练.
+在少量固定样本上反复训练，目的是确认模型有能力降低训练 loss。它不是泛化实验。
 
-记录时可以看这几项:
+下面是一个关闭增强的小样本配置：
 
-- 样本数是多少.
-- 训练了多久.
-- train loss 有没有明显下降.
-- train acc 有没有接近 100%.
-- 如果没有, 先怀疑哪里.
+```bash
+python exercises/block_02_resnet/task_14_numpy_resnet_train/train_resnet.py \
+  --epochs 5 --train-limit 100 --val-limit 100 --test-limit 100 \
+  --channels 4 8 16 --blocks 1 1 1 --no-augment --seed 0
+```
 
-如果 500 张图片都学不住, 不要急着跑全量训练.
+每轮 `train_loss/train_acc` 可以显示拟合趋势。训练指标没有改善时，常见的检查点包括：
 
-先查:
+1. Block 2 自动测试是否全部通过；
+2. 数据与标签是否对齐；
+3. 参数在 `optimizer.step()` 后是否改变；
+4. 是否出现 `NaN/Inf`；
+5. BN 是否处于 train 模式。
 
-- 标签有没有错位.
-- 参数有没有更新.
-- BN 训练/推理模式有没有切对.
-- 卷积、池化、BN 的 backward 有没有通过小测试.
-- 学习率是不是太大或太小.
-
-这一步很朴素, 但真的有用.
+小样本 train acc 较高也不能说明验证集表现好。它只排除了部分训练链路错误。
 
 ---
 
-## 三. 只改一个变量
+## 区分观察与解释
 
-如果你想比较两个设置, 尽量一次只改一个东西.
+将记录拆成“观察”和“解释”两列，可以把日志事实与当前假设分开：
 
-比如:
+| 观察到的结果 | 暂时解释 |
+| --- | --- |
+| 第 3 轮开始 val loss 上升 | 可能过拟合，也可能是验证集太小 |
+| loss 第 1 个 batch 变成 NaN | 可能学习率过大，可对照梯度和输入 |
+| 关闭增强后 train acc 上升 | 拟合难度降低；这项观察本身不反映泛化 |
 
-- 只改 learning rate.
-- 只开或关随机裁剪.
-- 只改 batch size.
-- 只换 optimizer.
-
-不要同时改学习率、增强、模型宽度、weight decay. 那样即使结果变好, 你也不知道是谁的功劳.
-
-这不是形式主义. 这是为了让实验能回答问题.
+左列对应日志或图片中可直接核对的事实；右列可以保留不确定性，并指向后续可区分这些解释的对照。单次波动本身不足以支持因果结论。
 
 ---
 
-## 四. 看几张分错的图
+## 查看真实误分类
 
-准确率只是一个数字.
+![CIFAR-100 官方测试集上的八个真实误分类](assets/misclassified_examples.png)
 
-有时候看几张分错样例更直观.
+这张图来自一份公开 CIFAR-100 ResNet-20 checkpoint 对官方 10,000 张 test 图片的完整推理，图上报告 top-1 `68.83%`。它用于示范错误分析，**不是** task 14 的 NumPy `SmallResNet` 结果。
 
-比如模型把猫预测成狗, 这可能还算正常; 把飞机预测成苹果, 就说明模型可能没学到什么像样的特征.
+可复现脚本是 [`scripts/render_cifar100_errors.py`](../../../scripts/render_cifar100_errors.py)。脚本会：
 
-可以简单记:
+- 严格加载完整权重和 BatchNorm 状态；
+- 校验参考 checkpoint 的 SHA-256；
+- 在官方 test split 上运行推理；
+- 按固定 seed 选择八个错误；
+- 把测试索引、true/pred 标签和 checkpoint 摘要写入 PNG metadata。
 
-| 真实类别 | 预测类别 | 可能原因 |
+图中实际出现的错误包括：
+
+| true | pred | 可观察的线索 |
 | --- | --- | --- |
-| | | |
+| `snake` | `worm` | 两类外形细长，低分辨率下局部轮廓接近 |
+| `girl` | `boy` | 画面主体和类别定义可能含有歧义 |
+| `mountain` | `whale` | 背景和整体色块可能压过对象形状 |
+| `clock` | `poppy` | 单张图难以支持原因判断，仍需更多同类混淆样本 |
 
-不用凑数量. 看几张就够.
+右列只是检查方向，不是由一张图片证明的原因。一种常见的分析路径是：
+
+1. 汇总 confusion matrix；
+2. 找重复出现的 true/pred 对；
+3. 查看这些样本的置信度和原图；
+4. 再决定检查标签、裁剪、类别相似性或模型容量。
+
+误分类证据来自真实推理结果；第三方模型的图片则与来源、checkpoint 和指标一起标注。这两点使实验证据与教学示意图保持明确边界。
 
 ---
 
-## 五. 这关最后留下什么?
-
-最后你应该有一个 `NOTES.md`, 里面可能只有几段话和一张表.
-
-这就够了.
-
-真正重要的是你开始习惯把训练现象和改动联系起来:
+## train、validation、test 的用途
 
 ```text
-我改了什么 -> 指标怎么变 -> 我猜原因是什么 -> 下一次只改什么
+train       参数更新；判断是否能拟合
+validation  选择学习率、增强、结构和停止轮次
+test        配置确定后做最终评估
 ```
 
-后面做 Transformer 训练时, 这个习惯还会继续用.
+反复根据 test accuracy 调参，会把测试集变成事实上的验证集。为指标标明所属 split，可以保留这一评估语境。对于 100～500 张的小验证子集，类别样本很少，单次准确率波动也会较大，小数点后的细微差别通常没有稳定含义。
+
+---
+
+## 记录模板
+
+`NOTES.md` 预留了以下信息位置：
+
+- 一个明确问题；
+- 一条完整可运行命令；
+- seed、split 大小、模型和优化器配置；
+- 每轮 train/val 指标；
+- 一条可核对的观察；
+- 一条标明不确定性的解释；
+- 下一次只改变的一个变量。
+
+代码回归检查仍使用 Block 2 的自动测试：
+
+```bash
+python -m unittest discover -s tests -p 'test_block2.py' -v
+```
+
+测试正常结束时显示 `OK`。它检查的是实现性质，而实验笔记对应具体运行的配置与结果。
+
+## 参考资料
+
+- [Stanford CS231n: Neural Networks Part 3 — Babysitting the Learning Process](https://cs231n.github.io/neural-networks-3/)
+- [CIFAR-100 官方类别与数据规模](https://www.cs.toronto.edu/~kriz/cifar.html)

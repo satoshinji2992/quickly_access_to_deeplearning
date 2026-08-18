@@ -1,22 +1,56 @@
-import numpy as np  # 数据处理
-import pandas as pd # 数据处理
-import matplotlib.pyplot as plt # 画图
 from pathlib import Path
-from data_creater import create_data
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from data_creater import create_data_splits, validate_data_splits
 from Model import MLPClassifier
-condition = "(x**2 + y**2) <= 1.0**2"  # 数据生成条件
-if not Path('train_data.csv').exists():
-    create_data(n=800,out_path='train_data.csv',condition=condition,seed=42)  # 生成数据文件
-if not Path('val_data.csv').exists():
-    create_data(n=200,out_path='val_data.csv',condition=condition,seed=43)  # 生成数据文件
-train_df = pd.read_csv('train_data.csv')
-val_df = pd.read_csv('val_data.csv')
-#sns.scatterplot(x="x", y="y", hue="label", data=df) #预览数据分布
-#plt.show()
-model = MLPClassifier(train_set=train_df, val_set=val_df,
-                      Learning_rate=0.1, batch_size=20, epochs=1000)
-model.fit()
-prediction = model.predict()
-plt.scatter(val_df['x'], val_df['y'], c=prediction, cmap='coolwarm', s=16) # 预测结果可视化
-if plt.get_backend().lower() != 'agg':
-    plt.show()
+
+
+condition = "(x**2 + y**2) <= 1.0**2"  # 修改后下次运行会立即重建数据
+TASK_DIR = Path(__file__).resolve().parent
+TRAIN_PATH = TASK_DIR / "train_data.csv"
+VAL_PATH = TASK_DIR / "val_data.csv"
+
+
+def main():
+    # 每次都依照当前 condition 确定性重建，避免旧 CSV 静默失效。
+    create_data_splits(
+        train_n=800,
+        val_n=200,
+        train_out_path=TRAIN_PATH,
+        val_out_path=VAL_PATH,
+        condition=condition,
+        variance=1.0,
+        seed=42,
+    )
+    train_df = pd.read_csv(TRAIN_PATH)
+    val_df = pd.read_csv(VAL_PATH)
+    validate_data_splits(train_df, val_df, condition)
+    print(
+        "data check passed: "
+        f"train={len(train_df)}, val={len(val_df)}, overlap=0, "
+        f"positive_ratio={train_df['label'].mean():.3f}/{val_df['label'].mean():.3f}"
+    )
+
+    model = MLPClassifier(
+        train_set=train_df,
+        val_set=val_df,
+        Learning_rate=0.1,
+        batch_size=20,
+        epochs=1000,
+        seed=0,
+    )
+    model.fit()
+    val_loss, val_accuracy = model.evaluate(val_df)
+    print(f"final validation: loss={val_loss:.4f}, accuracy={val_accuracy:.3f}")
+
+    prediction = model.predict(val_df)
+    plt.scatter(val_df["x"], val_df["y"], c=prediction, cmap="coolwarm", s=16)
+    plt.title(f"validation predictions (accuracy={val_accuracy:.3f})")
+    if plt.get_backend().lower() != "agg":
+        plt.show()
+
+
+if __name__ == "__main__":
+    main()

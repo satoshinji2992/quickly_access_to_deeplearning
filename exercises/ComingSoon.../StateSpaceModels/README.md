@@ -1,35 +1,13 @@
-# Mamba / State Space Model
+# State Space Model
 
-Transformer 用 attention 让 token 互相看.
+离散状态空间模型用一个随序列更新的状态汇总历史，基本形式可写为：
 
-代价是, 序列越长, attention 矩阵越大.
+$$
+h_t=\bar A h_{t-1}+\bar Bx_t,\qquad y_t=Ch_t+Dx_t.
+$$
 
-State Space Model 走的是另一条路: 用状态递推处理序列.
+它不显式构造 `T×T` attention 矩阵。对固定参数的线性 SSM，递推还可转换为卷积形式；这两种视角分别适合逐步推理和并行训练。
 
-## SSM 的粗略直觉
+理解这类模型需要区分三件事：连续系统如何离散化，状态如何递推，以及并行 scan 如何改变执行方式。“线性时间”描述的是序列长度方面的渐近计算，并不自动意味着在所有长度和硬件上都比 attention 快。
 
-你可以把它想成:
-
-```text
-当前输入 + 历史状态 -> 新状态 -> 输出
-```
-
-它不像 attention 那样显式构造所有 token 两两关系.
-
-这让它在长序列上有另一种效率优势.
-
-## Mamba
-
-Mamba 是比较有代表性的 SSM 路线模型.
-
-它引入 selective scan, 让模型根据输入动态调整状态更新.
-
-粗略地说, 它想保留 RNN/SSM 的线性复杂度优势, 又提升表达能力.
-
-## 和 Transformer 的关系
-
-Mamba 不是“Transformer 已经过时”的简单替代.
-
-更现实的看法是: 它提供了另一种序列建模工具.
-
-长上下文、时间序列、需要高吞吐的场景里, SSM 很值得关注.
+本页只是入口笔记，尚未提供离散化推导、scan 代码或梯度测试。

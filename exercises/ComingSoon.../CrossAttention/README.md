@@ -1,47 +1,14 @@
 # Cross-Attention
 
-Cross-attention 的核心是让一段序列去读取另一段序列.
-
-Self-attention 里, Q、K、V 都来自同一段序列.
-
-Cross-attention 里:
+Cross-attention 让当前序列从另一段序列中取回信息。与 self-attention 的区别只在 Q、K、V 的来源：
 
 ```text
-Q 来自当前序列
-K, V 来自另一段 memory
+self-attention:  Q, K, V 都由同一序列投影得到
+cross-attention: Q 来自当前序列，K, V 来自 memory
 ```
 
-这会出现在很多地方:
+设 `query` 为 `(B, T_q, D)`，`memory` 为 `(B, T_m, D)`，分头后的权重矩阵是 `(B, H, T_q, T_m)`，输出仍为 `(B, T_q, D)`。`T_q` 与 `T_m` 不必相等。
 
-- encoder-decoder 翻译模型.
-- 图文多模态模型.
-- 扩散模型里的条件控制.
+在 encoder–decoder 翻译模型中，decoder 的隐状态提供 Q，encoder 输出提供 K/V。多模态模型和带条件的扩散模型也会使用同样的结构。
 
-核心区别:
-
-```text
-self-attention:
-Q, K, V 都来自同一段序列
-
-cross-attention:
-Q 来自当前序列
-K, V 来自另一段 memory
-```
-
-举个翻译模型的例子:
-
-```text
-encoder 读英文句子 -> 得到 memory
-decoder 生成中文句子 -> 用 cross-attention 读取 memory
-```
-
-所以 cross-attention 更像“查资料”. 当前序列提出 query, 另一段序列提供 key/value.
-
-代码里的 `cross_attention.py` 是一个最小实现, 可以用来检查 shape:
-
-```text
-query  : (batch, query_len, dim)
-memory : (batch, memory_len, dim)
-output : (batch, query_len, dim)
-attn   : (batch, heads, query_len, memory_len)
-```
+本页只记录定义和 shape，尚未提供与主线任务同等的代码和测试。公式可参考 [Attention Is All You Need](https://arxiv.org/abs/1706.03762)。

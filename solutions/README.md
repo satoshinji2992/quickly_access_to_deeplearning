@@ -2,7 +2,7 @@
 
 这里放每个 block 的参考实现。
 
-运行前先在仓库根目录创建并激活 conda 环境:
+运行前先在仓库根目录创建并激活 conda 环境：
 
 ```bash
 conda create -n dl_tutorial python=3.10
@@ -18,4 +18,4 @@ pip install -r requirements.txt
 - `block_02_resnet/train_cifar100_solution.py`
 - `block_03_transformer/minimind_solution.py`
 
-通用的 NumPy 小型深度学习库放在 `../common/my_dl_lib.py`; task_02 之后的 exercises 和 solutions 会复用它。
+通用的 NumPy 小型深度学习库放在 `../common/my_dl_lib.py`；Task 02 之后的章节代码和参考实现会复用它。
