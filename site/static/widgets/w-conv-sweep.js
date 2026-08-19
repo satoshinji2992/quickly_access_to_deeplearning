@@ -82,7 +82,7 @@
 
     container.appendChild((function () { var d = document.createElement('div'); d.innerHTML =
       '<p class="wg-title">卷积扫过图像</p>' +
-      '<p class="wg-sub">在输入图上点击或拖动，把 3×3 窗口挪到某个左上角 (r, c)；每停一处，输出特征图就被补上一格。</p>' +
+      '<p class="wg-sub">点击或拖动 3×3 窗口，每停一处补一格输出。</p>' +
       '<div class="cs-shape">X: (1,1,8,8) · W: (1,1,3,3) · Y: (1,1,6,6)</div>' +
       '<div class="cs-main">' +
         '<div class="cs-inwrap">' +
@@ -105,7 +105,7 @@
         '<button type="button" class="wg-button" data-role="all">显示全部</button>' +
         '<button type="button" class="wg-button" data-role="reset">重置</button>' +
       '</div>' +
-      '<p class="wg-note">自动扫描按行优先顺序每 300ms 前进一格；一旦修改核，已算出的输出全部失效清空。</p>' +
+      '<p class="wg-note">自动扫描每 300ms 前进一格；改核会清空输出。</p>' +
       '<div class="wg-block">' +
         '<div class="wg-label"><span>当前窗口展开 · im2col</span><span>Y[r,c] = X_col · W_col</span></div>' +
         '<div class="cs-im">' +
@@ -115,7 +115,6 @@
           '<span class="cs-im-op">=</span>' +
           '<div class="cs-im-group"><div class="cs-im-cap">点积</div><b data-role="imval">0</b></div>' +
         '</div>' +
-        '<p class="wg-note">每个输出格子都对应这样一次「行向量 × 列向量」——这就是 im2col 后的一次矩阵乘法元素。</p>' +
       '</div>'; return d; })());
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };

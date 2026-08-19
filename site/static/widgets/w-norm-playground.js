@@ -94,9 +94,9 @@
     var root = document.createElement('div');
     root.innerHTML =
       '<p class="wg-title">BatchNorm 与 LayerNorm：沿不同的方向做标准化</p>' +
-      '<p class="wg-sub">同一份 4 样本 × 4 特征的数据 X: (B=4, D=4)。BN 逐<b>列</b>跨 4 个样本统计 μc、σc（依赖 batch）；LN 逐<b>行</b>跨 4 个特征统计 μr、σr（与 batch 无关）。点击「原始值」的格子 +0.5（Shift 点击 −0.5），右边两个视图实时重算。</p>' +
+      '<p class="wg-sub">X: (B=4, D=4)。BN 逐<b>列</b>、LN 逐<b>行</b>标准化；点格 +0.5（Shift −0.5）。</p>' +
       '<div class="np-grid" data-role="grid"></div>' +
-      '<p class="wg-note">配色：红 = 正值、蓝 = 负值，颜色越深绝对值越大。归一化后 BN 的每列、LN 的每行都满足 μ≈0、σ≈1（分母 σ 加了 ε²=1e-4 防除零，真实实现里 ε≈1e-5）。</p>' +
+      '<p class="wg-note">配色：红 = 正值、蓝 = 负值，越深绝对值越大。</p>' +
       '<div class="wg-block">' +
         '<div class="wg-label"><span>BN 的 running 统计（推理时用）</span><span data-role="nb"></span></div>' +
         '<div class="wg-controls">' +
@@ -104,9 +104,8 @@
           '<button type="button" class="wg-button" data-role="reset">重置数据</button>' +
         '</div>' +
         '<div class="np-run" data-role="run"></div>' +
-        '<p class="wg-note">实条 = running 统计（EMA 累积），绿标 = 本批统计。每按一次「再来一批」：X 换成 4 个新样本，running ← 0.7·running + 0.3·本批。点击格子改值只影响当前视图，不动 running。</p>' +
+        '<p class="wg-note">「再来一批」：running ← 0.7·running + 0.3·本批；改格不动 running。</p>' +
         '<p class="wg-note" data-role="hint"></p>' +
-        '<p class="wg-note">要点：BN 的统计<b>跨样本</b>（同一列的 4 个数），换一批样本结果就变，所以推理时要用 running 统计兜底；LN 的统计<b>跨特征</b>（同一行的 4 个数），单个样本自己就能算，与 batch 无关——这正是 Transformer 用 LN 的原因。</p>' +
       '</div>';
     container.appendChild(root);
 
@@ -163,7 +162,7 @@
             render();
             pulse(rawCells[rb * 4 + rc], bnCells, lnCells, rb, rc);
             q('hint').textContent = '样本' + (rb + 1) + '·特征' + (rc + 1) + ' → ' + next.toFixed(1) +
-              '：该列 μc 和该行 μr 都移动 0.125，BN 重排整列（蓝框），LN 重排整行（蓝框）。';
+              '：该列 μc、该行 μr 随之更新。';
           });
           place(cell, 2 + rc, 3 + rb);
           rawCells.push(cell);
@@ -294,7 +293,7 @@
       state.batches += 1;
       render();
       flashTicks();
-      q('hint').textContent = '第 ' + state.batches + ' 批：X 换成 4 个新样本——BN 视图随 batch 成员变化，LN 的每行仍只用自身统计。running 向本批靠近 30%。';
+      q('hint').textContent = '第 ' + state.batches + ' 批：已换成 4 个新样本。';
     });
 
     q('reset').addEventListener('click', function () {
@@ -304,11 +303,11 @@
       state.runVr = cs.vr.slice();
       state.batches = 1;
       render();
-      q('hint').textContent = '已重置回初始批：running 统计以第 1 批为初值。';
+      q('hint').textContent = '已重置：running 以第 1 批为初值。';
     });
 
     render();
-    q('hint').textContent = '初始批：4 列均值差异很大（μc ≈ +6.25 / −3.25 / +1.25 / +0.25）。同一份数据，BN 按列、LN 按行，归一化结果完全不同。';
+    q('hint').textContent = '初始批：4 列 μc ≈ +6.25 / −3.25 / +1.25 / +0.25。';
 
     return function dispose() {
       timers.forEach(function (t) { window.clearTimeout(t); });

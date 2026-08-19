@@ -143,7 +143,7 @@
     container.innerHTML =
       '<style>' + CSS + '</style>' +
       '<p class="wg-title">GQA：多个 query head 共享一组 KV</p>' +
-      '<p class="wg-sub">MHA 里每个 query head 都配一对自己专属的 K/V；GQA 把 Hq 个 query head 分成 Hkv 组，每组共用一份 KV。下图 Hq=4、Hkv=2：q0、q1 共享组 0，q2、q3 共享组 1。静态连线就是映射关系；点「处理一个 token」看一次前向的数据流。</p>' +
+      '<p class="wg-sub">q0、q1 共享组 0，q2、q3 共享组 1</p>' +
       '<div class="gq-legend">' +
         '<span><i class="gq-lch" style="background:#0b63f3"></i>query heads ×4</span>' +
         '<span><i class="gq-lch" style="background:' + KV0 + '"></i>组 0 K·V</span>' +
@@ -178,7 +178,7 @@
         '<div class="gq-brow"><span class="gq-bname">GQA · 2 组 KV</span>' +
           '<div class="gq-btrack"><div class="gq-bar gq-bgqa" style="width:50%"><b>2×2×T×Dh = 4·T·Dh</b></div><span class="gq-save">省 50%</span></div></div>' +
       '</div>' +
-      '<p class="wg-note">缓存比例 = Hkv/Hq，与 T 和 Dh 无关：Hq=32、Hkv=8 时是 MHA 的 1/4；MQA（Hkv=1）是极端情形 1/Hq。序列越长（T 越大），省下的显存越可观。</p>' +
+      '<p class="wg-note">缓存比例 = Hkv/Hq，与 T、Dh 无关</p>' +
       '<div class="wg-controls gq-ctrl">' +
         '<button type="button" class="wg-button is-primary" data-role="step">处理一个 token</button>' +
         '<button type="button" class="wg-button" data-role="reset">重置</button>' +
@@ -216,26 +216,26 @@
       setStage(-1);
       after(240, function () {
         setStage(0);
-        note('token「' + tok + '」进入：embedding 后经 Wq 一次投影，同时切出 4 份 query——所以 4 个 q 一起激活。');
+        note('token 进入：Wq 一次投影出 4 份 query');
       });
       after(700, function () {
         setStage(1);
-        note('4 个 query head 同时激活：同一 token、不同 head 的 q 各自独立（各有自己那份 Wq 权重）。');
+        note('4 个 q 同时激活，各自独立');
       });
       after(1280, function () {
         setStage(2);
-        note('repeat_kv：把 K0·V0 复制给 q0、q1 一组，K1·V1 复制给 q2、q3 一组。注意右侧物理存储仍然只有 2 组——复制只发生在计算路径上。');
+        note('repeat_kv 复制 KV，存储仍 2 组');
       });
       after(2120, function () {
         setStage(3);
-        note('每组的 q 用自己那份 K/V 做 softmax 注意力，得到 o0..o3，最后拼回 (B,4,T,Dh)。');
+        note('各组 q 对本组 K/V 做注意力，得 o0..o3');
       });
       after(3220, function () {
         setStage(4);
         state.count += 1;
         state.busy = false;
         buttons();
-        note('已处理 ' + state.count + ' 个 token。KV 缓存始终只有 2 组——GQA 省显存就省在这里。下一个 token：「' + TOKENS[state.count % TOKENS.length] + '」。');
+        note('已处理 ' + state.count + ' 个，缓存仍 2 组；下一个「' + TOKENS[state.count % TOKENS.length] + '」');
       });
     }
 
@@ -248,7 +248,7 @@
       setStage(-1);
       after(280, function () {
         setStage(4);
-        note('已重置。初始状态：已处理 1 个 token（「猫」）。点「处理一个 token」重放动画：token 进入 → 4 个 q 激活 → KV 复制展开 → 输出 o0..o3。');
+        note('点「处理一个 token」重放动画');
       });
     }
 
@@ -257,7 +257,7 @@
 
     // 预置到"已处理 1 个 token"的完成态，保证打开即有内容。
     setStage(4);
-    note('初始状态：已处理 1 个 token（「猫」）。点「处理一个 token」重放动画：token 进入 → 4 个 q 激活 → KV 复制展开 → 输出 o0..o3。');
+    note('点「处理一个 token」重放动画');
 
     return function dispose() { clearTimers(); };
   }

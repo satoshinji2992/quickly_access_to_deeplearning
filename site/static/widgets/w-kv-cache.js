@@ -140,7 +140,7 @@
 
     container.innerHTML =
       '<p class="wg-title">KV Cache：prefill 与逐步 decode</p>' +
-      '<p class="wg-sub">prompt = BOS 小 猫 在 睡，之后逐 token 生成 觉、。两层各存一份 K/V：Hkv=2、Hq=4、head_dim=8。每个槽位 = 一个 token 位置，内部 2 个子格 = 2 个 KV heads。</p>' +
+      '<p class="wg-sub">逐 token 生成：两层各存 K/V，Hkv=2、Hq=4、Dh=8。</p>' +
       '<div class="kvc-legend">' +
         '<span><i class="kvc-chip" style="background:#0b63f3"></i>K ×2 heads</span>' +
         '<span><i class="kvc-chip" style="background:#72d7ff"></i>V ×2 heads</span>' +
@@ -163,7 +163,7 @@
       '<div class="kvc-gqa">' +
         '<div class="kvc-grow"><span class="kvc-cq">q0</span><span class="kvc-cq">q1</span><span class="kvc-arr">─ 复用 →</span><span class="kvc-ck">K0</span><span class="kvc-cv">V0</span></div>' +
         '<div class="kvc-grow"><span class="kvc-cq">q2</span><span class="kvc-cq">q3</span><span class="kvc-arr">─ 复用 →</span><span class="kvc-ck">K1</span><span class="kvc-cv">V1</span></div>' +
-        '<div class="kvc-gtxt">每层只缓存 2 份 K/V（Hkv=2），4 个 query heads 计算时按 repeat_kv 分组复用；槽位里的 2 个子格就是这 2 个 KV heads。</div>' +
+        '<div class="kvc-gtxt">4 个 query heads 复用 2 份 K/V。</div>' +
       '</div>' +
       '<div class="wg-controls kvc-controls">' +
         '<button type="button" class="wg-button" data-role="pre">Prefill 5 个 prompt token</button>' +
@@ -209,7 +209,7 @@
         box.innerHTML = '<span class="kvc-qcap">输入</span>' + chips +
           '<span class="kvc-arr">→</span>' + qHeads() +
           '<span class="kvc-mono">q (1,4,5,8)</span>' +
-          '<span>训练式并行：一次 forward 算完所有位置</span>';
+          '<span>一次 forward 算完所有位置</span>';
         return;
       }
       var idx = state.past - 1;
@@ -224,19 +224,18 @@
 
     function noteText() {
       if (state.phase === 'empty') {
-        return '缓存为空。Prefill 一次并行 forward 写入 5 个 prompt 位置；之后每步 decode 只 forward 1 个新 token。';
+        return '缓存为空。点 Prefill 写入 5 个位置。';
       }
       if (state.phase === 'prefilling') {
-        return '训练式并行：一次 forward 算完所有位置（动画把 5 列拆开逐列点亮，只是便于观看）。';
+        return '一次 forward 并行算完 5 个位置。';
       }
       if (state.phase === 'prefilled') {
-        return 'past_len = 5。下一步 decode：新 token 的 q 只与缓存 K 做一次 1×5 的 QKᵀ，它自己的 K/V 追加为第 6 列。';
+        return 'past_len=5。下一步 QKᵀ 是 1×5。';
       }
       if (state.phase === 'decode') {
-        return 'decode 第 ' + (state.past - PROMPT.length) + ' 步：q (1,4,1,8) 复用 2 份 K/V 做注意力。QKᵀ 只算 1×' +
-          state.past + ' = ' + state.past + ' 个 score；朴素重算要 ' + state.past + '×' + state.past + ' = ' + state.past * state.past + ' 个。';
+        return 'decode 第 ' + (state.past - PROMPT.length) + ' 步：只新算 1 行 score。';
       }
-      return '生成结束：BOS 小 猫 在 睡 觉 。两步 decode 共追加 2 列，缓存增长到 (1,2,7,8)；每一步都只新算 1 行 score。';
+      return '生成结束。缓存 shape (1,2,7,8)。';
     }
 
     function render() {
