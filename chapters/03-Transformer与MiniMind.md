@@ -32,6 +32,8 @@ hidden:    (B, T, D)
 
 现在每个位置都有一个 $D$ 维向量，但这些向量还互不交流。若直接对每个位置独立做 MLP，最后一个位置只能看到自己的 token，改变前文不会改变它的输出。这正是旧版占位模型曾经暴露的问题：保留末尾 token、完全替换前文，末位 logits 一点不变。
 
+<div class="widget-mount" data-widget="token-embed-3d" data-title="token 向量的三维投影"></div>
+
 语言模型需要一个让 token 读取上下文的部件。
 
 ---
@@ -75,6 +77,8 @@ output:  (T, Dh)
 
 为什么除以 $\sqrt{d_{head}}$？维度增加时，点积的量级也会增大，softmax 很容易变得过尖，梯度集中在极少数位置。缩放把分数维持在较稳定的范围。
 
+<div class="widget-mount" data-widget="qkv-flow" data-title="Q/K/V 到输出，分步走"></div>
+
 [从一个 head 到 decoder-only](../exercises/block_03_transformer/task_20_transformer_theory/README.md)
 
 ---
@@ -100,6 +104,8 @@ query 3 -> key 0..3
 ![Causal mask](../assets/images/causal_mask.png)
 
 被禁止的位置要在 softmax **之前**从 score 中排除。若先做 softmax 再把权重乘 0，未来位置仍然分走过概率，留下的权重也不再和为 1。
+
+<div class="widget-mount" data-widget="causal-mask" data-title="训练并行与推理逐步"></div>
 
 causal 性质可以直接做数值实验：固定序列前缀，只改变未来 token，前缀位置的输出应保持不变。它比目测三角矩阵更接近模型真正需要满足的条件。
 
@@ -144,6 +150,8 @@ $$
 ![RoPE 的不同维度频率](../assets/images/rope.png)
 
 每一对维度使用不同 $\theta_i$。同一个向量在位置 $m$ 和位置 $n$ 采用不同旋转角，而旋转后的 Q/K 点积会依赖相对位移 $n-m$。准确的说法是“点积中出现相对位移”，而不是位置向量本身具有某种绝对不变性。
+
+<div class="widget-mount" data-widget="pos-encoding" data-title="正弦编码与 RoPE 对照"></div>
 
 V 不旋转，因为位置关系要改变的是“query 与哪个 key 匹配”；V 负责提供匹配后取回的内容。
 
@@ -310,6 +318,8 @@ Padding 需要处理两次：
 - top-k 只保留最高的 $k$ 个候选；
 - top-p 保留累计概率达到阈值的最小候选集。
 
+<div class="widget-mount" data-widget="sampling" data-title="温度、top-k、top-p 实时对比"></div>
+
 ![四种采样方法](../assets/images/sampling_methods.png)
 
 [生成循环与采样](../exercises/block_03_transformer/task_29_generate_sampling/README.md)
@@ -337,6 +347,8 @@ K+,V+ -> 写回当前层 cache
 ![逐层 KV Cache 的 prefill 与 decode](../assets/images/kv_cache.png)
 
 缓存不是一份全模型共享数组，而是每层各有一对 K/V；GQA 缓存保持 `Hkv` 个 heads，只在计算 attention 时复用到 `Hq`。RoPE 的位置从 `past_len` 接着走。
+
+<div class="widget-mount" data-widget="gqa-map" data-title="4 个 query 头共享 2 组 KV"></div>
 
 当长度超过 `max_seq_len`，本实现保留最后一个窗口，并对窗口做一次完整 prefill，重新对齐 RoPE 位置和所有层缓存。它不是简单地从数组左侧删掉几列。
 

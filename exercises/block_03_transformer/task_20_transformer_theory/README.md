@@ -8,6 +8,9 @@ Self-attention 把这件事写成矩阵运算。先把整段序列放进同一�
 
 ---
 
+
+<div class="widget-mount" data-widget="qkv-flow" data-title="Q/K/V 到输出，分步走"></div>
+
 ## Q、K、V
 
 输入 hidden states 记为：

@@ -13,6 +13,12 @@ $$
 
 上一节的 $y=ax+b$ 只能画直线。圆形分类需要一条封闭、弯曲的决策边界，因此多层线性变换之间还要加入非线性。
 
+
+<div class="widget-mount" data-widget="mlp-boundary" data-title="调权重，看决策边界弯成圆"></div>
+
+
+<div class="widget-mount" data-widget="backprop-steps" data-title="前向点亮、反向回流，走一遍"></div>
+
 ## 从线性层到 MLP
 
 设一个 batch 有 $m$ 个点，输入为 $\mathbf X\in\mathbb R^{m\times2}$。`Model.py` 使用 2-4-4-2 的网络：

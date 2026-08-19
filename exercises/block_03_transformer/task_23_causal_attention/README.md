@@ -8,6 +8,12 @@ Decoder-only 模型的 Q/K/V 都来自同一段 hidden states，但可见范围�
 
 ---
 
+
+<div class="widget-mount" data-widget="causal-mask" data-title="训练并行与推理逐步"></div>
+
+
+<div class="widget-mount" data-widget="gqa-map" data-title="4 个 query 头共享 2 组 KV"></div>
+
 ## 从 Q/K/V 到输出
 
 单个 head 在位置 $t$、$j$ 间的 score 是：

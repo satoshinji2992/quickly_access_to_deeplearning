@@ -11,6 +11,9 @@ CIFAR-100 的单张图片是 $32\times32$ RGB 数组。进入卷积前，数据�
 ---
 
 
+
+<div class="widget-mount" data-widget="image-batch" data-title="点开一张图，看 RGB 与 NCHW"></div>
+
 ## CIFAR-100 的三份数据
 
 [官方说明](https://www.cs.toronto.edu/~kriz/cifar.html)给出的 CIFAR-100 规模是：

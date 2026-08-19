@@ -1,0 +1,52 @@
+{
+ "images": [
+  {
+   "index": 0,
+   "label_id": 19,
+   "label": "cattle",
+   "zh": "牛"
+  },
+  {
+   "index": 1,
+   "label_id": 29,
+   "label": "dinosaur",
+   "zh": "恐龙"
+  },
+  {
+   "index": 2,
+   "label_id": 0,
+   "label": "apple",
+   "zh": "苹果"
+  },
+  {
+   "index": 3,
+   "label_id": 11,
+   "label": "boy",
+   "zh": "男孩"
+  },
+  {
+   "index": 4,
+   "label_id": 1,
+   "label": "aquarium_fish",
+   "zh": "鱼"
+  },
+  {
+   "index": 5,
+   "label_id": 86,
+   "label": "telephone",
+   "zh": "电话"
+  },
+  {
+   "index": 6,
+   "label_id": 90,
+   "label": "train",
+   "zh": "火车"
+  },
+  {
+   "index": 7,
+   "label_id": 28,
+   "label": "cup",
+   "zh": "杯子"
+  }
+ ]
+}
