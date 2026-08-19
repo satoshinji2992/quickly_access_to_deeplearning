@@ -50,7 +50,7 @@
     container.innerHTML =
       '<style>' + CSS + '</style>' +
       '<p class="wg-title">正弦位置编码：多尺度频率</p>' +
-      '<p class="wg-sub">句子按字符切成 T 个 token，每个 token 的位置 m 被写成 D 维 sin/cos 向量，直接加到 embedding 上（绝对位置）。取 D=16（8 个维度对）、base=10000。</p>' +
+      '<p class="wg-sub">按字符切 token，位置 m 编成 D=16 维 sin/cos 向量，base=10000。</p>' +
       '<div class="wg-label"><span>句子（按字符切分，最多 8 字）</span><span data-role="cnt"></span></div>' +
       '<input class="pe-in" data-role="sent" value="小猫在睡觉">' +
       '<p class="wg-note" data-role="snote"></p>' +
@@ -58,7 +58,7 @@
       '<div class="pe-row">' +
         '<div class="pe-col-hm">' +
           '<div class="pe-hm" data-role="hm"></div>' +
-          '<p class="wg-note">行 = token 位置 m，列 = 维度 d。d0/d1 共用角频率 ω0，d2/d3 共用 ω1……列头同时标出每个维度对的 ω。点击任一列选中该维度对，右侧画出它的 sin/cos。</p>' +
+          '<p class="wg-note">行 = 位置 m，列 = 维度 d；点击列头选中维度对。</p>' +
         '</div>' +
         '<div class="pe-col-cur">' +
           '<div class="wg-label"><span data-role="curtitle"></span><span>纵轴 [−1,1]</span></div>' +
@@ -226,8 +226,7 @@
       q('curtitle').textContent = '维度对 i=' + state.pair + ' · d' + (2 * state.pair) + '/d' + (2 * state.pair + 1);
       q('om').textContent = fmtW(w);
       q('per').textContent = fmtPeriod(w);
-      q('curnote').textContent = 'ω' + state.pair + ' = ' + fmtW(w) + '：走满一圈要 ' + fmtPeriod(w) +
-        ' 个位置。低维（i 小）几个位置就变一圈，高维成百上千个位置才变一圈——每个 token 的编码由这些不同频率叠加，唯一标识位置 m。';
+      q('curnote').textContent = 'ω' + state.pair + ' = ' + fmtW(w) + '：走一圈要 ' + fmtPeriod(w) + ' 个位置。';
       drawCurves();
     }
 

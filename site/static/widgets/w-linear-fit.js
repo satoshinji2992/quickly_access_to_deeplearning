@@ -37,7 +37,7 @@
   function mount(container) {
     container.innerHTML =
       '<p class="wg-title">拟合一条直线</p>' +
-      '<p class="wg-sub">拖动滑杆调整 $a$（斜率）与 $b$（截距）…</p>'.replace(/\$(a|b)\$/g, '<b>$1</b>') +
+      '<p class="wg-sub">拖动 $a$、$b$ 滑杆，图形与损失实时更新。</p>'.replace(/\$(a|b)\$/g, '<b>$1</b>') +
       '<canvas class="wg-canvas" data-role="scatter" height="240"></canvas>' +
       '<div class="wg-block">' +
         '<div class="wg-label"><span>斜率 a</span><span data-role="aval"></span></div>' +
@@ -59,7 +59,7 @@
       '</div>' +
       '<div class="wg-label"><span>损失曲面 L(a, b)</span><span>● 当前 ★ 最优</span></div>' +
       '<canvas class="wg-canvas" data-role="contour" height="210"></canvas>' +
-      '<p class="wg-note">曲面上每一点对应一组 (a, b)；颜色越深损失越小。梯度下降每步沿该点最陡的下坡方向走 η=0.12。</p>';
+      '<p class="wg-note">颜色越深损失越小；步长 η=0.12。</p>';
 
     var state = { a: 0.5, b: 7.5, timer: null };
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };

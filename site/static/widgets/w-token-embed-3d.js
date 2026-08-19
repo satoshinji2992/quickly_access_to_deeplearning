@@ -121,9 +121,8 @@
   function build(container, D, setBody) {
     setBody(
       '<p class="wg-title">Token 嵌入：8 维 → 3 维投影</p>' +
-      '<p class="wg-sub">嵌入表把 ' + D.tokens.length + ' 个 token 查成 shape (' + D.tokens.length +
-      ', 8) 的向量；左图用前三个主成分把它压成 (' + D.tokens.length +
-      ', 3) 的三维坐标。同簇 token 挨得近、异簇离得远——拖拽转一转，点一个点看看。</p>' +
+      '<p class="wg-sub">嵌入 (' + D.tokens.length + ', 8) 经 PCA 压成 (' + D.tokens.length +
+      ', 3)；拖拽旋转、点击选中</p>' +
       '<div class="te3-main">' +
         '<div class="te3-left">' +
           '<div class="te3-wrap">' +
@@ -134,8 +133,7 @@
         '</div>' +
         '<div class="te3-side" data-role="side"></div>' +
       '</div>' +
-      '<p class="wg-note">操作：拖拽 = 旋转视角 · 滚轮 = 缩放 · 点击圆点 = 选中该 token，' +
-      '右侧显示它的簇名、3D 坐标与原始 8 维向量。键盘 ← → ↑ ↓ 也能旋转，Enter 换选下一个 token。</p>' +
+      '<p class="wg-note">键盘 ← → ↑ ↓ 旋转，Enter 换选</p>' +
       (D.note ? '<p class="wg-note" data-role="note"></p>' : ''));
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
@@ -396,7 +394,7 @@
     function renderSide() {
       if (sel < 0) {
         side.innerHTML =
-          '<div class="te3-empty">未选中：点击图中任一圆点，查看该 token 的簇名、3D 坐标与原始 8 维向量。</div>';
+          '<div class="te3-empty">点击圆点查看 8 维向量与坐标</div>';
         return;
       }
       var nm = D.names[sel];

@@ -103,7 +103,7 @@
   /* ---------- 15 步定义 ---------- */
   var STEPS = [
     { phase: 'f', chip: '前向 1/6', title: 'z¹ = W¹·x + b¹',
-      desc: '第一层线性变换：4 个神经元各算一个加权和。绿节点是本步刚算出的值。',
+      desc: '第一层线性变换：4 个神经元各算一个加权和。',
       formula: 'z¹ = W¹·x + b¹', shape: '(4×2)·(2×1) + (4×1) → (4×1)',
       legend: '节点数值 = z¹　·　绿 = 本步新算出',
       panel:
@@ -114,7 +114,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.z1, st: 'new' } }, edges: { 0: { mode: 'fwd' } } } },
 
     { phase: 'f', chip: '前向 2/6', title: 'h¹ = ReLU(z¹)',
-      desc: '逐元素取 max(0, ·)：负的 z 直接归零。z¹₂ < 0，第 2 个神经元被截断，输出 0。',
+      desc: '负的 z 归零：z¹₂ < 0，第 2 个神经元输出 0。',
       formula: 'h¹ = max(0, z¹)', shape: '(4×1) → (4×1)',
       legend: '灰节点 = ReLU 截断（z ≤ 0 → 0）',
       panel:
@@ -125,7 +125,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'new', dead: F.z1.map(function (v) { return v <= 0; }) } } } },
 
     { phase: 'f', chip: '前向 3/6', title: 'z² = W²·h¹ + b²',
-      desc: '第二层加权和。注意 h¹₂ = 0：它乘任何权重都是 0，那条连接等于没参与。',
+      desc: '第二层加权和；h¹₂ = 0，第 2 列权重不参与。',
       formula: 'z² = W²·h¹ + b²', shape: '(4×4)·(4×1) + (4×1) → (4×1)',
       legend: '节点数值 = z²　·　左边灰色 0 = 上一步截断的 h¹₂',
       panel:
@@ -136,7 +136,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.z2, st: 'new' } }, edges: { 1: { mode: 'fwd' } } } },
 
     { phase: 'f', chip: '前向 4/6', title: 'h² = ReLU(z²)',
-      desc: '第二道门。z²₂ < 0 同样被截断——这个样本下第 2 个单元在两层都被挡住了。',
+      desc: 'z²₂ < 0 同样被截断，第 2 个单元两层输出均为 0。',
       formula: 'h² = max(0, z²)', shape: '(4×1) → (4×1)',
       legend: '灰节点 = ReLU 截断',
       panel:
@@ -147,7 +147,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'new', dead: F.z2.map(function (v) { return v <= 0; }) } } } },
 
     { phase: 'f', chip: '前向 5/6', title: 'logits = W³·h² + b³',
-      desc: '输出层：两个 logit 对应两个类，谁大就猜谁。h²₂ = 0 让它那一列权重又没用上。',
+      desc: '输出层：h²₂ = 0，该列权重不参与。',
       formula: 'logits = W³·h² + b³', shape: '(2×4)·(4×1) + (2×1) → (2×1)',
       legend: '节点数值 = logits　·　下标签 = 类别',
       panel:
@@ -157,7 +157,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: F.lg, st: 'new' } }, edges: { 2: { mode: 'fwd' } } } },
 
     { phase: 'f', chip: '前向 6/6', title: 'P = softmax(logits)',
-      desc: '取指数再归一化，得到概率。P₀ = 0.432 < 0.5：这个圆内的点被猜成了圆外。',
+      desc: 'P₀ = 0.432 < 0.5，该点被猜成圆外。',
       formula: 'P = softmax(logits)', shape: 'e^z ÷ Σ e^z → (2×1)',
       legend: '节点半径 ∝ 概率　·　数值 = P',
       panel:
@@ -169,7 +169,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: F.P, st: 'new' } }, radius: { 3: [12 + 9 * F.P[0], 12 + 9 * F.P[1]] } } },
 
     { phase: 'l', chip: '损失 1/1', title: 'L = −log P[y]',
-      desc: '交叉熵只看正确类的概率：P₀ 越接近 1，L 越接近 0。现在 P₀ 只有 0.43，损失不小。',
+      desc: 'P₀ = 0.432，损失 L = 0.839。',
       formula: 'L = −log P₀', shape: '标量',
       legend: '节点数值 = P　·　求损失不改任何节点',
       panel:
@@ -180,7 +180,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: F.P, st: 'known' } }, radius: { 3: [12 + 9 * F.P[0], 12 + 9 * F.P[1]] } } },
 
     { phase: 'b', chip: '反向 1/7', title: 'dlogits = (P − Y)/m',
-      desc: '反向传播从损失的门口出发。正确类概率不足 1，dlogits₀ 为负（要把 logit₀ 顶上去）；错误类正好相反。',
+      desc: 'dlogits = P − Y：正确类为负，错误类为正。',
       formula: 'dlogits = (P − Y) / m', shape: '(2×1)，m = 1',
       legend: '节点数值 = dlogits（红 = 梯度）',
       panel:
@@ -190,7 +190,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } } } },
 
     { phase: 'b', chip: '反向 2/7', title: 'dW³ = dlogits·(h²)ᵀ，db³ = Σdlogits',
-      desc: '每条连接的梯度 = 两端相乘：dW³[i][j] = dlogits[i]·h²[j]。h²₂ = 0，那一列全为 0。',
+      desc: 'dW³[i][j] = dlogits[i]·h²[j]；h²₂ = 0，第 2 列全 0。',
       formula: 'dW³ = dlogits · (h²)ᵀ，db³ = Σ dlogits', shape: '(2×1)·(1×4) → (2×4)',
       legend: '边上的红字 = 该连接的梯度 dW³　·　越粗 |梯度| 越大',
       panel:
@@ -199,7 +199,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } }, edges: { 2: { mode: 'bwd', mat: dW3, labels: true } } } },
 
     { phase: 'b', chip: '反向 3/7', title: 'dh² = (W³)ᵀ·dlogits',
-      desc: '梯度沿边往回乘：每个 h² 单元收到的梯度 = 它发给两个输出的加权组合（权重矩阵转置）。',
+      desc: '每个 h² 单元收到的梯度 = W³ 对应列的加权和。',
       formula: 'dh² = (W³)ᵀ · dlogits', shape: '(4×2)·(2×1) → (4×1)',
       legend: '节点数值 = dh²（红 = 梯度）　·　虚线边 = 梯度流过的连接',
       panel:
@@ -210,7 +210,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: dh2, st: 'grad' }, 3: { vals: dlogits, st: 'grad' } }, edges: { 2: { mode: 'bwd' } } } },
 
     { phase: 'b', chip: '反向 4/7', title: 'dz² = dh² ⊙ 1[z² > 0]',
-      desc: 'ReLU 的反向是一扇门：前向时没通过的（z ≤ 0），梯度也一律归零。dh²₂ = 1.08 再大也被清零。',
+      desc: 'z² ≤ 0 的单元梯度归零；dh²₂ = 1.08 也被清零。',
       formula: 'dz² = dh² ⊙ 1[z² > 0]', shape: '(4×1) 逐元素',
       legend: '灰节点 = 梯度被 ReLU 截断（→ 0）',
       panel:
@@ -221,7 +221,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: dz2, st: 'grad', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } } } },
 
     { phase: 'b', chip: '反向 5/7', title: 'dW² = dz²·(h¹)ᵀ，db² = Σdz²',
-      desc: 'dW²[i][j] = dz²[i]·h¹[j]。第 2 行全 0（dz²₂ 被截断），第 2 列也全 0（h¹₂ = 0）。',
+      desc: 'dW²[i][j] = dz²[i]·h¹[j]；第 2 行与第 2 列全 0。',
       formula: 'dW² = dz² · (h¹)ᵀ，db² = Σ dz²', shape: '(4×1)·(1×4) → (4×4)',
       legend: '边上的红字 = dW²（只标 |梯度| 最大的 8 条，完整数值见右）　·　灰虚线 = |梯度|≈0',
       panel:
@@ -230,7 +230,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: dz2, st: 'grad', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } }, edges: { 1: { mode: 'bwd', mat: dW2, labels: true } } } },
 
     { phase: 'b', chip: '反向 6/7', title: 'dh¹ = (W²)ᵀ·dz²',
-      desc: '继续往回乘。虽然 dz²₂ = 0，dh¹₂ 却不是 0——它是四个 dz² 沿 W² 第 2 列回传的加权和。',
+      desc: 'dz²₂ = 0 但 dh¹₂ ≠ 0：来自 W² 第 2 列的加权和。',
       formula: 'dh¹ = (W²)ᵀ · dz²', shape: '(4×4)·(4×1) → (4×1)',
       legend: '节点数值 = dh¹（红 = 梯度）',
       panel:
@@ -241,7 +241,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: dh1, st: 'grad' }, 2: { vals: dz2, st: 'grad', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } }, edges: { 1: { mode: 'bwd' } } } },
 
     { phase: 'b', chip: '反向 7/7', title: 'dz¹ = dh¹⊙1[z¹>0]，dW¹ = dz¹·xᵀ',
-      desc: '第一层的同一扇门：z¹₂ ≤ 0，dh¹₂ 归零。然后 dW¹[i][j] = dz¹[i]·x[j]，一直回到输入。',
+      desc: 'z¹₂ ≤ 0，dh¹₂ 归零；dW¹[i][j] = dz¹[i]·x[j]。',
       formula: 'dz¹ = dh¹ ⊙ 1[z¹>0]，dW¹ = dz¹·xᵀ，db¹ = dz¹', shape: '(4×1)⊙(4×1)，(4×1)·(1×2) → (4×2)',
       legend: '边上的红字 = dW¹　·　灰节点 = 梯度截断',
       panel:
@@ -250,7 +250,7 @@
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: dz1, st: 'grad', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: dz2, st: 'grad', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } }, edges: { 0: { mode: 'bwd', mat: dW1, labels: true } } } },
 
     { phase: 'u', chip: '更新 1/1', title: 'W ← W − η·dW（η = 0.3）',
-      desc: '42 个参数全部按同一规则更新。更新完立刻重跑前向：两个 logit 拉开了，P₀ 翻过 0.5。两个灰色单元更新后依旧被截断——死掉的神经元一步更新救不回来。',
+      desc: '42 个参数更新后重跑前向：P₀ 翻过 0.5；两个截断单元仍为 0。',
       formula: 'W ← W − η·dW，b ← b − η·db', shape: '每个参数一步',
       legend: '节点数值 = 更新后重新前向的值（绿 = 已刷新）',
       panel:
@@ -347,7 +347,7 @@
 
     container.insertAdjacentHTML('beforeend',
       '<p class="wg-title">反向传播：一步一次走清楚</p>' +
-      '<p class="wg-sub">固定一个 2−4−4−2 网络、固定一个样本 x = (0.8, 0.3)（落在单位圆内）、固定一组权重。下面 15 步把一次「前向 → 损失 → 反向 → 更新」完整拆开，每个数字都能照着面板手算。本演示把圆内记作类别 0（task_01 代码里圆内是类别 1——枚举顺序不影响算法本身）。</p>' +
+      '<p class="wg-sub">固定 2−4−4−2 网络与样本，15 步拆开前向→损失→反向→更新。</p>' +
       '<div class="bp-rail" data-role="rail"></div>' +
       '<div class="bp-main">' +
         '<div class="bp-graph">' +
@@ -369,7 +369,7 @@
         '<button type="button" class="wg-button" data-role="reset">回到第 1 步</button>' +
       '</div>' +
       '<div class="bp-formula" data-role="formula"></div>' +
-      '<p class="wg-note">面板显示保留 2−3 位小数（内部为全精度）。损失从 0.839 降到 0.186 只说明这一步方向对了：它只拟合了这一个样本，离「学会区分圆内外」还差很多轮。</p>');
+      '<p class="wg-note">面板显示保留 2−3 位小数。</p>');
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var svg = q('svg');

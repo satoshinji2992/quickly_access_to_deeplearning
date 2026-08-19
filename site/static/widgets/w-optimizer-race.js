@@ -76,7 +76,7 @@
       '@media (max-width:600px){.or-layout{flex-direction:column}.or-legend{flex:auto}.or-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}}' +
       '</style>' +
       '<p class="wg-title">优化器赛跑：同一起点，五种走法</p>' +
-      '<p class="wg-sub">f(x,y) = 0.6x² + 3.5y² + 0.9·sin(2.2x)·cos(1.8y)，y 方向陡、x 方向缓的峡谷加轻微非凸。SGD、Momentum、Adagrad、RMSProp、Adam 从 (-2.6, 2.2) 同时出发，谁先走进极小值？</p>' +
+      '<p class="wg-sub">f(x,y) = 0.6x² + 3.5y² + 0.9·sin(2.2x)·cos(1.8y)，五个优化器同起点、同 lr 赛跑。</p>' +
       '<div class="or-layout">' +
         '<div class="or-legend">' +
           '<div class="or-statbox"><span class="lb">全局步数 t</span><b data-role="t">0</b><span class="sub" data-role="sub">到达 0 · 发散 0</span></div>' +
@@ -97,7 +97,7 @@
         '<button type="button" class="wg-button" data-role="reset">重置</button>' +
         '<span class="or-hint">拖动 lr / β 立即生效</span>' +
       '</div>' +
-      '<p class="wg-note">同一把 lr 尺子量两个方向：峡谷窄方向（y）梯度大，SGD 的步长 lr·g 也跟着大，只能来回撞谷壁；Adagrad / RMSProp / Adam 按每个方向自己的历史梯度缩放步长，窄方向自动收手——同样的 lr，自适应方法在窄方向的步长更合理。把 lr 拉到 0.3 以上，可以看到 SGD 直接发散。</p>';
+      '<p class="wg-note">lr 拉到 0.3 以上可见 SGD 发散。</p>';
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var cv = q('cv');

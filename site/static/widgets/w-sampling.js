@@ -105,11 +105,11 @@
     container.innerHTML =
       '<style>' + CSS + '</style>' +
       '<p class="wg-title">采样：logits 怎么变成「下一个 token」的抽签筒</p>' +
-      '<p class="wg-sub">词表 12 个候选。模型最后一层输出的 logits 固定不变（下方暗色柱）；三个旋钮只改它变成概率之后的形状 —— 先 softmax(τ)，再依次过 top-k、top-p，最后重归一成抽样分布。</p>' +
+      '<p class="wg-sub">词表 12 个候选，logits 固定；拖动滑杆改变抽样分布</p>' +
       '<div class="smp-means">' +
-        '<div class="smp-mean"><b>τ 温度 · 调锋利</b><i>logits 先除以 τ 再 softmax：τ 小分布更尖、τ 大被压平。不淘汰任何 token。</i></div>' +
-        '<div class="smp-mean"><b>top-k · 定额淘汰</b><i>按概率排序只留前 k 个，其余直接出局；k=1 相当于贪心解码，永远挑最大。</i></div>' +
-        '<div class="smp-mean"><b>top-p · 按量淘汰</b><i>从大到小累计概率，留下恰好凑满 p 的最小集合（核采样）；p=1.0 不淘汰。</i></div>' +
+        '<div class="smp-mean"><b>τ 温度 · 调锋利</b><i>τ 小更尖、τ 大更平，不淘汰任何 token</i></div>' +
+        '<div class="smp-mean"><b>top-k · 定额淘汰</b><i>只留概率前 k 个；k=1 即贪心解码</i></div>' +
+        '<div class="smp-mean"><b>top-p · 按量淘汰</b><i>概率降序累计到 p 为止；p=1 不淘汰</i></div>' +
       '</div>' +
       '<div class="wg-label"><span>采样概率（截断后重归一）</span><span class="smp-legend"><i class="smp-chipb"></i>保留<i class="smp-chipg"></i>已淘汰</span></div>' +
       '<div class="smp-chart" data-role="chart"></div>' +
@@ -136,8 +136,8 @@
         '<button type="button" class="wg-button" data-role="reset">重置参数</button>' +
       '</div>' +
       '<div class="wg-label"><span>抽样记录</span><span data-role="hcount">已采 0 次 · 新在最左</span></div>' +
-      '<div class="smp-hist" data-role="hist"><span class="smp-empty">点「采一次」按当前分布抽签 —— 多采几次，出现频率会贴上蓝柱的高度。</span></div>' +
-      '<p class="wg-note">顺序固定：softmax(τ) → top-k → top-p（在 top-k 幸存者重归一后累计）→ 再重归一 → 抽样。softmax 用减最大值的稳定写法 p<sub>i</sub> = exp(z<sub>i</sub> − max z) / Σ<sub>j</sub> exp(z<sub>j</sub> − max z)：指数参数恒 ≤ 0 不会溢出，τ=0.1 时谷与峰相差 8.4 个 logit，最尾一项指数到 −84，e<sup>−84</sup> ≈ 0，被安全地压成 0。</p>';
+      '<div class="smp-hist" data-role="hist"><span class="smp-empty">点「采一次」按当前分布抽样</span></div>' +
+      '<p class="wg-note">softmax(τ)→top-k→top-p→重归一→抽样</p>';
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var state = { tau: DEF.tau, k: DEF.k, p: DEF.p };
@@ -183,7 +183,7 @@
         for (var j = 0; j < r.keptOrder.length; j += 1) {
           if (r.keptOrder[j] !== undefined) { names.push(TOK[r.keptOrder[j]]); }
         }
-        parts.push('top-k=' + state.k + ' 留「' + names.join(' ') + '」，其余 ' + (N - state.k) + ' 个直接出局；');
+        parts.push('top-k=' + state.k + ' 留「' + names.join(' ') + '」，出局 ' + (N - state.k) + '；');
       } else {
         parts.push('top-k=12 不淘汰；');
       }
@@ -201,8 +201,8 @@
         for (m = 0; m < N; m += 1) {
           if (!r.alive[m]) { if (r.reason[m] === 'k') { nk += 1; } else { np += 1; } }
         }
-        parts.push('top-p=' + state.p.toFixed(2) + '：幸存者重归一后降序累计 ' + steps.join(' → ') +
-          ' ≥ ' + state.p.toFixed(2) + ' 停 —— 保留 ' + r.keptOrder.length + ' 个重归一抽样；出局的 ' + (nk + np) + ' 个 = k 淘汰 ' + nk + ' + p 淘汰 ' + np + '。');
+        parts.push('top-p=' + state.p.toFixed(2) + '：累计 ' + steps.join(' → ') +
+          ' ≥ ' + state.p.toFixed(2) + ' 停；留 ' + r.keptOrder.length + ' 个，出局 ' + (nk + np) + '（k ' + nk + ' + p ' + np + '）。');
       } else {
         parts.push('top-p=1.00 不淘汰。');
       }
@@ -249,7 +249,7 @@
       var hist = q('hist');
       hist.innerHTML = '';
       if (!history.length) {
-        hist.appendChild(el('span', 'smp-empty', '点「采一次」按当前分布抽签 —— 多采几次，出现频率会贴上蓝柱的高度。'));
+        hist.appendChild(el('span', 'smp-empty', '点「采一次」按当前分布抽样'));
       } else {
         for (var j2 = 0; j2 < history.length; j2 += 1) {
           hist.appendChild(el('span', 'smp-chip' + (j2 === 0 ? ' is-new' : ''), TOK[history[j2]]));
