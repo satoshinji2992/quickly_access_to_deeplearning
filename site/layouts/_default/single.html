@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .Title }}｜快速入门深度学习</title>
+  <meta name="description" content="{{ .Title }}：快速入门深度学习教程">
+  <meta property="og:title" content="{{ .Title }}｜快速入门深度学习">
+  <meta property="og:description" content="{{ .Title }}：快速入门深度学习教程">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="{{ .Permalink }}">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "docs.css" | relURL }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous">
+</head>
+<body class="docs-body">
+  <header class="docs-topbar">
+    <a class="brand" href="{{ site.Home.RelPermalink }}"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></a>
+    <nav><a href="{{ site.Home.RelPermalink }}">首页</a><a class="current" href="{{ "docs/overview/" | relURL }}">文档</a><a href="{{ site.Params.repository }}">GitHub ↗</a></nav>
+    <button class="docs-menu" type="button" aria-controls="docs-sidebar" aria-expanded="false">目录</button>
+  </header>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="docs-sidebar" aria-label="文档目录">
+      {{ range hugo.Data.docs.groups }}
+      <section>
+        <h2>{{ .title }}</h2>
+        {{ range .items }}
+        {{ $url := printf "docs/%s/" .slug | relURL }}
+        <a href="{{ $url }}"{{ if eq $.RelPermalink $url }} class="active" aria-current="page"{{ end }}>{{ .title }}</a>
+        {{ end }}
+      </section>
+      {{ end }}
+    </aside>
+
+    <article class="docs-article">
+      <div class="docs-breadcrumb"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>文档</span><span>/</span><span>{{ .Title }}</span></div>
+      <header class="docs-heading">
+        <div class="eyebrow">{{ .Params.group }}</div>
+        <h1>{{ .Title }}</h1>
+        <a class="source-link" href="{{ .Params.source_url }}">在 GitHub 查看源文件 ↗</a>
+      </header>
+      <div class="markdown-body">{{ .Content }}</div>
+      <nav class="docs-pagination" aria-label="前后章节">
+        {{ with .Params.prev_url }}<a class="prev" href="{{ . | relURL }}"><span>上一节</span><strong>{{ $.Params.prev_title }}</strong></a>{{ else }}<span></span>{{ end }}
+        {{ with .Params.next_url }}<a class="next" href="{{ . | relURL }}"><span>下一节</span><strong>{{ $.Params.next_title }}</strong></a>{{ end }}
+      </nav>
+    </article>
+
+    <aside class="docs-toc" aria-label="本页目录">
+      <span>本页内容</span>
+      {{ .TableOfContents }}
+    </aside>
+  </div>
+
+  <script defer src="{{ "docs.js" | relURL }}"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],ignoredTags:['script','noscript','style','textarea','pre','code']})"></script>
+</body>
+</html>

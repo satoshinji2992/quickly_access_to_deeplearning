@@ -1,0 +1,15 @@
+baseURL = "https://satoshinji2992.github.io/quickly_access_to_deeplearning/"
+languageCode = "zh-CN"
+title = "快速入门深度学习"
+disableKinds = ["taxonomy", "term", "rss"]
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    noClasses = false
+    lineNos = false
+
+[params]
+repository = "https://github.com/satoshinji2992/quickly_access_to_deeplearning"
