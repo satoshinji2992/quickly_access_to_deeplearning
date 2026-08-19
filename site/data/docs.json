@@ -9,7 +9,7 @@
     {
       "title": "Block 1 · 基础",
       "items": [
-        {"title": "基础知识", "slug": "chapter-basics", "source": "chapters/01-基础知识.md"},
+        {"title": "基础知识", "page_title": "y = ax + b：从一条直线开始", "slug": "chapter-basics", "source": "chapters/01-基础知识.md"},
         {"title": "线性回归", "slug": "linear-regression", "source": "exercises/block_01_basics/task_00_linear_regression/README.md"},
         {"title": "圆形分类", "slug": "circle-classifier", "source": "exercises/block_01_basics/task_01_circle_classifier/README.md"},
         {"title": "小型深度学习库", "slug": "mini-dl-lib", "source": "exercises/block_01_basics/task_02_mini_dl_lib/README.md"},
@@ -19,7 +19,7 @@
     {
       "title": "Block 2 · ResNet",
       "items": [
-        {"title": "ResNet 图像分类", "slug": "chapter-resnet", "source": "chapters/02-ResNet图像分类.md"},
+        {"title": "ResNet 图像分类", "page_title": "这是哪一种物体？从 MLP 走到 ResNet", "slug": "chapter-resnet", "source": "chapters/02-ResNet图像分类.md"},
         {"title": "图像数据管线", "slug": "image-data-pipeline", "source": "exercises/block_02_resnet/task_10_image_data_pipeline/README.md"},
         {"title": "Conv2D 与 im2col", "slug": "conv2d-im2col", "source": "exercises/block_02_resnet/task_11_conv2d_im2col/README.md"},
         {"title": "池化与 BatchNorm", "slug": "pooling-batchnorm", "source": "exercises/block_02_resnet/task_12_pooling_and_bn/README.md"},
@@ -31,7 +31,7 @@
     {
       "title": "Block 3 · Transformer",
       "items": [
-        {"title": "Transformer 与 MiniMind", "slug": "chapter-transformer", "source": "chapters/03-Transformer与MiniMind.md"},
+        {"title": "Transformer 与 MiniMind", "page_title": "apple is __：从上下文预测下一个 token", "slug": "chapter-transformer", "source": "chapters/03-Transformer与MiniMind.md"},
         {"title": "Transformer 理论", "slug": "transformer-theory", "source": "exercises/block_03_transformer/task_20_transformer_theory/README.md"},
         {"title": "正弦位置编码", "slug": "sinusoidal-position", "source": "exercises/block_03_transformer/task_21_sinusoidal_position/README.md"},
         {"title": "RoPE", "slug": "rope", "source": "exercises/block_03_transformer/task_22_rope_position/README.md"},

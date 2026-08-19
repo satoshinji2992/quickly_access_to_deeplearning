@@ -117,3 +117,5 @@ python -m unittest tests.test_docs -v
 ```
 
 预期每条命令末尾都显示 `OK`。Block 2/3 的测试覆盖 shape、梯度、数据隔离、causal 性质和 checkpoint 等基础约束；它们不衡量完整 CIFAR-100 训练精度，也不代表模型具备通用语言能力。
+
+教程内容的分层、改稿顺序和发布检查见 [教程改稿 workflow](CONTRIBUTING.md)。

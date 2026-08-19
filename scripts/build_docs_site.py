@@ -93,7 +93,7 @@ def prepare() -> None:
         following = entries[index + 1] if index + 1 < len(entries) else None
         metadata = [
             "---",
-            f"title: {yaml_string(entry['title'])}",
+            f"title: {yaml_string(entry.get('page_title', entry['title']))}",
             f"group: {yaml_string(entry['group'])}",
             f"slug: {yaml_string(entry['slug'])}",
             f"weight: {index + 1}",
