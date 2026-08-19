@@ -7,10 +7,13 @@ pipeline remains inspectable in one file.
 
 import argparse
 from dataclasses import asdict
+import json
+import io
 from pathlib import Path
 import sys
 
 import torch
+import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -167,31 +170,38 @@ def evaluate(model, data_loader, device="cpu"):
     return loss_total / max(token_count, 1)
 
 
+def _state_dict_to_numpy(state_dict):
+    return {k: v.cpu().numpy() for k, v in state_dict.items()}
+
+
+def _numpy_to_state_dict(arrays, device="cpu"):
+    return {k: torch.from_numpy(v).to(device) for k, v in arrays.items()}
+
+
 def save_checkpoint(path, model, optimizer, tokenizer, step, val_loss):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "config": asdict(model.config),
-            "model_state": model.state_dict(),
-            "optimizer_state": optimizer.state_dict() if optimizer is not None else None,
-            "tokenizer": tokenizer.state_dict(),
-            "step": int(step),
-            "val_loss": float(val_loss),
-        },
-        path,
-    )
+    # Save tensors as numpy arrays (no pickle)
+    np.savez(str(path) + ".npz", **_state_dict_to_numpy(model.state_dict()))
+    # Save metadata as JSON (no pickle)
+    meta = {
+        "config": asdict(model.config),
+        "tokenizer": tokenizer.state_dict(),
+        "step": int(step),
+        "val_loss": float(val_loss),
+    }
+    Path(str(path) + ".meta.json").write_text(json.dumps(meta), encoding="utf-8")
 
 
 def load_checkpoint(path, device="cpu"):
-    try:
-        checkpoint = torch.load(path, map_location=device, weights_only=False)
-    except TypeError:  # PyTorch before the weights_only argument existed.
-        checkpoint = torch.load(path, map_location=device)
-    tokenizer = CharacterTokenizer.from_state_dict(checkpoint["tokenizer"])
-    model = MiniMindCore(MiniMindConfig(**checkpoint["config"])).to(device)
-    model.load_state_dict(checkpoint["model_state"])
-    return model, tokenizer, checkpoint
+    path = Path(path)
+    arrays = np.load(str(path) + ".npz")
+    model_state = _numpy_to_state_dict(dict(arrays), device=device)
+    meta = json.loads(Path(str(path) + ".meta.json").read_text(encoding="utf-8"))
+    tokenizer = CharacterTokenizer.from_state_dict(meta["tokenizer"])
+    model = MiniMindCore(MiniMindConfig(**meta["config"])).to(device)
+    model.load_state_dict(model_state)
+    return model, tokenizer, meta
 
 
 def train_model(
