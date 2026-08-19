@@ -115,6 +115,7 @@ class BatchNorm1D:
 
 class LayerNorm:
     def __init__(self, features, eps=1e-5):
+        self.features = features
         self.gamma = np.ones((1, features))
         self.beta = np.zeros((1, features))
         self.dgamma = np.zeros_like(self.gamma)
@@ -122,17 +123,34 @@ class LayerNorm:
         self.eps = eps
 
     def forward(self, x):
+        x = np.asarray(x)
+        if x.ndim == 0:
+            raise ValueError("LayerNorm expects at least one dimension")
+        if x.shape[-1] != self.features:
+            raise ValueError(
+                f"expected last dimension {self.features}, got {x.shape[-1]}"
+            )
         self.mean = np.mean(x, axis=-1, keepdims=True)
         self.var = np.var(x, axis=-1, keepdims=True)
         self.std_inv = 1.0 / np.sqrt(self.var + self.eps)
         self.x_hat = (x - self.mean) * self.std_inv
-        return self.gamma * self.x_hat + self.beta
+        affine_shape = (1,) * (x.ndim - 1) + (self.features,)
+        self.gamma_view = self.gamma.reshape(affine_shape)
+        self.beta_view = self.beta.reshape(affine_shape)
+        return self.gamma_view * self.x_hat + self.beta_view
 
     def backward(self, dout):
+        if dout.shape != self.x_hat.shape:
+            raise ValueError(
+                f"dout shape {dout.shape} does not match forward output {self.x_hat.shape}"
+            )
         feature_count = dout.shape[-1]
-        self.dbeta[...] = np.sum(dout, axis=0, keepdims=True)
-        self.dgamma[...] = np.sum(dout * self.x_hat, axis=0, keepdims=True)
-        dxhat = dout * self.gamma
+        # gamma/beta are shared by every leading position. For (B, T, F),
+        # parameter gradients therefore reduce both B and T, leaving only F.
+        leading_axes = tuple(range(dout.ndim - 1))
+        self.dbeta[...] = np.sum(dout, axis=leading_axes)
+        self.dgamma[...] = np.sum(dout * self.x_hat, axis=leading_axes)
+        dxhat = dout * self.gamma_view
         sum_dxhat = np.sum(dxhat, axis=-1, keepdims=True)
         sum_dxhat_xhat = np.sum(dxhat * self.x_hat, axis=-1, keepdims=True)
         return (

@@ -1,238 +1,247 @@
-# task_12: 池化与 BatchNorm
+# task_12：池化与 BatchNorm
 
-现在你已经有了卷积.
+本节包含三个 NCHW 层：`MaxPool2D` 缩小局部特征图，`GlobalAvgPool2D` 把空间维汇聚成通道向量，`BatchNorm2D` 管理训练和评估时使用的不同统计量。代码入口是 [`layers.py`](./layers.py)。
 
-卷积负责从局部窗口里提特征. 但一个 CNN 只靠卷积还不够.
-
-图片一开始是 $32\times 32$, 如果每一层都保持这个尺寸, 计算量会越来越大. 而且分类任务最后只需要判断“这张图是什么”, 不需要保留每个像素位置的输出.
-
-所以我们需要几个新层:
-
-- MaxPool: 让空间尺寸变小.
-- GlobalAvgPool: 把整张特征图汇聚成一个向量.
-- BatchNorm: 让训练更稳.
-
-![BatchNorm](assets/batchnorm.png)
-
-这些层看起来不像卷积那么“主角”, 但 ResNet 训练不起来时, 问题经常就藏在这里.
+最终的 `SmallResNet` 使用 GlobalAvgPool 和 BatchNorm；它不使用 MaxPool，而是在残差 stage 开头用 stride-2 卷积降采样。MaxPool 作为一个独立算子保留在同一模块中。
 
 ---
 
-## 一. MaxPool: 只留下局部最强响应
+## MaxPool2D：forward 中的 argmax 缓存
 
-MaxPool 的想法很粗暴.
+对每个样本、每个通道，MaxPool 在局部窗口内取最大值。若输入为 `(N,C,H,W)`，无 padding 时：
 
-![MaxPool](assets/maxpool.png)
+$$
+H_{out}=\left\lfloor\frac{H-K_h}{S_h}\right\rfloor+1,
+\qquad
+W_{out}=\left\lfloor\frac{W-K_w}{S_w}\right\rfloor+1.
+$$
 
-在一个小窗口里, 只保留最大值.
+输出 shape 是 `(N,C,H_out,W_out)`，通道数不变。
 
-比如 $2\times 2$ 的窗口:
+![2×2 MaxPool 的前向与反向](assets/maxpool.png)
+
+图中使用 `kernel_size=2, stride=2`。四个窗口各产生一个最大值，所以输出和上游梯度都是 `2×2`；backward 把四份上游梯度分别送回四个获胜位置。
+
+### 并列最大值
+
+最大值不一定唯一。本实现使用 NumPy `argmax` 的规则：
+
+1. 将窗口按行优先顺序展平；
+2. 选择第一个最大值；
+3. 一份上游梯度只送到这个位置。
+
+例如：
 
 $$
 \begin{bmatrix}
-1 & 3 \\
-2 & 0
+6&6\\
+4&6
 \end{bmatrix}
 $$
 
-MaxPool 以后就是:
+三个 `6` 并列，左上角的 `6` 获得梯度。配图左下角单独标出了这条约定。
 
-$$3$$
+### backward 的缓存
 
-为什么可以这么做?
-
-因为很多时候, 我们关心的是“某个特征有没有出现”, 而不是它在这个小窗口里的精确位置.
-
-比如一个边缘检测器在左上角强一点还是右下角强一点, 对后面的分类不一定重要. MaxPool 会让模型对小范围平移更不敏感.
-
-如果输入是:
+`forward()` 保存：
 
 ```text
-(N, C, H, W)
+x_shape
+argmax: (N, C, H_out, W_out)
+output_shape
 ```
 
-使用 `kernel_size=2, stride=2`, 输出通常会变成:
+`backward(dout)` 创建全零 `dX`，再用 `np.add.at` 写入获胜位置。使用 add 而不是赋值，还能正确处理重叠池化窗口：同一个输入位置从多个窗口收到的梯度会累加。
 
-```text
-(N, C, H/2, W/2)
-```
+---
 
-通道数不变, 空间尺寸减半.
+## GlobalAvgPool2D：每个通道留下一个数
 
-### MaxPool 的反向传播
-
-MaxPool forward 只保留最大值, backward 也只把梯度传给最大值所在的位置.
-
-刚才的例子里最大值是 3, 如果上游梯度是 10, 那么梯度会变成:
+Global Average Pooling 对全部空间位置求均值：
 
 $$
-\begin{bmatrix}
-0 & 10 \\
-0 & 0
-\end{bmatrix}
+y_{n,c}=\frac{1}{HW}\sum_{h=1}^{H}\sum_{w=1}^{W}x_{n,c,h,w}.
 $$
 
-所以 forward 时必须记住每个窗口里最大值的位置. 否则 backward 不知道梯度该传给谁.
+shape 变化为：
 
-这就是 `MaxPool2D` 里最容易漏掉的缓存.
+```text
+(N, C, H, W) -> (N, C)
+```
+
+![三个通道分别求空间均值](assets/globalavgpool.png)
+
+backward 将 `dout[n,c]` 均分到该通道的 $H\times W$ 个位置：
+
+$$
+\frac{\partial L}{\partial x_{n,c,h,w}}
+=\frac{1}{HW}\frac{\partial L}{\partial y_{n,c}}.
+$$
+
+因此 `GlobalAvgPool2D` 只需缓存输入 shape，没有参数和 buffer。
 
 ---
 
-## 二. GlobalAvgPool: 分类前的收口
+## BatchNorm2D 的统计轴
 
-早期 CNN 常常在最后接一大段全连接层.
+输入 shape 为 `(N,C,H,W)`。每个通道独立统计，归约轴是 `(N,H,W)`：
 
-但这样参数很多, 也容易过拟合.
+$$
+\mu_c=\frac{1}{NHW}\sum_{n,h,w}x_{n,c,h,w},
+$$
 
-Global Average Pooling 更简单: 对每个通道的整张特征图求平均.
+$$
+\sigma_c^2=\frac{1}{NHW}\sum_{n,h,w}(x_{n,c,h,w}-\mu_c)^2.
+$$
 
-![Global Average Pooling](assets/globalavgpool.png)
+然后标准化，并恢复可学习的尺度与偏移：
 
-如果输入是:
+$$
+\hat{x}=\frac{x-\mu}{\sqrt{\sigma^2+\varepsilon}},
+\qquad
+y=\gamma\hat{x}+\beta.
+$$
+
+![BatchNorm2D 在 train/eval 模式下使用的统计量、运行缓冲区与反向归约](assets/batchnorm.png)
+
+参数 shape 为：
 
 ```text
-(N, C, H, W)
+gamma, beta: (1, C, 1, 1)
 ```
 
-输出就是:
+训练分支用当前 mini-batch 的统计量做标准化，同时用 EMA 更新 `running_mean` 和 `running_var`；评估分支只读这两个 buffer，不再用当前 batch 重新估计。标准化后还会乘 `gamma`、加 `beta`，因此最终的 `y` 不必保持零均值、单位方差。
 
-```text
-(N, C)
-```
-
-也就是说, 每个通道最后只留下一个数字.
-
-你可以把它理解成: 这个通道负责检测某种特征, GlobalAvgPool 问的是“这种特征在整张图里平均有多强”.
-
-当前 `GlobalAvgPool2D` 已经给出了 forward 和 backward:
-
-```python
-return np.mean(x, axis=(2, 3))
-```
-
-反向传播时, 一个通道上的梯度会平均分回所有空间位置:
-
-$$dx = \frac{dout}{H\times W}$$
+原始 BatchNorm 论文用“降低 internal covariate shift”解释设计动机。这里把重点放在可直接对照代码的四个部分：统计轴、仿射参数、running buffers 和模式切换。
 
 ---
 
-## 三. BatchNorm: 让每层看到的分布别乱飘
+## train 与 eval 使用不同统计量
 
-Block 1 里已经讲过归一化.
+### 训练模式
 
-到了 CNN 里, BatchNorm 很常见, ResNet 里几乎每个卷积后面都会接 BN.
+`train()` 后，forward 使用当前 batch 的 `mean/variance`，并原位更新：
 
-它解决的问题是: 每一层的输入分布在训练过程中会变.
+$$
+\text{running\_mean}
+\leftarrow m\,\text{running\_mean}+(1-m)\mu_B,
+$$
 
-参数一更新, 前一层输出变了, 后一层看到的数据分布也变了. 如果分布飘得太厉害, 训练就会抖, 学习率也不敢设大.
+$$
+\text{running\_var}
+\leftarrow m\,\text{running\_var}+(1-m)\sigma_B^2.
+$$
 
-BatchNorm 的做法是, 对一个 batch 内每个通道分别计算均值和方差:
+代码默认 `momentum=0.9`。这里的 $m$ 是旧统计量的权重；不同框架对参数名 `momentum` 的定义可能相反，移植配置时以更新公式为准。
 
-$$\mu_B = \mathrm{mean}(x)$$
+### 评估模式
 
-$$\sigma_B^2 = \mathrm{var}(x)$$
-
-然后标准化:
-
-$$\hat{x} = \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \varepsilon}}$$
-
-再加上可学习的缩放和平移:
-
-$$y = \gamma\hat{x} + \beta$$
-
-对 2D 图像来说, 每个通道的均值和方差会在 `N,H,W` 三个维度上统计. 所以 `BatchNorm2D` 里的参数形状是:
+`eval()` 后，forward 使用 `running_mean/running_var`：
 
 ```text
-gamma.shape = (1, C, 1, 1)
-beta.shape  = (1, C, 1, 1)
+当前 batch 的内容不会改变统计量
+running buffers 不再更新
 ```
 
-这样它们可以广播到整张特征图.
+如果验证前没有调用 `model.eval()`，验证 batch 会参与统计并改变模型状态。下一轮 `train_epoch()` 会再次切换到 train 模式。
+
+### 参数与 buffer
+
+```text
+parameters:
+  gamma, dgamma
+  beta, dbeta
+
+buffers:
+  running_mean
+  running_var
+```
+
+buffer 不参与梯度下降，但会影响 eval 输出。只保存 `parameters()` 的 checkpoint 无法忠实恢复 BatchNorm 模型。
 
 ---
 
-## 四. 训练和推理为什么不一样?
+## BatchNorm backward
 
-BatchNorm 最烦人的地方在这里.
+先求两个参数梯度：
 
-训练时, 它使用当前 batch 的均值和方差.
+$$
+d\beta=\sum_{n,h,w}dY,
+\qquad
+d\gamma=\sum_{n,h,w}dY\odot\hat{X}.
+$$
 
-但推理时, 你可能一次只输入一张图片. 如果还用当前 batch 统计量, 那统计会很不稳定.
+令 $M=NHW$、$d\hat{X}=dY\odot\gamma$，训练模式下输入梯度可写成：
 
-所以训练时 BN 会顺手维护两个滑动平均:
+$$
+dX=\frac{1}{\sqrt{\sigma_B^2+\varepsilon}}
+\left(
+d\hat{X}
+-\frac{1}{M}\sum d\hat{X}
+-\frac{\hat{X}}{M}\sum(d\hat{X}\odot\hat{X})
+\right).
+$$
+
+求和都沿 `(N,H,W)`，并保留通道轴。评估模式把 running statistics 当常数，因此：
+
+$$
+dX=dY\odot\gamma\,/\sqrt{\text{running\_var}+\varepsilon}.
+$$
+
+`dgamma`、`dbeta` 和两个 running buffer 都使用 `array[...] = ...` 原位写入，保持 optimizer 和 checkpoint 代码持有的引用有效。
+
+---
+
+## 接口清单
+
+三个类都提供统一的层接口：
 
 ```text
-running_mean
-running_var
-```
-
-推理时就用这两个值.
-
-这也是为什么 `BatchNorm2D` 里有:
-
-```python
+forward(x)
+backward(dout)
+parameters()
+named_parameters(prefix)
+named_buffers(prefix)
 train()
 eval()
 ```
 
-如果训练时忘了 `train()`, 或验证时忘了 `eval()`, 模型结果会很奇怪.
+各层状态如下：
 
-这类 bug 很常见, 而且不一定报错.
+| 层 | 参数 | buffer / forward 缓存 |
+| --- | --- | --- |
+| `MaxPool2D` | 无 | 输入 shape、argmax、输出 shape |
+| `GlobalAvgPool2D` | 无 | 输入 shape |
+| `BatchNorm2D` | gamma、beta | running mean/var、`x_hat`、`std_inv` |
 
----
-
-## 五. BatchNorm backward 怎么想?
-
-BatchNorm 的 forward 是几步连起来的:
-
-```text
-mean -> var -> normalize -> scale and shift
-```
-
-反向传播就是把这几步倒着拆开.
-
-最容易先写对的是:
-
-$$d\gamma = \sum dout \cdot \hat{x}$$
-
-$$d\beta = \sum dout$$
-
-难一点的是 $dx$.
-
-你可以先不要死背公式, 而是把计算图写出来:
-
-```text
-x -> mean
-x -> x - mean
-x - mean -> var
-var -> std_inv
-x_hat = (x - mean) * std_inv
-y = gamma * x_hat + beta
-```
-
-然后按链式法则往回推.
-
-如果实在卡住, 先用数值梯度检查. BN 的 backward 手推有点烦, 但只要 forward 的缓存清楚, 它不是玄学.
+`backward()` 使用与前一次 `forward()` 对应的缓存。BatchNorm 还会记录该次 forward 的 train/eval 模式，避免模式切换后套用错误的导数。
 
 ---
 
-## 六. 你要完成什么?
+## 运行与核对
 
-请完成 `layers.py` 里的:
-
-```text
-MaxPool2D.forward
-MaxPool2D.backward
-BatchNorm2D.backward
+```bash
+python exercises/block_02_resnet/task_12_pooling_and_bn/layers.py
+python -m unittest discover -s tests -p 'test_block2.py' -v
 ```
 
-`GlobalAvgPool2D` 已经给了一个可用版本, 你可以读一下它的 forward 和 backward, 这对理解“空间维汇聚”很有帮助.
+模块命令成功时不打印内容。测试正常结束时显示 `OK`。
 
-建议测试顺序:
+测试覆盖以下性质：
 
-1. 先用一个很小的数组测试 MaxPool forward.
-2. 再测试 MaxPool backward, 看梯度是不是只回到最大值位置.
-3. 测试 BatchNorm forward, 看每个通道标准化后均值是否接近 0、方差是否接近 1.
-4. 最后做 BatchNorm backward 的数值梯度检查.
+- MaxPool 输出 shape 正确，四个上游梯度都回到对应 argmax；
+- 并列最大值选择行优先的第一个位置；
+- 重叠窗口的输入梯度能累加；
+- GlobalAvgPool forward/backward 的 shape 分别为 `(N,C)` 和 `(N,C,H,W)`；
+- BatchNorm 的 `dX/dgamma/dbeta` shape 正确且数值有限；
+- BatchNorm 输入梯度通过有限差分；
+- train 更新 running buffers，eval 不更新；
+- `named_buffers()` 能列出全部运行统计量。
 
-下一关我们把卷积、BN、ReLU 组合起来, 做 ResNet 里最重要的残差块.
+[task_13：残差块](../task_13_residual_block/README.md) 把这里的 BatchNorm 与卷积组合到两条分支中。
+
+## 参考资料
+
+- [Dive into Deep Learning: Pooling](https://d2l.ai/chapter_convolutional-neural-networks/pooling.html)
+- [Dive into Deep Learning: Batch Normalization](https://d2l.ai/chapter_convolutional-modern/batch-norm.html)
+- [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](https://arxiv.org/abs/1502.03167)

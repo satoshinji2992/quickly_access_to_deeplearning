@@ -1,23 +1,16 @@
 # PPO
 
-PPO 是 RLHF 里常见的强化学习优化方法.
+PPO（Proximal Policy Optimization）用新旧策略的概率比率更新 policy，并通过 clipped objective 限制单次更新的幅度：
 
-它的目标不是让模型从零学语言, 而是在已有模型基础上, 根据 reward model 的分数继续调整输出行为.
+$$
+L^{\mathrm{clip}}=\mathbb E\!\left[\min\left(r_tA_t,
+\operatorname{clip}(r_t,1-\epsilon,1+\epsilon)A_t\right)\right].
+$$
 
-## 为什么要限制更新幅度?
-
-如果每次更新太猛, 模型很容易偏离原来的语言分布.
-
-结果可能是 reward 变高, 但回答变得奇怪.
-
-PPO 会用 clipped objective 限制策略变化, 让模型别一步走太远.
-
-## 在 LLM 里的位置
-
-常见流程:
+在 RLHF 中，`A_t` 通常结合 reward model 分数、value 估计和相对参考模型的 KL 惩罚。Clipping 不是稳定训练的充分条件；reward 尺度、advantage 归一化、生成长度与采样参数仍需要记录和检查。
 
 ```text
-pretrain -> SFT -> reward model -> PPO
+pretrain -> SFT -> preference/reward data -> rollout -> PPO update
 ```
 
-PPO 不是唯一选择, 但它是理解 RLHF 的经典入口.
+本页尚未包含 rollout worker、reward model、value head 或 PPO 训练器，因此不构成可运行 RLHF 教程。算法定义见 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)。
