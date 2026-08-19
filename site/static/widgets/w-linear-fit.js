@@ -67,13 +67,17 @@
     var best = optimum();
 
     function dpr(canvas) {
-      var cssWidth = canvas.clientWidth || 400;
+      var logicalHeight = parseFloat(canvas.getAttribute('height'));
+      var cssWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+      cssWidth = Math.max(200, Math.min(cssWidth || 400, 640));
       var ratio = window.devicePixelRatio || 1;
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = logicalHeight + 'px';
       canvas.width = Math.round(cssWidth * ratio);
-      canvas.height = Math.round(parseFloat(canvas.getAttribute('height')) * ratio);
+      canvas.height = Math.round(logicalHeight * ratio);
       var ctx = canvas.getContext('2d');
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      return { ctx: ctx, w: cssWidth, h: parseFloat(canvas.getAttribute('height')) };
+      return { ctx: ctx, w: cssWidth, h: logicalHeight };
     }
 
     function drawScatter() {
