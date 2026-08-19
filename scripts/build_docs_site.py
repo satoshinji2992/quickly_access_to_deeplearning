@@ -15,7 +15,7 @@ SITE = ROOT / "site"
 CONTENT = SITE / "content" / "docs"
 DOC_ASSETS = SITE / "static" / "assets" / "docs"
 REPOSITORY = "https://github.com/satoshinji2992/quickly_access_to_deeplearning"
-LINK = re.compile(r"(!?)\[([^\]]*)\]\(([^)\n]+)\)")
+LINK = re.compile(r"(!?)\[([^\]\n]*)\]\(([^)\n]+)\)")
 
 
 def yaml_string(value: str) -> str:

@@ -10,6 +10,9 @@ CIFAR-100 的单张图片是 $32\times32$ RGB 数组。进入卷积前，数据�
 
 ---
 
+
+<div class="widget-mount" data-widget="image-batch" data-title="点开一张图，看 RGB 与 NCHW"></div>
+
 ## CIFAR-100 的三份数据
 
 [官方说明](https://www.cs.toronto.edu/~kriz/cifar.html)给出的 CIFAR-100 规模是：
@@ -45,7 +48,7 @@ test_limit
 ### 数据划分的关键性质
 
 - train 与 validation 的源索引无交集；
-- 标签是一维整数，范围为 `[0, 100)`；
+- 标签是一维整数，范围为 `0..99`；
 - 图片数量与标签数量相同；
 - 本地或生成数据可用 `assert_disjoint_splits()` 检查完全相同的图片记录。
 
