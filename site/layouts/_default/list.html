@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文档目录｜快速入门深度学习</title>
+  <meta name="description" content="NumPy、ResNet 与 Transformer 中文教程目录">
+  <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "docs.css" | relURL }}">
+</head>
+<body class="docs-body">
+  <header class="docs-topbar">
+    <a class="brand" href="{{ site.Home.RelPermalink }}"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></a>
+    <nav><a href="{{ site.Home.RelPermalink }}">首页</a><a class="current" href="{{ "docs/" | relURL }}">文档</a><a href="{{ site.Params.repository }}">GitHub ↗</a></nav>
+  </header>
+  <main class="docs-index">
+    <header><div class="eyebrow">DOCUMENTATION</div><h1>文档目录</h1><p>从 NumPy 基础网络到 ResNet 和 decoder-only Transformer。</p></header>
+    {{ range hugo.Data.docs.groups }}
+    <section>
+      <h2>{{ .title }}</h2>
+      <div class="docs-index-grid">
+        {{ range .items }}<a href="{{ printf "docs/%s/" .slug | relURL }}"><strong>{{ .title }}</strong><span>阅读 →</span></a>{{ end }}
+      </div>
+    </section>
+    {{ end }}
+  </main>
+</body>
+</html>

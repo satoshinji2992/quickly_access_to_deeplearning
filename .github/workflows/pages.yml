@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "chapters/**"
+      - "exercises/**/README.md"
+      - "scripts/build_docs_site.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -25,10 +28,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "0.159.1"
+          extended: true
+      - name: Prepare documentation
+        run: python scripts/build_docs_site.py
+      - name: Build site
+        run: hugo --source site --minify
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/public
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

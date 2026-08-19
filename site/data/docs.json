@@ -1,0 +1,49 @@
+{
+  "groups": [
+    {
+      "title": "总览",
+      "items": [
+        {"title": "课程总览", "slug": "overview", "source": "chapters/00-课程总览.md"}
+      ]
+    },
+    {
+      "title": "Block 1 · 基础",
+      "items": [
+        {"title": "基础知识", "slug": "chapter-basics", "source": "chapters/01-基础知识.md"},
+        {"title": "线性回归", "slug": "linear-regression", "source": "exercises/block_01_basics/task_00_linear_regression/README.md"},
+        {"title": "圆形分类", "slug": "circle-classifier", "source": "exercises/block_01_basics/task_01_circle_classifier/README.md"},
+        {"title": "小型深度学习库", "slug": "mini-dl-lib", "source": "exercises/block_01_basics/task_02_mini_dl_lib/README.md"},
+        {"title": "MNIST MLP", "slug": "mnist-mlp", "source": "exercises/block_01_basics/task_03_mnist_mlp/README.md"}
+      ]
+    },
+    {
+      "title": "Block 2 · ResNet",
+      "items": [
+        {"title": "ResNet 图像分类", "slug": "chapter-resnet", "source": "chapters/02-ResNet图像分类.md"},
+        {"title": "图像数据管线", "slug": "image-data-pipeline", "source": "exercises/block_02_resnet/task_10_image_data_pipeline/README.md"},
+        {"title": "Conv2D 与 im2col", "slug": "conv2d-im2col", "source": "exercises/block_02_resnet/task_11_conv2d_im2col/README.md"},
+        {"title": "池化与 BatchNorm", "slug": "pooling-batchnorm", "source": "exercises/block_02_resnet/task_12_pooling_and_bn/README.md"},
+        {"title": "残差块", "slug": "residual-block", "source": "exercises/block_02_resnet/task_13_residual_block/README.md"},
+        {"title": "NumPy ResNet 训练", "slug": "numpy-resnet-train", "source": "exercises/block_02_resnet/task_14_numpy_resnet_train/README.md"},
+        {"title": "实验记录", "slug": "experiment-notes", "source": "exercises/block_02_resnet/task_15_experiment_notes/README.md"}
+      ]
+    },
+    {
+      "title": "Block 3 · Transformer",
+      "items": [
+        {"title": "Transformer 与 MiniMind", "slug": "chapter-transformer", "source": "chapters/03-Transformer与MiniMind.md"},
+        {"title": "Transformer 理论", "slug": "transformer-theory", "source": "exercises/block_03_transformer/task_20_transformer_theory/README.md"},
+        {"title": "正弦位置编码", "slug": "sinusoidal-position", "source": "exercises/block_03_transformer/task_21_sinusoidal_position/README.md"},
+        {"title": "RoPE", "slug": "rope", "source": "exercises/block_03_transformer/task_22_rope_position/README.md"},
+        {"title": "Causal Attention 与 GQA", "slug": "causal-attention", "source": "exercises/block_03_transformer/task_23_causal_attention/README.md"},
+        {"title": "SwiGLU", "slug": "swiglu", "source": "exercises/block_03_transformer/task_24_swiglu_ffn/README.md"},
+        {"title": "Embedding 与 LM Head", "slug": "embedding-lm-head", "source": "exercises/block_03_transformer/task_25_embedding_lm_head/README.md"},
+        {"title": "Decoder Block", "slug": "decoder-block", "source": "exercises/block_03_transformer/task_26_decoder_blocks/README.md"},
+        {"title": "MiniMind Core", "slug": "minimind-core", "source": "exercises/block_03_transformer/task_27_minimind_core/README.md"},
+        {"title": "Next-token 训练", "slug": "next-token-training", "source": "exercises/block_03_transformer/task_28_next_token_training/README.md"},
+        {"title": "生成与采样", "slug": "generate-sampling", "source": "exercises/block_03_transformer/task_29_generate_sampling/README.md"},
+        {"title": "KV Cache", "slug": "kv-cache", "source": "exercises/block_03_transformer/task_30_kv_cache/README.md"}
+      ]
+    }
+  ]
+}
