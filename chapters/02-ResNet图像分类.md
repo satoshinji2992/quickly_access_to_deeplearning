@@ -133,6 +133,8 @@ $$
 
 这不是换了一种卷积定义，只是把原来的所有局部点积排进同一次矩阵乘法。
 
+<div class="widget-mount" data-widget="conv-sweep" data-title="拖动卷积核，看特征图补满"></div>
+
 ### backward 为什么不能直接 reshape 回去
 
 相邻窗口会重叠。输入中间的一个像素可能参与多个输出，因此反向时也会收到多条梯度。`col2im` 必须把这些贡献**累加**回原位置，而不是把列矩阵直接 reshape。

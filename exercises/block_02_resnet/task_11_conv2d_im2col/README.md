@@ -6,6 +6,8 @@
 
 ![一个可手算的互相关例子](assets/conv2d_explained.png)
 
+<div class="widget-mount" data-widget="conv-sweep" data-title="拖动卷积核，看特征图补满"></div>
+
 ---
 
 ## 核对一个输出元素

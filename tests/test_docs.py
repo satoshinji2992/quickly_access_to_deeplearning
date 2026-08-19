@@ -123,6 +123,32 @@ class DocumentationTests(unittest.TestCase):
             [], offenders, "CJK punctuation inside display math:\n" + "\n".join(offenders)
         )
 
+    def test_widget_mounts_reference_registered_widgets(self):
+        """data-widget markers must match the panel.js registry and files."""
+        registry_file = ROOT / "site" / "static" / "widgets" / "panel.js"
+        registry = registry_file.read_text(encoding="utf-8")
+        registered = set(re.findall(r"'([a-z0-9-]+)':\s*\{ file:", registry))
+        self.assertTrue(registered, "panel.js registry not parseable")
+        offenders = []
+        for document in markdown_files():
+            for line_number, line in enumerate(
+                document.read_text(encoding="utf-8").splitlines(), start=1
+            ):
+                for widget_id in re.findall(r'data-widget="([a-z0-9-]+)"', line):
+                    if widget_id not in registered:
+                        offenders.append(
+                            f"{document.relative_to(ROOT)}:{line_number}: {widget_id}"
+                        )
+        for widget_id in sorted(registered):
+            entry = re.search(
+                r"'" + widget_id + r"':\s*\{ file: '([^']+)'", registry
+            )
+            if entry and not (ROOT / "site" / "static" / "widgets" / entry.group(1)).exists():
+                offenders.append(f"panel.js registry: missing file {entry.group(1)}")
+        self.assertEqual(
+            [], offenders, "unknown or broken widget references:\n" + "\n".join(offenders)
+        )
+
     def test_math_survives_markdown_and_katex(self):
         """Patterns known to break goldmark passthrough or KaTeX."""
         offenders = []

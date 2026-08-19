@@ -340,6 +340,8 @@ K+,V+ -> 写回当前层 cache
 
 当长度超过 `max_seq_len`，本实现保留最后一个窗口，并对窗口做一次完整 prefill，重新对齐 RoPE 位置和所有层缓存。它不是简单地从数组左侧删掉几列。
 
+<div class="widget-mount" data-widget="kv-cache" data-title="逐步解码，看缓存增长"></div>
+
 缓存实现是否正确，可以比较两条路径：
 
 1. 每步完整重算上下文；
