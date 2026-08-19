@@ -41,7 +41,7 @@ past_key_values = [
 
 ```text
 Q:       (B,n_heads,1,head_dim)
-K_cache: (B,n_heads,past_len+1,head_dim)  # 计算时展开
+K(repeat_kv 展开后): (B,n_heads,past_len+1,head_dim)
 scores:  (B,n_heads,1,past_len+1)
 ```
 

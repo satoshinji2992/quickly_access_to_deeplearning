@@ -57,9 +57,11 @@ $$
 =\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_{head}}}+M\right)V.
 $$
 
+其中 $M$ 是加法掩码：可见位置取 $0$，禁止位置取 $-\infty$，这样被禁位置在 softmax 之前就已经被排除。训练时为什么必须遮住某些位置，下一节展开。
+
 ![Scaled dot-product self-attention](../assets/images/self_attention.png)
 
-逐步看 shape 会更清楚。先忽略 batch 和多头，设序列长为 $T$：
+逐步看 shape 会更清楚。先忽略 batch 和多头，设序列长为 $T$、每个 head 的维度为 $d_{head}$（下文 shape 表记作 `Dh`，代码里是 `head_dim`）：
 
 ```text
 Q:       (T, Dh)
@@ -190,10 +192,10 @@ RoPE、causal mask、padding mask 和 GQA 在这一层真正汇合。[Causal Att
 Attention 让不同位置互相读取，但一次加权求和并不足以完成所有特征变换。FFN 对每个位置独立使用同一组参数：
 
 ```text
-(B, T, D) -> (B, T, H) -> (B, T, D)
+(B, T, D) -> (B, T, hidden_dim) -> (B, T, D)
 ```
 
-它不混合序列位置，所以不会破坏 causal 性质。本章使用 SwiGLU：
+中间维度 `hidden_dim` 通常大于 `D`，与 `ffn.py` 中的参数同名。FFN 不混合序列位置，所以不会破坏 causal 性质。本章使用 SwiGLU：
 
 $$
 g=W_{gate}x,\qquad u=W_{up}x,

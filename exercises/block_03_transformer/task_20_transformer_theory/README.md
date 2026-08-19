@@ -31,7 +31,7 @@ $$
 =\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_{head}}}+M\right)V.
 $$
 
-`QKᵀ` 得到位置两两之间的 score；softmax 沿 key 方向把 score 变成权重；最后用权重加权 `V`。所以可以简单记成：Q/K 决定“看哪里”，V 决定“拿回来什么”。
+其中 $M$ 是与 score 同 shape 的加法掩码：可见位置取 $0$，禁止位置取 $-\infty$（实现里用有限的最小值代替，见 task 23）。`QKᵀ` 得到位置两两之间的 score；softmax 沿 key 方向把 score 变成权重；最后用权重加权 `V`。所以可以简单记成：Q/K 决定“看哪里”，V 决定“拿回来什么”。
 
 缩放项来自 score 的量级。若 Q、K 各维近似独立且方差相近，点积的方差会随 $d_{head}$ 增长；除以 $\sqrt{d_{head}}$ 后，softmax 不容易因为维度变大而过早饱和。
 
@@ -62,7 +62,7 @@ q2 -> k0 k1 k2
 q3 -> k0 k1 k2 k3
 ```
 
-这就是下三角 causal mask。禁止位置在 softmax 前从 score 中排除。它带来一个可直接观察的性质：固定前缀、任意改动未来 token，前缀位置的输出保持不变。
+这就是下三角 causal mask，也就是代入公式里 $M$ 的方式：下三角（含对角线）取 $0$，上三角取 $-\infty$，禁止位置便在 softmax 前从 score 中排除。它带来一个可直接观察的性质：固定前缀、任意改动未来 token，前缀位置的输出保持不变。
 
 ## 原论文和本章模型并不相同
 

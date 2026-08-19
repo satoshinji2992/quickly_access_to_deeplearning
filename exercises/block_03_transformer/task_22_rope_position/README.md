@@ -13,8 +13,7 @@
 取 Q 或 K 的一对分量 $(x_0,x_1)$。位置 $m$ 对应一次二维旋转：
 
 $$
-\begin{bmatrix}x'_0\\x'_1\end{bmatrix}
-=
+\begin{bmatrix}x'_0\\x'_1\end{bmatrix} =
 \begin{bmatrix}
 \cos(m\theta)&-\sin(m\theta)\\
 \sin(m\theta)& \cos(m\theta)
@@ -56,7 +55,7 @@ $$
 cos, sin: (T,Dh/2)
 ```
 
-`apply_rope` 再把每列重复两次，与成对分量对齐。图中的三个圆分别表示三个维度对，不是三个 token；箭头长短只作示意，重要的是角速度 $\omega_0,\omega_1,\omega_2$ 不同。
+`apply_rope` 再把每列重复两次，与成对分量对齐。图中的三个圆分别表示三个维度对，不是三个 token；箭头长短只作示意，重要的是角速度 $\theta_0,\theta_1,\theta_2$（即图中标注的 $\omega_0,\omega_1,\omega_2$）不同。
 
 ## 点积为何出现相对位移
 
