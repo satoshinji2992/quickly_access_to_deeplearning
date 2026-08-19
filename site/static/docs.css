@@ -42,9 +42,16 @@
 .markdown-body blockquote p:last-child { margin-bottom:0; }
 .markdown-body img { width:auto; max-width:100%; max-height:760px; margin:28px auto 34px; border:1px solid rgba(7,19,33,.18); background:white; }
 .markdown-body code { padding:.16em .38em; border-radius:3px; background:#e9e6dc; font: .88em ui-monospace,SFMono-Regular,Consolas,monospace; }
-.markdown-body pre { position:relative; margin:26px 0; padding:22px; overflow:auto; background:#071321; color:#dce7ef; border:1px solid #203143; line-height:1.65; }
+.markdown-body pre { position:relative; margin:26px 0; padding:22px; overflow:auto; background:#efede3; color:#2a3540; border:1px solid #d8d3c4; line-height:1.65; }
 .markdown-body pre code { padding:0; background:transparent; color:inherit; font-size:13px; }
-.copy-code { position:absolute; top:9px; right:9px; border:1px solid #4e6070; background:#102335; color:#dce7ef; padding:5px 8px; font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace; cursor:pointer; }
+.copy-code { position:absolute; top:9px; right:9px; border:1px solid rgba(7,19,33,.35); background:#f7f5ef; color:#45515c; padding:5px 8px; font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace; cursor:pointer; }
+.copy-code:hover { background:#071321; color:#fffef9; }
+.markdown-body .chroma .c,.markdown-body .chroma .c1,.markdown-body .chroma .ch,.markdown-body .chroma .cm,.markdown-body .chroma .cs { color:#8b929b; font-style:italic; }
+.markdown-body .chroma .k,.markdown-body .chroma .kc,.markdown-body .chroma .kd,.markdown-body .chroma .kn,.markdown-body .chroma .kp,.markdown-body .chroma .kr,.markdown-body .chroma .kt,.markdown-body .chroma .ow { color:#075dcf; }
+.markdown-body .chroma .s,.markdown-body .chroma .s1,.markdown-body .chroma .s2,.markdown-body .chroma .sa,.markdown-body .chroma .sb,.markdown-body .chroma .sc,.markdown-body .chroma .se,.markdown-body .chroma .si,.markdown-body .chroma .sr,.markdown-body .chroma .ss { color:#1a6b45; }
+.markdown-body .chroma .mi,.markdown-body .chroma .mf,.markdown-body .chroma .mh,.markdown-body .chroma .mo { color:#9a5b00; }
+.markdown-body .chroma .nf { color:#8250df; }
+.markdown-body .chroma .m { color:#8b929b; }
 .markdown-body table { display:block; width:100%; margin:26px 0; overflow:auto; border-collapse:collapse; font-size:14px; }
 .markdown-body th,.markdown-body td { min-width:120px; padding:11px 13px; border:1px solid #cdd2d4; text-align:left; vertical-align:top; }
 .markdown-body th { background:#e9e6dc; color:#071321; }
