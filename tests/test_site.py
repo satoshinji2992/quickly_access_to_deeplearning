@@ -56,6 +56,7 @@ class ProjectSiteTests(unittest.TestCase):
         html = HOMEPAGE.read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
         self.assertIn("hugo --source site --minify", workflow)
+        self.assertIn("python scripts/check_site_links.py", workflow)
         self.assertIn("path: site/public", workflow)
         self.assertIn("actions/deploy-pages@v4", workflow)
         self.assertIn(

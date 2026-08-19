@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -37,6 +38,35 @@ def local_targets(path: Path):
 
 
 class DocumentationTests(unittest.TestCase):
+    def test_narrative_chapters_link_every_implementation_section(self):
+        catalog = json.loads(
+            (ROOT / "site" / "data" / "docs.json").read_text(encoding="utf-8")
+        )
+        missing = []
+        for group in catalog["groups"]:
+            if not group["title"].startswith("Block"):
+                continue
+            chapter = (ROOT / group["items"][0]["source"]).resolve()
+            linked = {
+                (chapter.parent / target).resolve()
+                for _, target in local_targets(chapter)
+            }
+            for item in group["items"][1:]:
+                source = (ROOT / item["source"]).resolve()
+                if source not in linked:
+                    missing.append(f"{chapter.relative_to(ROOT)} -> {item['source']}")
+        self.assertEqual([], missing, "missing narrative links:\n" + "\n".join(missing))
+
+    def test_narrative_chapters_avoid_assignment_and_promotional_tone(self):
+        phrases = ("请你", "提交作业", "轻松掌握", "一眼看懂", "从零到精通", "赋能")
+        offenders = []
+        for chapter in sorted((ROOT / "chapters").glob("*.md")):
+            text = chapter.read_text(encoding="utf-8")
+            for phrase in phrases:
+                if phrase in text:
+                    offenders.append(f"{chapter.relative_to(ROOT)}: {phrase}")
+        self.assertEqual([], offenders)
+
     def test_all_local_markdown_targets_exist(self):
         broken = []
         for document in markdown_files():

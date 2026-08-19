@@ -8,6 +8,9 @@ on:
       - "chapters/**"
       - "exercises/**/README.md"
       - "scripts/build_docs_site.py"
+      - "scripts/check_site_links.py"
+      - "tests/test_docs.py"
+      - "tests/test_site.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -39,6 +42,10 @@ jobs:
         run: python scripts/build_docs_site.py
       - name: Build site
         run: hugo --source site --minify
+      - name: Check documentation
+        run: |
+          python -m unittest tests.test_docs tests.test_site -v
+          python scripts/check_site_links.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
