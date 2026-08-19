@@ -23,7 +23,7 @@ $$
 &\mathbf H_1&=\mathrm{ReLU}(\mathbf Z_1),\\
 \mathbf Z_2 &= \mathbf H_1\mathbf W_2+\mathbf b_2,
 &\mathbf H_2&=\mathrm{ReLU}(\mathbf Z_2),\\
-\text{logits} &= \mathbf H_2\mathbf W_3+\mathbf b_3
+\mathbf Z_3\;(\text{logits}) &= \mathbf H_2\mathbf W_3+\mathbf b_3
 \end{aligned}
 $$
 
@@ -136,7 +136,7 @@ $$
 \end{aligned}
 $$
 
-shape 为这些公式提供了直接的核对方法。例如 $(m,4)^\top@(m,2)=(4,2)$，正好与 $\mathbf W_3$ 相同。`Model.py` 的 `backward()` 算完这些量后直接更新参数；下一节会把“计算梯度”和“更新参数”拆成 Layer 与 Optimizer。
+shape 为这些公式提供了直接的核对方法。例如 $(m,4)^{\top}@(m,2)=(4,2)$，正好与 $\mathbf W_3$ 相同。`Model.py` 的 `backward()` 算完这些量后直接更新参数；下一节会把“计算梯度”和“更新参数”拆成 Layer 与 Optimizer。
 
 ## batch、epoch 与验证集
 

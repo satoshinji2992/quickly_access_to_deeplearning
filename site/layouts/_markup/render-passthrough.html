@@ -1,0 +1,7 @@
+{{/* Emit passthrough math verbatim, restoring the delimiters for the
+       client-side KaTeX auto-render configured in single.html. */}}
+{{- if eq .Type "block" -}}
+$${{- .Inner }}$$
+{{- else -}}
+${{- .Inner }}$
+{{- end -}}

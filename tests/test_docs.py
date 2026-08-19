@@ -123,6 +123,39 @@ class DocumentationTests(unittest.TestCase):
             [], offenders, "CJK punctuation inside display math:\n" + "\n".join(offenders)
         )
 
+    def test_math_survives_markdown_and_katex(self):
+        """Patterns known to break goldmark passthrough or KaTeX."""
+        offenders = []
+        for document in markdown_files():
+            text = document.read_text(encoding="utf-8")
+            chunks = text.split("$$")
+            for index in range(1, len(chunks), 2):
+                body = chunks[index]
+                line_number = 1 + sum(
+                    chunk.count("\n") for chunk in chunks[:index]
+                )
+                for offset, line in enumerate(body.splitlines()):
+                    # A lone = or - line inside display math is parsed as a
+                    # setext heading underline before passthrough sees the block.
+                    if line.strip() in ("=", "-"):
+                        offenders.append(
+                            f"{document.relative_to(ROOT)}:{line_number + offset}: lone {line.strip()!r} line inside $$"
+                        )
+            for match in re.finditer(r"\\text\{([^{}]*)\}", text):
+                # KaTeX rejects unescaped underscores inside \text{}.
+                if re.search(r"(?<!\\)_", match.group(1)):
+                    offenders.append(
+                        f"{document.relative_to(ROOT)}: unescaped _ inside \\text{{{match.group(1)}}}"
+                    )
+            # A control word glued to @ (e.g. \top@) lexes as one undefined command.
+            for match in re.finditer(r"\\[a-zA-Z]+@", text):
+                offenders.append(
+                    f"{document.relative_to(ROOT)}: control word followed by @ in {match.group(0)}"
+                )
+        self.assertEqual(
+            [], offenders, "math patterns that break rendering:\n" + "\n".join(offenders)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

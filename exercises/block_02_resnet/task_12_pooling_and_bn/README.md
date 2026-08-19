@@ -97,7 +97,7 @@ $$
 然后标准化，并恢复可学习的尺度与偏移：
 
 $$
-\hat{x}=\frac{x-\mu}{\sqrt{\sigma^2+\varepsilon}},
+\hat{x}=\frac{x-\mu_c}{\sqrt{\sigma_c^2+\varepsilon}},
 \qquad
 y=\gamma\hat{x}+\beta.
 $$

@@ -41,10 +41,11 @@ next_id = logits.argmax(dim=-1, keepdim=True)
 
 ### Temperature
 
-当 $\tau>0$：
+当 $\tau>0$，设 $z$ 为最后一位的 logits 向量（`(B,V)` 中的一行，shape 为 `(V,)`）：
 
 $$
-p_i=\operatorname{softmax}(z_i/\tau).
+p=\operatorname{softmax}(z/\tau),\qquad
+p_i=\frac{\exp(z_i/\tau)}{\sum_{j}\exp(z_j/\tau)}.
 $$
 
 - `0 < τ < 1`：分布更尖，更偏向高 logit；
@@ -67,14 +68,14 @@ top_k>V     截到 V
 
 ### Top-p / nucleus
 
-Top-p 先按概率降序排列，再保留累计概率达到 $p$ 所需的最小前缀。假设：
+Top-p 先按概率降序排列，再保留累计概率达到 $p_{\text{top}}$ 所需的最小前缀。假设：
 
 ```text
 probabilities = [0.60, 0.25, 0.10, 0.05]
 top_p = 0.70
 ```
 
-第一个候选只累计到 0.60，所以还要保留第二个，采样集合为前两项。实现先标出累计概率超过阈值的位置，再把删除 mask 右移一格，保证跨过 $p$ 的那个 token 留下。
+第一个候选只累计到 0.60，所以还要保留第二个，采样集合为前两项。实现先标出累计概率超过阈值的位置，再把删除 mask 右移一格，保证跨过 $p_{\text{top}}$ 的那个 token 留下。
 
 ```text
 top_p=None 或 1  不过滤

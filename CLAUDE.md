@@ -51,6 +51,8 @@ Every test command is expected to end with `OK`.
 
 **Docs pipeline:** repo Markdown is the single source of truth. `scripts/build_docs_site.py` reads the catalog `site/data/docs.json` (groups → items with `source`/`slug`; must stay 25 items with unique slugs), converts each source file into `site/content/docs/<slug>.md` with Hugo front matter (prev/next), rewrites internal links, and copies images to `site/static/assets/docs/`. Generated dirs (`site/content`, `site/public`, `site/static/assets/docs`) are never committed. CI (`.github/workflows/pages.yml`) reruns the doc tests + Hugo build on pushes touching chapters/exercises READMEs/site/scripts, then deploys.
 
+**Math rendering:** formulas are client-side KaTeX (auto-render with `$$`/`$` delimiters, see `site/layouts/_default/single.html`). Goldmark's passthrough extension (`site/hugo.toml`, note the key is `enable`) plus the render hook `site/layouts/_markup/render-passthrough.html` protect math from markdown mangling (`\,`→`,`, `'`→`’`, `_`→`<em>`, `\_`→`_`). When writing math: no lone `=`/`-` lines inside `$$` blocks (setext heading), no unescaped `_` inside `\text{}`, no control word directly followed by `@` — `tests/test_docs.py::test_math_survives_markdown_and_katex` enforces all three.
+
 **Content gates enforced by tests:**
 - `tests/test_docs.py` — every local Markdown link/image target must resolve; each Block chapter must link to all of its exercise READMEs.
 - `tests/test_site.py` — homepage assets must exist; the homepage must not contain promotional boilerplate (真正跑通, 拆开黑盒, 一眼看懂, 轻松掌握, 赋能, etc.); docs.json catalog integrity.

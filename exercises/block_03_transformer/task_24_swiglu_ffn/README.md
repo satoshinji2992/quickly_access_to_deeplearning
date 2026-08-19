@@ -11,10 +11,10 @@ $$
 Shape 先扩张，再压回模型维度：
 
 ```text
-(B,T,D) -> (B,T,H) -> (B,T,D)
+(B,T,D) -> (B,T,hidden_dim) -> (B,T,D)
 ```
 
-`H` 通常大于 `D`。最后回到 `D`，结果便能与 decoder block 的输入相加。
+`hidden_dim` 通常大于 `D`。最后回到 `D`，结果便能与 decoder block 的输入相加。
 
 ---
 
@@ -36,9 +36,9 @@ $$
 三次投影的 shape：
 
 ```text
-gate: D -> H
-up:   D -> H
-down: H -> D
+gate: D -> hidden_dim
+up:   D -> hidden_dim
+down: hidden_dim -> D
 ```
 
 Gate 分支先经过：
