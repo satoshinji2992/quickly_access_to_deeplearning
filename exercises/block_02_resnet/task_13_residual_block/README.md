@@ -8,6 +8,9 @@
 
 ---
 
+
+<div class="widget-mount" data-widget="residual-block" data-title="两分支结构与梯度直通路"></div>
+
 ## 残差块的公式
 
 把主分支记为 $F(x)$，shortcut 记为 $S(x)$：

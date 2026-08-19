@@ -18,6 +18,7 @@
     'optimizer-race': { file: 'w-optimizer-race.js', title: '优化器：同一起点赛跑' },
     'norm-playground': { file: 'w-norm-playground.js', title: 'BatchNorm 与 LayerNorm' },
     'image-batch': { file: 'w-image-batch.js', title: '一张图片的 NCHW' },
+    'residual-block': { file: 'w-residual.js', title: '残差块：两分支与梯度直通路' },
     'pool-sweep': { file: 'w-pool-sweep.js', title: '池化：窗口扫描与梯度路由' },
     'im2col-grad': { file: 'w-im2col-grad.js', title: 'im2col 与梯度回传' },
     'causal-mask': { file: 'w-causal-mask.js', title: '因果掩码：训练与推理' },

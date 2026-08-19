@@ -1,4 +1,4 @@
-/* image-batch — 8 张真实 CIFAR-100 图片摆成书架：点开一本，看 R/G/B 三张
+/* image-batch — 8 张真实 CIFAR-100 图片：点击选中一张，看 R/G/B 三张
  * 通道热图，再点一个像素，读出它在 NCHW 布局里的四个下标 (B, C, H, W)。
  * 数据资产：assets/widgets/cifar8.png（256×32 横向 sprite）+ cifar8_meta.json。 */
 (function () {
@@ -18,20 +18,18 @@
   var MONO = 'ui-monospace, SFMono-Regular, Consolas, monospace';
   var CH_HEX = ['#d0342c', '#15803d', '#2456e0'];
   var CH_ZH = ['R', 'G', 'B'];
-  var TILTS = [-4, -3, -2, -1, -4, -3, -2, -1];
 
   var STYLE_TEXT = [
-    '/* 书架：8 本“书”斜靠在搁板上 */',
-    '.ib-books{--bs:56px;display:flex;justify-content:center;gap:13px;align-items:flex-end;',
-    'padding:14px 6px 0;border-bottom:3px solid #071321;box-shadow:0 6px 0 -3px rgba(7,19,33,.22)}',
+    '/* 缩略图行：batch 里的 8 张图，B=0..7 */',
+    '.ib-books{--bs:56px;display:flex;justify-content:center;gap:13px;align-items:flex-end;padding:6px 6px 0}',
     '.ib-book{width:var(--bs);height:var(--bs);border:1px solid #071321;background:#f7f5ef;',
     'background-repeat:no-repeat;image-rendering:pixelated;',
     'background-size:calc(var(--bs)*8) var(--bs);',
-    'transform:rotate(var(--tilt));transform-origin:50% 100%;cursor:pointer;',
+    'cursor:pointer;',
     'transition:transform .16s ease,box-shadow .16s ease,opacity .16s ease}',
-    '.ib-book:hover,.ib-book:focus-visible{transform:rotate(0deg) translateY(-8px);',
+    '.ib-book:hover,.ib-book:focus-visible{transform:translateY(-4px);',
     'box-shadow:3px 3px 0 #0b63f3;outline:none}',
-    '.ib-book.is-on{transform:rotate(0deg) translateY(-6px);box-shadow:2px 2px 0 #0b63f3}',
+    '.ib-book.is-on{transform:translateY(-4px);box-shadow:2px 2px 0 #0b63f3}',
     '.ib-book.is-dim{opacity:.3}',
     '.ib-names{display:flex;justify-content:center;gap:13px;margin-top:6px}',
     '.ib-name{width:var(--bs);text-align:center;line-height:1.4}',
@@ -168,14 +166,14 @@
     setBody(
       '<p class="wg-title">一个 batch，8 张 CIFAR 图片</p>' +
       '<p class="wg-sub">每张 32×32、3 个通道，摞成一个 shape 为 (8,&nbsp;3,&nbsp;32,&nbsp;32) 的数组 X，' +
-      '四个轴依次是 (B, C, H, W)。点开书架上的一本书，再点图上的一个像素，看它的四个下标。</p>' +
+      '四个轴依次是 (B, C, H, W)。点击一张图片选中它，再点放大图上的一个像素，读出它的四个下标。</p>' +
       '<div class="ib-books" data-role="books"></div>' +
       '<div class="ib-names" data-role="names"></div>' +
       '<p class="wg-note" data-role="hint" style="text-align:center"></p>' +
       '<div class="ib-panel" data-role="panel">' +
         '<div class="ib-ehead">' +
           '<div class="ib-etitle" data-role="etitle"></div>' +
-          '<button type="button" class="wg-button" data-role="collapse">收起书架</button>' +
+          '<button type="button" class="wg-button" data-role="collapse">收起</button>' +
         '</div>' +
         '<div class="ib-views">' +
           '<div class="ib-view" data-role="view-all">' +
@@ -214,12 +212,12 @@
           '</div>' +
         '</div>' +
       '</div>' +
-      '<p class="wg-note">书架上一本书 = batch 里的一张图（换书 = 换下标 B）；三张热图把 R/G/B 拆开，' +
+      '<p class="wg-note">每张缩略图 = batch 里的一张图（B = 0..7）；三张热图把 R/G/B 拆开，' +
       '颜色越亮该通道数值越大；冒号 : 表示这一维整条取。batch 里每张图内容不同，但 shape 必须完全一致，才能拼进同一个数组。</p>');
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var S = {
-      sel: 0,            /* 选中的书 = batch 下标 B */
+      sel: 0,            /* 选中的图片 = batch 下标 B */
       expanded: true,
       h: 12, w: 20,      /* 默认选中的像素 */
       activeC: 0,        /* X[b, c, h, w] 里高亮的 c */
@@ -234,7 +232,7 @@
     var PIXELS = octx.getImageData(0, 0, SPRITE_W, SIDE).data;
     function px(b, h, w, c) { return PIXELS[((h * SPRITE_W) + (b * SIDE + w)) * 4 + c]; }
 
-    /* 单通道热图离屏缓存：只在换书时重建。 */
+    /* 单通道热图离屏缓存：只在换图时重建。 */
     var chan = { sel: -1, cvs: [null, null, null] };
     function chanCanvas(c) {
       if (chan.sel !== S.sel) {
@@ -260,7 +258,7 @@
       return chan.cvs[c];
     }
 
-    /* ---- 书架 DOM ---- */
+    /* ---- 缩略图行 DOM ---- */
     var booksEl = q('books'), namesEl = q('names');
     var bookEls = [], nameEls = [];
     META.forEach(function (m, i) {
@@ -268,10 +266,9 @@
       b.className = 'ib-book';
       b.setAttribute('role', 'button');
       b.setAttribute('tabindex', '0');
-      b.setAttribute('aria-label', '展开第 ' + (i + 1) + ' 张图：' + m.zh);
+      b.setAttribute('aria-label', '选择第 ' + (i + 1) + ' 张图：' + m.zh);
       b.style.backgroundImage = 'url(' + SPRITE_URL + ')';
       b.style.backgroundPosition = 'calc(var(--bs) * ' + (-i) + ') 0';
-      b.style.setProperty('--tilt', TILTS[i] + 'deg');
       b.addEventListener('click', function () { pickBook(i); });
       b.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickBook(i); }
@@ -399,8 +396,8 @@
         nameEls[i].classList.toggle('is-dim', S.expanded && i !== S.sel);
       });
       q('hint').textContent = S.expanded
-        ? '已展开第 ' + (S.sel + 1) + ' 张（B=' + S.sel + '）· 点其他书切换，再点当前这本书或按「收起书架」折叠'
-        : '书架折叠中 · 点击任意一本书展开它的三个通道';
+        ? '已选中第 ' + (S.sel + 1) + ' 张（B=' + S.sel + '）· 点击其他图片切换；再点当前图片或按「收起」折叠'
+        : '已折叠 · 点击任意一张图片展开它的三个通道';
 
       var panel = q('panel');
       if (!S.expanded) {

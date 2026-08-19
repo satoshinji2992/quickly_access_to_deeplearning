@@ -252,6 +252,8 @@ $$
 
 identity shortcut 的 $J_S=I$，所以梯度多了一条直接路径；projection shortcut 的 Jacobian 则来自 `Conv1x1 + BN`。残差连接改善了梯度流动，但它不是“梯度永远不会消失”的证明，后面的激活、参数和数值范围仍然重要。
 
+<div class="widget-mount" data-widget="residual-block" data-title="两分支结构与梯度直通路"></div>
+
 [残差块](../exercises/block_02_resnet/task_13_residual_block/README.md)说明了两种 shortcut 的 shape、缓存顺序和反向合流。
 
 ---
