@@ -9,7 +9,7 @@
     {
       "title": "Block 1 · 基础",
       "items": [
-        {"title": "基础知识", "page_title": "y = ax + b：从一条直线开始", "slug": "chapter-basics", "source": "chapters/01-基础知识.md"},
+        {"title": "基础知识", "page_title": "y = ax + b! 神经网络到底是什么?", "slug": "chapter-basics", "source": "chapters/01-基础知识.md"},
         {"title": "线性回归", "slug": "linear-regression", "source": "exercises/block_01_basics/task_00_linear_regression/README.md"},
         {"title": "圆形分类", "slug": "circle-classifier", "source": "exercises/block_01_basics/task_01_circle_classifier/README.md"},
         {"title": "小型深度学习库", "slug": "mini-dl-lib", "source": "exercises/block_01_basics/task_02_mini_dl_lib/README.md"},
