@@ -1,19 +1,8 @@
-/* Widget triggers and right-side dock panel — paper/brutalist site style. */
-.widget-mount { margin: 26px 0; }
-.widget-trigger { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border: 1px solid #071321; background: #fffef9; font: 700 12px ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .06em; color: #071321; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
-.widget-trigger:hover, .widget-trigger.is-active { transform: translateY(-2px); box-shadow: 4px 4px 0 #72d7ff; }
-.widget-trigger.is-active { background: #071321; color: #c8ff47; }
-
-.widget-panel { position: fixed; top: 86px; right: 16px; bottom: 16px; width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; background: #fffef9; border: 1px solid #071321; box-shadow: 10px 10px 0 rgba(11, 99, 243, .9); z-index: 60; }
-.widget-panel[hidden] { display: none; }
-.widget-panel-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid rgba(7, 19, 33, .2); background: #f4f2ec; }
-.widget-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
-.widget-tab { flex: 0 0 auto; padding: 7px 10px; border: 1px solid rgba(7, 19, 33, .35); background: transparent; font: 700 10px ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .05em; color: #45515c; cursor: pointer; }
-.widget-tab.is-active { background: #071321; color: #fffef9; border-color: #071321; }
-.widget-panel-close { width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid #071321; background: transparent; font: 700 13px ui-monospace, SFMono-Regular, Consolas, monospace; cursor: pointer; }
-.widget-panel-close:hover { background: #071321; color: #fffef9; }
-.widget-body { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; }
-.widget-instance { font-size: 13px; line-height: 1.6; color: #263541; }
+/* Inline widget cards embedded in the article flow — paper/brutalist style. */
+.widget-mount { margin: 30px 0; max-width: 660px; border: 1px solid #071321; background: #fffef9; box-shadow: 6px 6px 0 rgba(11, 99, 243, .85); }
+.widget-head { padding: 9px 14px; border-bottom: 1px solid rgba(7, 19, 33, .2); background: #f4f2ec; font: 700 10px ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; color: #45515c; }
+.widget-head::before { content: "▶ "; color: #0b63f3; }
+.widget-frame { padding: 16px; font-size: 13px; line-height: 1.6; color: #263541; }
 
 /* Shared widget primitives. */
 .wg-title { margin: 0 0 4px; font-size: 15px; font-weight: 800; letter-spacing: -.01em; color: #071321; }
@@ -35,6 +24,7 @@
 .wg-cell { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid rgba(7, 19, 33, .3); background: #fffef9; font: 700 11px ui-monospace, SFMono-Regular, Consolas, monospace; color: #071321; }
 .wg-note { margin: 8px 0 0; font-size: 11px; color: #65717c; }
 
-@media (max-width: 1180px) {
-  .widget-panel { top: auto; left: 12px; right: 12px; bottom: 12px; height: min(62vh, 540px); width: auto; }
+@media (max-width: 760px) {
+  .widget-mount { margin: 22px 0; box-shadow: 4px 4px 0 rgba(11, 99, 243, .85); }
+  .widget-frame { padding: 12px; }
 }
