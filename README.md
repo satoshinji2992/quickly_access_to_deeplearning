@@ -1,10 +1,18 @@
 # 快速入门深度学习
 
-这是一套以代码为主的深度学习入门教程。起点是一条直线，随后会实现一个小型 NumPy 深度学习库、用于 CIFAR-100 的 ResNet，以及带 RoPE、GQA 和 KV Cache 的小型 decoder-only Transformer。
+> 从 `y = ax + b` 出发，一路写到 `token → logits`。
 
-除明确标注的理论导读外，每个可运行主题都附有代码入口、运行命令和结果核对方法。这些检查覆盖数据隔离、梯度、shape 约束和 checkpoint round-trip，用来区分“程序能跑”和“计算符合预期”。
+[查看项目主页](https://deep-learning-field-notes.wwwsatoshinji.chatgpt.site) · [打开课程总览](chapters/00-课程总览.md) · [浏览论文与视频资料](推荐教学视频.md)
 
-[课程、论文与视频资料](推荐教学视频.md)
+这里不从厚厚的 API 手册开始。第一站只是一条直线；接着拆开前向传播与反向传播，搭一套小型 NumPy 深度学习库，再让 CIFAR-100 图像流过 ResNet，最后拼出带 RoPE、GQA 和 KV Cache 的 decoder-only Transformer。
+
+代码能跑只是起点。每个可运行主题都附有入口、命令和结果核对方法，用数据隔离、梯度、shape 与 checkpoint round-trip 判断计算是否真的对上了。
+
+**三段路线，一条主线：**
+
+- **Block 1 · 看清梯度** — 线性回归 → 圆形分类 → Mini DL Library → MNIST
+- **Block 2 · 看清像素流** — CIFAR-100 → Conv2D → BatchNorm → ResNet
+- **Block 3 · 看清上下文** — Attention → RoPE / GQA → MiniMind → KV Cache
 
 ## 环境准备
 
@@ -30,7 +38,7 @@ assets/       # 共享图片
 
 关键配图中的矩阵数值、shape、梯度数量和 head 映射都有自动检查。task 15 的误分类图来自真实 CIFAR-100 推理，并保留 test split、checkpoint 摘要和测试索引。
 
-## 课程路线
+## 从哪里开始
 
 1. [课程总览](chapters/00-课程总览.md)
 2. [Block 1: 基础知识](chapters/01-基础知识.md) — 直线拟合 → 圆形分类 → 小型 NumPy DL 库 → MNIST
@@ -67,7 +75,7 @@ assets/       # 共享图片
 - [task_29: Generate 与采样](exercises/block_03_transformer/task_29_generate_sampling/README.md)
 - [task_30: KV Cache](exercises/block_03_transformer/task_30_kv_cache/README.md)
 
-## 拓展主题
+## 还想继续往前？
 
 `exercises/ComingSoon.../`
 

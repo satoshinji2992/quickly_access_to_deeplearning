@@ -14,7 +14,7 @@ MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
 def markdown_files():
     for path in ROOT.rglob("*.md"):
-        if ".git" not in path.parts:
+        if ".git" not in path.parts and "node_modules" not in path.parts:
             yield path
 
 
