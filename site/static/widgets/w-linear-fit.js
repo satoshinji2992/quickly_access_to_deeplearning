@@ -65,9 +65,12 @@
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var scatter = q('scatter'), contour = q('contour');
     var best = optimum();
+    // Logical sizes are constants — never read back from the width/height
+    // attributes, which this component rewrites with device-pixel values
+    // (reading them back made every re-render double the canvas height).
+    var SCATTER_H = 240, CONTOUR_H = 210;
 
-    function dpr(canvas) {
-      var logicalHeight = parseFloat(canvas.getAttribute('height'));
+    function dpr(canvas, logicalHeight) {
       var cssWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
       cssWidth = Math.max(200, Math.min(cssWidth || 400, 640));
       var ratio = window.devicePixelRatio || 1;
@@ -81,7 +84,7 @@
     }
 
     function drawScatter() {
-      var c = dpr(scatter), ctx = c.ctx;
+      var c = dpr(scatter, SCATTER_H), ctx = c.ctx;
       ctx.clearRect(0, 0, c.w, c.h);
       var xMin = -0.3, xMax = 3.4, yMin = -0.5, yMax = 13;
       var sx = function (x) { return 34 + (x - xMin) / (xMax - xMin) * (c.w - 46); };
@@ -113,7 +116,7 @@
     }
 
     function drawContour() {
-      var c = dpr(contour), ctx = c.ctx;
+      var c = dpr(contour, CONTOUR_H), ctx = c.ctx;
       var off = document.createElement('canvas');
       var N = 90;
       off.width = N; off.height = N;
