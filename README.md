@@ -2,6 +2,8 @@
 
 > 从 `y = ax + b` 出发，一路写到 `token → logits`。
 
+[查看项目主页](https://deep-learning-field-notes.wwwsatoshinji.chatgpt.site) · [打开课程总览](chapters/00-课程总览.md) · [浏览论文与视频资料](推荐教学视频.md)
+
 这里不从厚厚的 API 手册开始。第一站只是一条直线；接着拆开前向传播与反向传播，搭一套小型 NumPy 深度学习库，再让 CIFAR-100 图像流过 ResNet，最后拼出带 RoPE、GQA 和 KV Cache 的 decoder-only Transformer。
 
 代码能跑只是起点。每个可运行主题都附有入口、命令和结果核对方法，用数据隔离、梯度、shape 与 checkpoint round-trip 判断计算是否真的对上了。
@@ -11,8 +13,6 @@
 - **Block 1 · 看清梯度** — 线性回归 → 圆形分类 → Mini DL Library → MNIST
 - **Block 2 · 看清像素流** — CIFAR-100 → Conv2D → BatchNorm → ResNet
 - **Block 3 · 看清上下文** — Attention → RoPE / GQA → MiniMind → KV Cache
-
-[打开课程总览](chapters/00-课程总览.md) · [浏览论文与视频资料](推荐教学视频.md)
 
 ## 环境准备
 
