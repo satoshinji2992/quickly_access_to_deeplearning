@@ -44,6 +44,8 @@ $$
 
 学习率 $\eta$ 决定步长。当前脚本每次用完整数据计算一次梯度，因此这里的一次循环也就是一次 full-batch 更新。
 
+<div class="widget-mount" data-widget="linear-fit" data-title="调 a 与 b，看损失和梯度"></div>
+
 ## 为什么先做标准化
 
 工作年限只有个位到十位，薪资却是几万。两个量级相差很大时，同一个学习率很难同时照顾斜率和截距。`if_normalize=1` 会把 $x$、$y$ 分别变成均值为 0、标准差为 1 的量：

@@ -15,6 +15,8 @@
 
 KV Cache 用于自回归推理，不用于本章的并行训练 forward。
 
+<div class="widget-mount" data-widget="kv-cache" data-title="逐步解码，看缓存增长"></div>
+
 ---
 
 ## Cache 保存什么
