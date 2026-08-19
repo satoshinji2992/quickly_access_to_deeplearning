@@ -1,230 +1,238 @@
-# task_13: 残差块
+# task_13：残差块
 
-现在我们已经有了卷积、池化和 BatchNorm.
+[ResNet 原论文](https://arxiv.org/abs/1512.03385)观察到一个优化问题：把普通网络堆得更深，训练误差可能反而升高。这种 degradation 不能用过拟合解释，因为更深模型连训练集都没有拟合得更好。
 
-照理说, 多堆几层 CNN, 模型应该越来越强. 但真实情况没这么顺.
+残差块给变换分支加上一条 shortcut。代码入口是 [`residual_block.py`](./residual_block.py)，实现 post-activation `BasicBlock`。
 
-网络变深以后, 训练反而可能变差. 不是过拟合, 甚至连训练集都学不好. 这就很难受了: 模型明明更大, 表达能力更强, 但优化更难.
-
-ResNet 的想法很直接:
-
-如果几层网络暂时学不好新东西, 至少让它先别破坏输入.
-
-于是有了 shortcut.
-
-![残差块](assets/residual_block.png)
+![BasicBlock 的主分支和 shortcut](assets/residual_block.png)
 
 ---
 
-## 一. 残差块在算什么?
+## 残差块的公式
 
-普通网络的一段可以写成:
+把主分支记为 $F(x)$，shortcut 记为 $S(x)$：
 
-$$y = F(x)$$
+$$
+z=F(x)+S(x),
+\qquad
+y=\operatorname{ReLU}(z).
+$$
 
-ResNet 让它变成:
+如果输入、输出 shape 相同，$S(x)=x$。这时若目标映射为 $H(x)$，主分支拟合的是：
 
-$$y = F(x) + x$$
+$$
+F(x)=H(x)-x.
+$$
 
-这里的 $F(x)$ 是卷积、BN、ReLU 组成的分支. $x$ 是直接绕过去的 shortcut.
+“残差”指的就是相对 shortcut 输入还需补上的变化。它不是预测误差，也不是 loss。
 
-最后再接一个 ReLU:
-
-$$\mathrm{out} = \mathrm{ReLU}(F(x) + x)$$
-
-这就是残差块最核心的结构.
-
-直觉上, 模型不需要直接学出目标映射 $H(x)$, 而是学:
-
-$$F(x) = H(x) - x$$
-
-也就是残差.
-
-如果这一块暂时没学到什么, 它可以让 $F(x)$ 接近 0, 输出就接近 $x$. 至少不会比原来差太多.
+当空间尺寸或通道数改变时，$x$ 不能直接和主分支相加，$S$ 改用可学习的 projection。
 
 ---
 
-## 二. BasicBlock 的结构
+## 本仓库的 BasicBlock
 
-ResNet 里最基础的块通常长这样:
+主分支：
 
 ```text
-Conv3x3 -> BN -> ReLU -> Conv3x3 -> BN -> add shortcut -> ReLU
+Conv3x3(stride=s)
+-> BatchNorm
+-> ReLU
+-> Conv3x3(stride=1)
+-> BatchNorm
 ```
 
-对应代码里的 `BasicBlock`.
-
-第一层卷积负责提取特征, 第二层卷积继续处理. shortcut 把输入直接加到第二个 BN 的输出上.
-
-如果输入输出形状一样, shortcut 就是原样返回:
+shortcut：
 
 ```text
+identity                           shape 不变
+Conv1x1(stride=s) -> BatchNorm     shape 改变
+```
+
+合并：
+
+```text
+main + shortcut -> ReLU
+```
+
+第二个卷积后有 BatchNorm，但在加法前没有 ReLU；加法之后还有一个 ReLU。少掉第二个 BN 或末尾 ReLU，都会使图、正文和代码表示成不同结构。
+
+本实现的 projection 使用 `Conv1x1 + BN`。这是清晰易验算的教学选择；原论文讨论过不止一种 CIFAR shortcut 方案，因此这个块名并不表示它是某个官方模型的逐层复刻。
+
+---
+
+## 两种 shortcut shape
+
+### identity shortcut
+
+```python
+block = BasicBlock(in_channels=16, out_channels=16, stride=1)
+x.shape       == (N, 16, 32, 32)
+block.forward(x).shape == (N, 16, 32, 32)
+```
+
+主分支的两个 `3×3` 卷积都使用 `padding=1`，空间尺寸不变；shortcut 原样传递输入。
+
+### projection shortcut
+
+```python
+block = BasicBlock(in_channels=16, out_channels=32, stride=2)
+x.shape        == (N, 16, 32, 32)
+block.forward(x).shape == (N, 32, 16, 16)
+```
+
+主分支的第一个 `3×3` 卷积和 shortcut 的 `1×1` 卷积都使用 stride 2，两路输出均为 `(N,32,16,16)`。
+
+构造函数的判断是：
+
+```python
+self.needs_projection = self.stride != 1 or self.in_channels != self.out_channels
+```
+
+forward 在相加前再次比较 `main.shape` 与 `shortcut.shape`，不一致时立即报错。
+
+---
+
+## forward 的缓存顺序
+
+对应代码：
+
+```text
+main = conv1(x)
+main = bn1(main)
+main = relu1(main)
+main = conv2(main)
+main = bn2(main)
+
 shortcut = x
+# 或 shortcut = proj_bn(proj_conv(x))
+
+y = relu2(main + shortcut)
 ```
 
-如果形状不一样, 比如通道数变了, 或者 stride=2 导致空间尺寸减半, 那就不能直接相加了.
+每个子层保存自己的 backward 缓存。块本身记录是否已经执行过 forward；没有缓存就调用 backward 会抛出 `RuntimeError`。
 
-这时需要 projection shortcut, 通常用 $1\times 1$ 卷积:
-
-```text
-shortcut = Conv1x1(x)
-```
-
-它的作用不是提复杂特征, 而是把形状对齐.
-
----
-
-## 三. 为什么 shortcut 对反向传播有帮助?
-
-假设:
-
-$$y = F(x) + x$$
-
-那么反向传播时:
-
-$$\frac{\partial y}{\partial x} = \frac{\partial F(x)}{\partial x} + 1$$
-
-注意这个 $+1$.
-
-它意味着梯度不只要穿过卷积分支, 还可以沿着 shortcut 直接传回来.
-
-深层网络里, 梯度一层层乘下去很容易变小. shortcut 给了梯度一条更短的路.
-
-![梯度通路](assets/residual_gradient_path.png)
-
-这就是 ResNet 能训练得更深的关键原因之一.
-
-当然, 这不是说加了残差就万事大吉. 学习率、初始化、BatchNorm 模式、数据增强还是会影响训练. 但没有 shortcut, 深层 CNN 会难很多.
-
----
-
-## 四. shape 必须对齐
-
-残差块最常见的错误就是相加时 shape 不一致.
-
-比如主分支输出:
-
-```text
-(N, 32, 16, 16)
-```
-
-shortcut 输出:
-
-```text
-(N, 16, 32, 32)
-```
-
-这当然不能加.
-
-需要 projection 的情况通常有两种:
-
-- `stride != 1`: 空间尺寸发生变化.
-- `in_channels != out_channels`: 通道数发生变化.
-
-代码里已经有这个判断:
+以下片段展示两种路径的 shape：
 
 ```python
-self.needs_projection = stride != 1 or in_channels != out_channels
+import numpy as np
+from exercises.block_02_resnet.task_13_residual_block.residual_block import BasicBlock
+
+rng = np.random.default_rng(0)
+
+identity = BasicBlock(4, 4, stride=1)
+x1 = rng.normal(size=(2, 4, 8, 8))
+y1 = identity.forward(x1)
+dx1 = identity.backward(np.ones_like(y1))
+print(x1.shape, y1.shape, dx1.shape)
+
+projection = BasicBlock(4, 8, stride=2)
+x2 = rng.normal(size=(2, 4, 8, 8))
+y2 = projection.forward(x2)
+dx2 = projection.backward(np.ones_like(y2))
+print(x2.shape, y2.shape, dx2.shape)
 ```
 
-如果 `needs_projection=True`, shortcut 分支就要用 $1\times 1$ 卷积和 BN 把形状改成和主分支一致.
+预期：
+
+```text
+(2, 4, 8, 8) (2, 4, 8, 8) (2, 4, 8, 8)
+(2, 4, 8, 8) (2, 8, 4, 4) (2, 4, 8, 8)
+```
 
 ---
 
-## 五. forward 怎么写?
+## backward 在加法处分成两路
 
-按 BasicBlock 的结构写:
-
-```text
-main:
-  conv1 -> bn1 -> relu -> conv2 -> bn2
-
-shortcut:
-  identity 或 projection
-
-out:
-  relu(main + shortcut)
-```
-
-forward 时要缓存必要的中间结果, 因为 backward 会用到.
-
-特别是最后的相加:
+先反传末尾 ReLU：
 
 ```text
-z = main + shortcut
-out = relu(z)
+dadded = relu2.backward(dout)
 ```
 
-ReLU backward 需要知道 `z > 0` 的位置.
+因为 `z = main + shortcut`，两条分支都收到 `dadded`。
+
+主分支按相反顺序：
+
+```text
+bn2 -> conv2 -> relu1 -> bn1 -> conv1
+```
+
+shortcut 分支：
+
+```text
+identity:    dshortcut = dadded
+projection:  proj_bn -> proj_conv
+```
+
+最后：
+
+```text
+dx = dmain + dshortcut
+```
+
+![主分支与 shortcut 都对输入梯度有贡献](assets/residual_gradient_path.png)
+
+若暂时忽略末尾 ReLU并令 $z=F(x)+S(x)$，则：
+
+$$
+\frac{\partial L}{\partial x}
+=\frac{\partial L}{\partial z}
+\left(J_F(x)+J_S(x)\right).
+$$
+
+identity shortcut 的 $J_S=I$；projection shortcut 的 $J_S$ 是 `Conv1x1 + BN` 的 Jacobian。shortcut 增加了传播路径，但 ReLU、分支参数和上游梯度仍会影响最终梯度，不能据此声称梯度恒定或永不消失。
 
 ---
 
-## 六. backward 怎么写?
+## 参数、buffer 与模式递归
 
-反向传播从最后的 ReLU 开始.
+`parameters()` 返回主分支的 Conv/BN 参数；存在 projection 时，再加入 `proj_conv/proj_bn` 参数。
 
-假设上游梯度是 `dout`, 先过最后的 ReLU:
-
-```text
-dz = dout * (z > 0)
-```
-
-因为:
+命名示例：
 
 ```text
-z = main + shortcut
+block.conv1.W
+block.bn1.gamma
+block.conv2.W
+block.bn2.gamma
+block.proj_conv.W
+block.proj_bn.gamma
 ```
 
-所以梯度会分成两路:
+`named_buffers()` 收集每个 BatchNorm 的：
 
 ```text
-dmain = dz
-dshortcut = dz
+running_mean
+running_var
 ```
 
-主分支按反方向走:
-
-```text
-bn2 -> conv2 -> relu -> bn1 -> conv1
-```
-
-shortcut 分支如果是 identity, 那它对输入的梯度就是 `dshortcut`.
-
-如果是 projection, 就要反向经过 projection conv 和 projection BN.
-
-最后把两路对输入的梯度加起来:
-
-```text
-dx = dx_main + dx_shortcut
-```
-
-这个地方很容易漏. 一旦漏掉 shortcut 的梯度, 残差块就只剩半条路了.
+`train()` 和 `eval()` 会递归调用所有子层。模式切换不只修改 `block.training`，也会传递给 BatchNorm 子层。
 
 ---
 
-## 七. 你要完成什么?
+## 运行与核对
 
-请完成 `residual_block.py` 里的 `BasicBlock`.
-
-当前文件只留下了骨架:
-
-```python
-Conv3x3 -> BN -> ReLU -> Conv3x3 -> BN -> shortcut add -> ReLU
+```bash
+python exercises/block_02_resnet/task_13_residual_block/residual_block.py
+python -m unittest discover -s tests -p 'test_block2.py' -v
 ```
 
-你需要在完成 task_11 和 task_12 后, 把那些层接进来.
+第一条命令成功时不打印内容。测试正常结束时显示 `OK`。
 
-建议先做两种测试:
+测试覆盖以下性质：
 
-1. 输入输出通道相同, stride=1. 这时 shortcut 应该是 identity.
-2. 输入输出通道不同或 stride=2. 这时必须走 projection.
+- identity 模式保持 `(N,C,H,W)`；
+- projection 模式同时改变通道与空间大小；
+- 两种模式的 `dx.shape` 都等于输入 shape；
+- 参数名称不重复，包含 `bn2`；
+- projection 的 BatchNorm buffer 出现在 `named_buffers()`；
+- `train()/eval()` 能递归切换所有 BN；
+- backward 同时累加主分支和 shortcut 的输入梯度。
 
-每种都检查:
+[task_14](../task_14_numpy_resnet_train/README.md) 将多个 BasicBlock 接成 SmallResNet，并加入训练与评估循环。
 
-- forward 输出 shape 是否正确.
-- backward 输出 `dx` shape 是否和输入一致.
-- 参数梯度 shape 是否正确.
+## 参考资料
 
-再做一个小实验: 把主分支的卷积权重临时设得很小, 看输出是否接近输入经过最后 ReLU 后的结果.
-
-下一关我们开始把这些块组装成一个轻量 ResNet.
+- [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
+- [Dive into Deep Learning: Residual Networks](https://d2l.ai/chapter_convolutional-modern/resnet.html)

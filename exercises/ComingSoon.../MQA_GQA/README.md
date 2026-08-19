@@ -1,47 +1,15 @@
 # MQA / GQA
 
-普通 Multi-Head Attention 里, Q/K/V 都有同样数量的 heads.
-
-比如:
+标准 multi-head attention 为每个 query head 保留一组 K/V。MQA 让所有 query heads 共享一组 K/V；GQA 则让一组 query heads 共享一组 K/V。
 
 ```text
-n_heads = 32
+MHA: n_heads = 32, n_kv_heads = 32
+GQA: n_heads = 32, n_kv_heads = 8
+MQA: n_heads = 32, n_kv_heads = 1
 ```
 
-那么 Q、K、V 都有 32 个 head.
+上面的 GQA 例子中，每 4 个 query heads 共享 1 组 K/V。共享不会减少 query heads 的数量：attention 仍产生 32 个 head outputs，然后 concat 并做输出投影。
 
-这在训练时没什么问题, 但推理时会带来一个麻烦: KV Cache 很大.
+KV cache 的主要存储量与 `n_kv_heads` 成正比，因此 MQA/GQA 能减少自回归推理时的显存占用和内存带宽需求。共享的粒度则会影响质量与效率的取舍。
 
-## MQA
-
-MQA(Multi-Query Attention)让所有 Q heads 共享同一组 K/V.
-
-```text
-n_heads = 32
-n_kv_heads = 1
-```
-
-KV Cache 会小很多, 但表达能力可能受影响.
-
-## GQA
-
-GQA(Grouped-Query Attention)折中一点.
-
-多个 Q heads 共享一组 K/V:
-
-```text
-n_heads = 32
-n_kv_heads = 8
-```
-
-每 4 个 Q heads 共用 1 个 KV head.
-
-很多 LLaMA 风格模型会用 GQA, 因为它在推理速度和效果之间比较均衡.
-
-## 和 KV Cache 的关系
-
-KV Cache 的大小大致和 `n_kv_heads` 成正比.
-
-所以减少 KV heads, 推理时显存和带宽压力都会下降.
-
-这就是大模型喜欢 MQA/GQA 的主要原因.
+可运行实现见 [Task 23](../../block_03_transformer/task_23_causal_attention/README.md)，结构与实验背景见 [GQA 论文](https://arxiv.org/abs/2305.13245)。

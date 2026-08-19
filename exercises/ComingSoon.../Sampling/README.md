@@ -1,57 +1,22 @@
 # Sampling
 
-语言模型最后输出的是 logits.
+语言模型输出下一个 token 的 logits。解码策略决定如何从这个分布选择 token，不会修改模型参数。
 
-你要把 logits 变成下一个 token.
+## Greedy 与 temperature
 
-选法不同, 生成风格会差很多.
-
-## Greedy
-
-每次选概率最大的 token:
-
-```text
-next = argmax(logits)
-```
-
-稳定, 但容易重复, 也容易无聊.
-
-## Temperature
-
-temperature 控制分布的尖锐程度:
+Greedy 每步选择最大 logit，结果确定，但可能较早陷入重复模式。Temperature 先缩放 logits：
 
 $$
-p = \mathrm{softmax}(logits / T)
+p_i=\operatorname{softmax}(z_i/T).
 $$
 
-$T$ 小, 模型更保守.
+`T < 1` 使分布更尖，`T > 1` 使分布更平。`T = 0` 不应直接代入除法，代码中通常把它当作 greedy。
 
-$T$ 大, 模型更随机.
+## Top-k 与 top-p
 
-## Top-k
+- Top-k 只保留概率最高的 `k` 个候选，其余设为零后重新归一化。
+- Top-p 先按概率降序排列，保留累计概率首次达到 `p` 的最短前缀。因此候选个数会随当前分布变化。
 
-只保留概率最高的 k 个 token.
+temperature、top-k 和 top-p 可以组合使用，但不存在适合所有任务的固定参数。测试时应固定随机种子，并检查被截断候选的概率确实为零。
 
-比如 `top_k=50`, 就只从 50 个候选里采样.
-
-这能减少抽到离谱 token 的概率.
-
-## Top-p
-
-Top-p 也叫 nucleus sampling.
-
-它不是固定保留 k 个 token, 而是保留累计概率达到 p 的那一小撮 token.
-
-比如 `top_p=0.9`, 就保留概率从高到低累加到 0.9 的候选集合.
-
-## 常见组合
-
-实际生成时常见组合是:
-
-```text
-temperature = 0.7 或 1.0
-top_p = 0.9
-top_k = 40 或 50
-```
-
-没有永远最好的参数. 写故事、写代码、做问答, 需要的随机程度都不一样.
+可运行实现和边界检查见 [Task 29](../../block_03_transformer/task_29_generate_sampling/README.md)。

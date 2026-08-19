@@ -22,3 +22,7 @@ class SwiGLU(nn.Module):
     def forward(self, x):
         return self.w3(F.silu(self.w1(x)) * self.w2(x))
 
+
+if __name__ == "__main__":
+    values = torch.randn(2, 6, 32)
+    print("SwiGLU output:", tuple(SwiGLU(32, 64)(values).shape))

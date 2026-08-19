@@ -1,14 +1,14 @@
 # 快速入门深度学习
 
-你可能已经上过人工智能导论,也可能已经把作业文档丢给 AI 生成过一份看起来很完美的代码. 但代码能跑和你真的理解它,中间差得还挺远.
+这是一套以代码为主的深度学习入门教程。起点是一条直线，随后会实现一个小型 NumPy 深度学习库、用于 CIFAR-100 的 ResNet，以及带 RoPE、GQA 和 KV Cache 的小型 decoder-only Transformer。
 
-这个教程会带你从拟合一条直线开始,逐步搭出一个小型深度学习库,再到 ResNet 图像分类和 Transformer.
+除明确标注的理论导读外，每个可运行主题都附有代码入口、运行命令和结果核对方法。这些检查覆盖数据隔离、梯度、shape 约束和 checkpoint round-trip，用来区分“程序能跑”和“计算符合预期”。
 
-[一些推荐的教学视频](推荐教学视频.md)
+[课程、论文与视频资料](推荐教学视频.md)
 
 ## 环境准备
 
-推荐使用 conda 管理 Python 环境, 用 `requirements.txt` 管理项目依赖. 这个依赖文件默认覆盖完整教程, 包括 NumPy、MNIST、Transformer 和图片裁剪工具:
+推荐使用 conda 管理 Python 环境，用 `requirements.txt` 安装项目依赖。该文件覆盖完整教程，包括 NumPy、MNIST 和 Transformer 相关依赖：
 
 ```bash
 conda create -n dl_tutorial python=3.10
@@ -16,19 +16,19 @@ conda activate dl_tutorial
 pip install -r requirements.txt
 ```
 
-如果只学习 Block 1 和 Block 2 的 NumPy 部分,核心依赖是 `numpy`、`pandas`、`matplotlib` 和 `scikit-learn`. `torch` / `torchvision` 主要用于 MNIST 与 Transformer 相关任务.
+如果只学习 Block 1 和 Block 2 的 NumPy 部分，核心依赖是 `numpy`、`pandas`、`matplotlib` 和 `scikit-learn`。`torch` / `torchvision` 主要用于 MNIST 与 Transformer 相关任务。
 
 ## 目录
 
 ```text
 chapters/     # 章节
-exercises/    # 练习代码
+exercises/    # 分节代码与可运行示例
 solutions/    # 参考实现
 common/       # task_02 之后共享的小型 NumPy 深度学习库完整实现
 assets/       # 共享图片
-tools/        # 小工具，比如手动裁图器
-legacy/       # 归档资料
 ```
+
+关键配图中的矩阵数值、shape、梯度数量和 head 映射都有自动检查。task 15 的误分类图来自真实 CIFAR-100 推理，并保留 test split、checkpoint 摘要和测试索引。
 
 ## 课程路线
 
@@ -44,7 +44,7 @@ legacy/       # 归档资料
 - [task_02: 小型深度学习库](exercises/block_01_basics/task_02_mini_dl_lib/README.md)
 - [task_03: MLP 识别 MNIST](exercises/block_01_basics/task_03_mnist_mlp/README.md)
 
-### Block 2: 这是飞机还是轮船? 用 ResNet 分类物体!
+### Block 2: 用 ResNet 分类 CIFAR-100 小图像
 
 - [task_10: 图像数据管线](exercises/block_02_resnet/task_10_image_data_pipeline/README.md)
 - [task_11: Conv2D 与 im2col](exercises/block_02_resnet/task_11_conv2d_im2col/README.md)
@@ -53,7 +53,7 @@ legacy/       # 归档资料
 - [task_14: NumPy ResNet 训练](exercises/block_02_resnet/task_14_numpy_resnet_train/README.md)
 - [task_15: 实验记录](exercises/block_02_resnet/task_15_experiment_notes/README.md)
 
-### Block 3: apple is __ ? __ 注意力是你所需要的
+### Block 3: 用上下文补出下一个 token
 
 - [task_20: Transformer 理论](exercises/block_03_transformer/task_20_transformer_theory/README.md)
 - [task_21: Sinusoidal 位置编码](exercises/block_03_transformer/task_21_sinusoidal_position/README.md)
@@ -78,22 +78,34 @@ MQA_GQA
 Sampling
 Tokenizer
 SFT
-Alignment_DPO_RLHF
+RL/Alignment_DPO_RLHF
 MoE
 Mamba / StateSpaceModels
 RL
 ```
 
-教程随时可能更新,使用这个命令同步:
+同步上游更新：
 
 ```bash
 git pull origin main
 ```
 
-运行参考实现:
+运行参考实现：
 
 ```bash
 python solutions/block_01_basics/linear_regression_solution.py
 python solutions/block_01_basics/mini_network_reference.py
 python solutions/block_02_resnet/train_cifar100_solution.py --subset-size 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
+python solutions/block_03_transformer/minimind_solution.py
 ```
+
+不下载数据的快速检查：
+
+```bash
+python -m unittest discover -s tests -p 'test_block1.py' -v
+python -m unittest discover -s tests -p 'test_block2.py' -v
+python -m unittest discover -s tests -p 'test_block3.py' -v
+python -m unittest tests.test_docs -v
+```
+
+预期每条命令末尾都显示 `OK`。Block 2/3 的测试覆盖 shape、梯度、数据隔离、causal 性质和 checkpoint 等基础约束；它们不衡量完整 CIFAR-100 训练精度，也不代表模型具备通用语言能力。
