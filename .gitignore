@@ -3,8 +3,4 @@ __pycache__/
 *.pyc
 data/
 checkpoints/
-site/node_modules/
-site/dist/
-site/.next/
-site/.wrangler/
 exercises/block_01_basics/task_03_mnist_mlp/data/
