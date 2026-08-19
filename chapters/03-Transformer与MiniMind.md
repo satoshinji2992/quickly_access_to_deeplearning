@@ -133,6 +133,8 @@ $$
 
 生成出的 `(T,D)` 位置表增加一个 batch 轴后成为 `(1,T,D)`，再与 `(B,T,D)` embedding 相加。
 
+<div class="widget-mount" data-widget="pos-encoding" data-title="正弦编码：频率有多快"></div>
+
 [正弦位置编码](../exercises/block_03_transformer/task_21_sinusoidal_position/README.md)
 
 ### RoPE 把位置放进 Q/K 的旋转角
@@ -151,7 +153,7 @@ $$
 
 每一对维度使用不同 $\theta_i$。同一个向量在位置 $m$ 和位置 $n$ 采用不同旋转角，而旋转后的 Q/K 点积会依赖相对位移 $n-m$。准确的说法是“点积中出现相对位移”，而不是位置向量本身具有某种绝对不变性。
 
-<div class="widget-mount" data-widget="pos-encoding" data-title="正弦编码与 RoPE 对照"></div>
+<div class="widget-mount" data-widget="rope-rotate" data-title="RoPE：位置变成旋转角"></div>
 
 V 不旋转，因为位置关系要改变的是“query 与哪个 key 匹配”；V 负责提供匹配后取回的内容。
 

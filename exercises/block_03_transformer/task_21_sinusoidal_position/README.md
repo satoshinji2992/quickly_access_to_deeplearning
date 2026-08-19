@@ -9,7 +9,7 @@ Self-attention 只比较向量内容，不会凭空知道 token 的先后顺序�
 ---
 
 
-<div class="widget-mount" data-widget="pos-encoding" data-title="正弦编码与 RoPE 对照"></div>
+<div class="widget-mount" data-widget="pos-encoding" data-title="正弦编码：频率有多快"></div>
 
 ## 公式怎样落到数组中
 

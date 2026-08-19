@@ -8,6 +8,9 @@
 
 ---
 
+
+<div class="widget-mount" data-widget="rope-rotate" data-title="RoPE：位置变成旋转角"></div>
+
 ## 把相邻两维看成一个平面
 
 取 Q 或 K 的一对分量 $(x_0,x_1)$。位置 $m$ 对应一次二维旋转：
