@@ -118,7 +118,7 @@
   function mount(container) {
     container.innerHTML =
       '<p class="wg-title">MLP 决策边界：手调一个 2-h-2 网络</p>' +
-      '<p class="wg-sub">圆内为 1、圆外为 0；点边 +0.3，Shift+点 −0.3。</p>' +
+      '<p class="wg-sub">数据只有两个特征 (x₁, x₂)：单位圆内为蓝色类、圆外为米色类。下面的网络图里，每条边就是一个权重——点击边 +0.3、Shift+点击 −0.3，看边界跟着弯折。</p>' +
       '<div class="wg-label"><span>隐藏宽度 h（神经元个数）</span><span data-role="hval">2-4-2</span></div>' +
       '<div class="wg-controls">' +
         '<button type="button" class="wg-button" data-role="h2">h=2</button>' +
@@ -134,7 +134,7 @@
         '<div class="mb-col">' +
           '<div class="wg-label"><span>网络 2-h-2</span><span>点击边/偏置</span></div>' +
           '<div class="mb-svgwrap" data-role="net"></div>' +
-          '<p class="wg-note">蓝边=正权重，红边=负权重，粗细=|w|；下方偏置同样可点。</p>' +
+          '<p class="wg-note">蓝边=正权重，红边=负权重，粗细=|w|。点击边 +0.3，Shift+点击 −0.3；隐藏/输出节点下方的偏置同样可点。</p>' +
         '</div>' +
       '</div>' +
       '<div class="wg-readout">' +
@@ -449,13 +449,13 @@
 
       var tail;
       if (state.model.h <= 2) {
-        tail = '2 条折线围不出闭合区域。';
+        tail = '只有 2 条折线，无论怎么调也围不出闭合区域——这就是宽度不够时 MLP 表达能力的天花板。';
       } else if (state.model.h <= 4) {
-        tail = '4 条折线围成四边形。';
+        tail = '4 条折线首尾相接，围出的是四边形：四个角盖不住圆外远的点，四个边中段又切进圆内。';
       } else {
-        tail = '8 条折线围成八边形，接近圆。';
+        tail = '8 条折线首尾相接，围出近似圆的八边形——折线越多，边界越接近圆。';
       }
-      q('foldnote').textContent = '活跃 ' + act + '/' + state.model.h + ' 条折线。' + tail;
+      q('foldnote').textContent = 'ReLU 折线：第 j 个隐藏神经元在输入平面留下直线 w·x+b=0（左图斜虚线），折线的一侧输出恒为 0。当前活跃 ' + act + '/' + state.model.h + ' 条。' + tail;
     }
 
     function render() {

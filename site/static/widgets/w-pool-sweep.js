@@ -96,7 +96,7 @@
 
     container.appendChild((function () { var d = document.createElement('div'); d.innerHTML =
       '<p class="wg-title">池化：窗口取数与梯度路由</p>' +
-      '<p class="wg-sub">点击或拖动移动 2×2 窗口；「反向视图」看 dY → dX。</p>' +
+      '<p class="wg-sub">在 8×8 输入上点击或拖动，把 2×2 窗口（stride 2）挪到某个位置；切到反向视图，看上游梯度 dY 如何原路返回输入。</p>' +
       '<div class="ps-shape">X: (1,1,8,8) → Y: (1,1,4,4) · 窗口 2×2 · stride 2 · 无参数</div>' +
       '<div class="ps-main">' +
         '<div class="ps-inwrap">' +
@@ -125,9 +125,9 @@
       '<div class="ps-back" data-role="backpanel" style="display:none;">' +
         '<div class="wg-label"><span>反向：dY → dX</span><span>dY: (1,1,4,4) → dX: (1,1,8,8)</span></div>' +
         '<div class="ps-readout" data-role="backread"></div>' +
-        '<p class="wg-note">Max：梯度只进胜出格；Avg：四格各 ¼。</p>' +
+        '<p class="wg-note">Max：整个窗口的梯度流进唯一胜出格；Avg：四格均分。stride 等于窗口大小时窗口不重叠，每个输入格只属于一个窗口。</p>' +
       '</div>' +
-      '<p class="wg-note">并列最大值取行优先第一个，同 np.argmax 规则。</p>'; return d; })());
+      '<p class="wg-note">并列最大值取行优先（row-major）遇到的第一个，与 np.argmax 规则一致；池化层没有可学习参数，反向传播只做这份「路由表」。</p>'; return d; })());
 
     // 反向路由表：输入格下标 → 收到的 dX 量。
     function routesFor(wr, wc, mode) {
@@ -352,8 +352,8 @@
         ? '红 = 收到梯度的输入格'
         : (state.mode === 'max' ? '绿框 = 最大值胜出格（反向只回它）' : '虚线 = 四格均分（各 ¼）');
       q('sidenote').textContent = state.view === 'fwd'
-        ? (state.mode === 'max' ? '每格 = 窗口内最大值。' : '每格 = 四格平均值。')
-        : '点击格子选定 dY=1 的位置，或「dY 全设 1」。';
+        ? (state.mode === 'max' ? '每格填窗口内的最大值，绿框标出胜出格。' : '每格填四格平均值，值可带小数。')
+        : '点击格子把 dY=1 放到该窗口，或「dY 全设 1」看整体路由。';
       q('view').textContent = state.view === 'fwd' ? '反向视图' : '回到正向';
       q('view').classList.toggle('is-primary', state.view === 'bwd');
       q('auto').classList.toggle('is-primary', state.view === 'fwd');

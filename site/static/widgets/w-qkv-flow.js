@@ -204,12 +204,12 @@
     '(T,D) = (3,4)',
   ];
   var NOTES = [
-    'X：3 个 token × 4 维；同一份 X 乘三组 W 得 Q/K/V',
-    'Wq/Wk/Wv 各 (D,D)=(4,4)，投出三份不同的 (3,4)',
-    'scores[i,j] = q_i·k_j / √4。点击格子高亮 Q 行与 K 列',
-    'M 与 scores 同 shape：j ≤ i 加 0，j > i 加 −∞',
-    '逐行 softmax：−∞ → 0，每行和 = 1；底色越深权重越大',
-    'out = 权重·V；第 0 行权重 [1.00, 0, 0]，out₀ = v₀',
+    'X 是嵌入层出来的输入：3 个 token、每个 4 维。接下来这一份 X 会同时乘三组不同的参数，得到 Q、K、V。',
+    '同一个 X，三组参数：Wq/Wk/Wv 都是 (D,D)=(4,4)。Q 用来"提问"，K 用来"被匹配"，V 才是真正被加权取走的内容。',
+    'scores[i,j] = q_i·k_j / √D，√4=2。点击任意格子：蓝底 = 参与的 Q 行（scores 的第 i 行），青底 = 参与的 K 行（第 j 列）。',
+    '因果掩码 M 与 scores 同 shape：j ≤ i 的位置加 0（不变），j > i 的位置加 −∞。比如 S[0,2]=2.5 落在未来，直接被砍掉。',
+    '对 scores+M 的每一行独立做 softmax：−∞ 变成 0，其余归一化，每行和 = 1。底色越深，注意力权重越大。',
+    'out = 权重·V：每个 token 的输出是 V 各行的加权和。第 0 行权重是 [1.00, 0, 0]，所以 out₀ = v₀ —— 第一个 token 只看得到自己。',
   ];
 
   function fmtIntCell(v) { return fInt(v); }
@@ -225,7 +225,7 @@
     var shell = document.createElement('div');
     shell.innerHTML =
       '<p class="wg-title">QKV 分步：一个 attention 头的完整计算</p>' +
-      '<p class="wg-sub">T=3、D=4。点「下一步」推进；第③步可点 scores 格子</p>' +
+      '<p class="wg-sub">T=3 个 token、D=4 维的最小数字例子，数值全部预计算。用"下一步"逐个点亮矩阵；第 ③ 步点击 scores 的任意格子，可以看到它由哪一行 Q、哪一行 K 算出。</p>' +
       '<div class="qf-steps" data-role="steps"></div>' +
       '<div class="wg-controls qf-controls">' +
         '<button type="button" class="wg-button" data-role="prev">上一步</button>' +
@@ -256,7 +256,8 @@
       '<div><b>行 = token</b>：t0、t1、t2 共 T=3 个</div>' +
       '<div><b>列 = 维度</b>：d0–d3 共 D=4 维</div>' +
       '<div>例如 t2 = [2, 1, 1, 0]</div>' +
-      '<div>带上 batch 即 <b>(B,T,D) = (1,3,4)</b></div>';
+      '<div>带上 batch 即 <b>(B,T,D) = (1,3,4)</b></div>' +
+      '<div>下面所有矩阵都从这 12 个数字出发。</div>';
     q('s1body').appendChild(side);
 
     /* —— ② 投影 —— */
@@ -276,7 +277,7 @@
       q('s2body').appendChild(col);
       projRefs.push({ mat: mM });
     });
-    var ptag = el('div', 'qf-ptag', '三组 W 不同 → 同一个 X 投出三份 (3,4)');
+    var ptag = el('div', 'qf-ptag', '三组 W 参数不同 → 同一个 X 投出三份不同的 (3,4)：Q 去"问"，K 去"被检索"，V 提供内容。');
     q('s2body').appendChild(ptag);
     var qRows = projRefs[0].mat.grid, kRows = projRefs[1].mat.grid;
 
@@ -325,7 +326,7 @@
     var mSmWrap = el('div', 'qf-mitem'); mSmWrap.appendChild(mSm.root);
     mSmWrap.appendChild(el('div', 'qf-mlab', 'scores + M'));
     s4.appendChild(mSmWrap);
-    var s4note = el('div', 'qf-ptag', '灰色 = −∞：j > i 的位置被掩码');
+    var s4note = el('div', 'qf-ptag', '灰色 = −∞：位置 (i,j) 且 j > i 的 score 全部被砍掉 —— 每个 token 看不到未来的 token。');
     q('s4body').appendChild(s4note);
 
     /* —— ⑤ softmax —— */
@@ -351,8 +352,9 @@
     var s5legend = el('div', 'qf-ptag');
     s5legend.style.cssText = 'flex:1 1 200px;margin-top:0';
     s5legend.innerHTML =
-      '<div>底色越深 = 权重越大；灰格 = 0。</div>' +
-      '<div>q0 只有 1 个可见位置 → 权重 1.00。</div>';
+      '<div>底色越深 = 权重越大；灰格 = 被 −∞ 压成 0。</div>' +
+      '<div>行 q0 只有 1 个可见位置 → 权重 1.00；</div>' +
+      '<div>行 q1 在 k0/k1 间分；行 q2 三家分。</div>';
     q('s5body').appendChild(s5legend);
 
     /* —— ⑥ 输出 —— */
@@ -371,7 +373,7 @@
     }
     olines.innerHTML = ohtml;
     var ok0 = el('div', 'qf-ok0');
-    ok0.innerHTML = '<b>out₀ = v₀</b>　第一个 token 只看得到自己';
+    ok0.innerHTML = '<b>out₀ = v₀</b>　第一个 token 只有 k0 可看，权重 1.00，输出原样等于自己的 V 行；后面的 token 才是真正的"加权混合"。';
     olines.appendChild(ok0);
     q('s6body').appendChild(olines);
 

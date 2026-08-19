@@ -91,7 +91,7 @@
     container.innerHTML =
       '<style>' + CSS + '</style>' +
       '<p class="wg-title">因果掩码：训练一次全算，推理每步只算一行</p>' +
-      '<p class="wg-sub">T=6 · 下三角可见，其余置 −∞ · shape (1,1,6,6)</p>' +
+      '<p class="wg-sub">序列 T=6：BOS 小 猫 在 睡 觉。第 i 行 = 第 i 个 token 作为 query 的打分行；因果掩码只允许它看前 i+1 个 key（下三角），其余置 −∞。score 矩阵 shape (B,H,T,T) = (1,1,6,6)。</p>' +
       '<div class="wg-controls">' +
         '<button type="button" class="wg-button is-primary" data-role="mtrain">训练：一次 forward 全算</button>' +
         '<button type="button" class="wg-button" data-role="mstep">推理：逐 token 一步步算</button>' +
@@ -222,7 +222,7 @@
         } else {
           row.tag.className = 'cml-tag' + (i < step ? ' cache' : i === step ? ' now' : '');
           row.tag.textContent = i < step ? '缓存' : i === step ? '本步新算' : '未到';
-          row.tag.title = i < step ? '已算过，进缓存' : i === step ? '本步新算的一行' : '还没轮到';
+          row.tag.title = i < step ? 'pos ' + i + ' 在之前的步已算过，结果进缓存' : i === step ? '本步 forward 新算的一行' : '还没轮到这一行';
           row.g.className = i === step ? 'cml-g cur' : 'cml-g';
         }
 
@@ -239,7 +239,7 @@
           if (j > i) {
             cell.className = 'cml-cell mk';
             cell.textContent = '✕';
-            cell.title = 'j > i：被掩码置 −∞';
+            cell.title = 'j > i：key 在未来，被掩码置 −∞，softmax 后权重为 0';
             return;
           }
           var s = SCORE[i][j], w = W[i][j];
@@ -271,16 +271,19 @@
         q('s2l').textContent = '被掩码（−∞）'; q('s2').textContent = MASKED + ' 格';
         q('s3l').textContent = 'forward 次数'; q('s3').textContent = '1 次';
         q('s4l').textContent = '训练 label'; q('s4').textContent = '右移一位';
-        q('note').textContent = '悬停任一行查看该行 softmax';
+        q('note').textContent = '训练（teacher forcing）：6 行在同一个 forward 里并行算完 —— ' + LOWER +
+          ' 个可见 score 一次全部得到，' + MASKED + ' 个上三角格被置 −∞、softmax 后为 0。第 i 行的输出预测第 i+1 个 token，所以 label 就是输入右移一位。悬停任一行可单独看该行的 softmax。';
       } else {
         q('s1l').textContent = '当前步'; q('s1').textContent = (step + 1) + ' / ' + T;
         q('s2l').textContent = '本步新算 score'; q('s2').textContent = '1×' + (step + 1) + ' = ' + (step + 1) + ' 个';
         q('s3l').textContent = '已缓存行'; q('s3').textContent = step + ' 行';
         q('s4l').textContent = 'forward 次数'; q('s4').textContent = (step + 1) + ' 次';
         if (step < T - 1) {
-          q('note').textContent = '第 ' + (step + 1) + ' / ' + T + ' 步：新算 pos ' + step + ' 一行，上方 ' + step + ' 行已缓存';
+          q('note').textContent = '推理第 ' + (step + 1) + ' / ' + T + ' 步：每步只算一行。本步新算的是 pos ' + step + '（query「' + TOK[step] +
+            '」）—— 做一次 1×' + (step + 1) + ' 的 qKᵀ/√d 再 softmax；上方 ' + step + ' 行已算过、进缓存变暗，下方 ' + (T - 1 - step) + ' 行还没轮到。';
         } else {
-          q('note').textContent = '完成：共 ' + T + ' 次 forward，K/V 从缓存读';
+          q('note').textContent = '推理走完 ' + T + ' 步：每步 1 行、共 ' + T +
+            ' 次 forward。训练一个 forward 就算完的矩阵，推理要拆成 T 步 —— 换来的是每步只有 1 个 token 过网络，前面的 K/V 直接从缓存读。';
         }
         btnNext.disabled = step >= T - 1;
         btnAuto.disabled = step >= T - 1;

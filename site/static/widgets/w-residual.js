@@ -43,26 +43,26 @@
 
   /* 面板 A 的步进描述：6 步前向 + 5 步反向。 */
   var FWD_STEPS = [
-    { boxes: ['x'], text: '输入 x：<b>(1,16,32,32)</b>，同时进入主分支与 shortcut。' },
-    { boxes: ['c1'], text: '主分支第一段 Conv3×3 → BN → ReLU，通道 16→16。' },
-    { boxes: ['c2'], text: '主分支第二段 Conv3×3 → BN（无 ReLU），输出 F(x)，<b>shape 仍 (1,16,32,32)</b>。' },
-    { boxes: ['sc'], text: 'shortcut：S(x)=x 原样直通，不引入参数。' },
-    { boxes: ['add'], text: '⊕ 相加：F(x)+S(x)，两分支 shape 必须一致。' },
-    { boxes: ['y'], text: '最后 ReLU：<b>y = ReLU(F(x)+S(x))</b>；映射接近恒等时只需 F(x)≈0。' },
+    { boxes: ['x'], text: '输入 x：<b>(1, 16, 32, 32)</b>。它同时进入主分支和 shortcut——两条路并行。' },
+    { boxes: ['c1'], text: '主分支第一段 Conv3×3 → BN → ReLU：通道 16→16，得到中旬特征。' },
+    { boxes: ['c2'], text: '主分支第二段 Conv3×3 → BN（无 ReLU）：输出 F(x)，<b>shape 仍 (1,16,32,32)</b>。' },
+    { boxes: ['sc'], text: 'shortcut 计算 S(x)：identity 模式下 S(x)=x 原样直通（不引入任何参数）。' },
+    { boxes: ['add'], text: '⊕ 相加：F(x)+S(x)。两条分支的 shape 必须完全一致，否则无法逐元素相加。' },
+    { boxes: ['y'], text: '最后 ReLU：<b>y = ReLU(F(x)+S(x))</b>。若最合适的映射接近恒等，主分支只需把 F(x) 学到接近 0。' },
   ];
   var BWD_STEPS = [
-    { boxes: ['y'], text: 'dL/dy 先过 ReLU 掩码：前向为负处梯度为 0。' },
-    { boxes: ['add'], text: '⊕：<b>梯度原样复制给两条支路</b>，dL/dF = dL/dS。' },
-    { boxes: ['c2'], text: '主支路：dL/dF 依次过 BN、Conv 的 Jacobian。' },
-    { boxes: ['sc'], text: 'shortcut：Jacobian 为 I，梯度<b>不经缩放直通回 x</b>。' },
-    { boxes: ['x'], text: '合流：<b>dL/dx = dL/dy·(J_F + J_S)</b>；J_S=I 保证有不衰减路径。' },
+    { boxes: ['y'], text: '反向开始：上游梯度 dL/dy 到达，先过 ReLU 掩码（前向为负的位置梯度为 0）。' },
+    { boxes: ['add'], text: '梯度到达 ⊕：加法节点的梯度<b>原样复制给两条支路</b>——dL/dF = dL/dS = dL/d(和)。' },
+    { boxes: ['c2'], text: '主支路：dL/dF 依次穿过 BN、Conv 的 Jacobian，每过一层都被缩放/混合一次。' },
+    { boxes: ['sc'], text: 'shortcut：identity 的 Jacobian 是 I，梯度<b>不经任何缩放直通回 x</b>——这就是残差网络的梯度高速路。' },
+    { boxes: ['x'], text: '合流：<b>dL/dx = dL/dy·(J_F + J_S)</b>。即使 J_F 很小，J_S=I 保证总有一条不衰减的路径。' },
   ];
 
   function mount(container) {
     container.innerHTML =
       '<style>' + CSS + '</style>' +
       '<p class="wg-title">残差块：两条分支与一条梯度直通路</p>' +
-      '<p class="wg-sub">y = ReLU(F(x)+S(x))。步进看前向与反向。</p>' +
+      '<p class="wg-sub">BasicBlock = 主分支学增量 F(x)，shortcut 提供 S(x)，相加后再 ReLU。步进看一遍前向合流与反向分流，再往下用简化模型看"越深梯度越小"的问题怎样被 shortcut 化解。</p>' +
       '<div class="wg-controls">' +
         '<button type="button" class="wg-button is-primary" data-role="mode-id">shortcut：identity（16→16）</button>' +
         '<button type="button" class="wg-button" data-role="mode-pr">projection（16→32, s2）</button>' +
@@ -96,6 +96,7 @@
       '<div class="rs-desc" data-role="desc"></div>' +
 
       '<div class="wg-label" style="margin-top:22px"><span>深度-梯度实验（简化模型）</span><span>条形为对数尺度</span></div>' +
+      '<p class="wg-note">把每一层对梯度范数的"保留率"记为 σ（卷积混合会缩小它）。普通深网把 N 层连乘，到达输入的梯度是 σᴺ；有 shortcut 时，加法节点让梯度多一条不衰减的直通路，最底层至少收到 1 份。</p>' +
       '<div class="wg-readout">' +
         '<div class="wg-stat"><span>深度 N（层）</span><b data-role="nv">12</b></div>' +
         '<div class="wg-stat"><span>每层保留率 σ</span><b data-role="sv">0.60</b></div>' +
@@ -144,14 +145,14 @@
       }
       q('yshape').textContent = state.projection ? '(1,32,16,16)' : '(1,16,32,32)';
       BWD_STEPS[3].text = state.projection
-        ? 'shortcut：梯度只经 Conv1×1 一次缩放。'
-        : 'shortcut：Jacobian 为 I，梯度<b>不经缩放直通回 x</b>。';
+        ? 'shortcut：projection 的 Conv1×1 也是浅层线性映射，梯度只经过一次转置缩放，仍远比主分支直接。'
+        : 'shortcut：identity 的 Jacobian 是 I，梯度<b>不经任何缩放直通回 x</b>——这就是残差网络的梯度高速路。';
       BWD_STEPS[4].text = state.projection
-        ? '合流：<b>dL/dx = dL/dy·(J_F + J_S)</b>，J_S 来自 Conv1×1。'
-        : '合流：<b>dL/dx = dL/dy·(J_F + J_S)</b>；J_S=I 保证有不衰减路径。';
+        ? '合流：<b>dL/dx = dL/dy·(J_F + J_S)</b>，J_S 来自 Conv1×1 的转置。两条路相加，衰减不再是唯一命运。'
+        : '合流：<b>dL/dx = dL/dy·(J_F + J_S)</b>。即使 J_F 很小，J_S=I 保证总有一条不衰减的路径。';
       FWD_STEPS[3].text = state.projection
-        ? 'shortcut：16→32 且 s2 时，用 Conv1×1+BN 对齐 shape。'
-        : 'shortcut：S(x)=x 原样直通，不引入参数。';
+        ? 'shortcut 计算 S(x)：通道 16→32 且 stride 2 时 x 无法直接相加，用 Conv1×1+BN 对齐 shape。'
+        : 'shortcut 计算 S(x)：identity 模式下 S(x)=x 原样直通（不引入任何参数）。';
       paintStep();
     }
 
@@ -177,7 +178,9 @@
       q('bres').style.width = width(1) + '%';
       q('vplain').textContent = fmtSci(plain);
       q('vres').textContent = '≥ 1';
-      q('bnote').textContent = 'σ=' + sigma.toFixed(2) + '、N=' + N + '：普通输入端梯度 ' + fmtSci(plain) + '，残差 ≥1。';
+      q('bnote').textContent = 'σ=' + sigma.toFixed(2) + '、N=' + N + '：普通网络的输入端梯度只剩 ' +
+        fmtSci(plain) + '（连乘 ' + N + ' 次）；残差网络无论多深，shortcut 都把完整的一份梯度送回输入。' +
+        '真实网络里 σ 不是常数，这里只演示连乘衰减与直通路保底的对比。';
     }
 
     /* ---- 事件 ---- */
