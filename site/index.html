@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>快速入门深度学习｜NumPy、ResNet 与 Transformer</title>
+  <meta name="description" content="以 NumPy 实现基础网络、ResNet 与 decoder-only Transformer 的中文教程。">
+  <meta property="og:title" content="快速入门深度学习">
+  <meta property="og:description" content="NumPy、ResNet 与 decoder-only Transformer 的实现笔记。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://satoshinji2992.github.io/quickly_access_to_deeplearning/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main>
+    <nav class="nav shell" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="返回首页"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></a>
+      <div class="nav-links"><a href="#route">内容</a><a href="#figures">图解</a><a href="#tests">测试</a></div>
+      <a class="nav-cta" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning">GitHub ↗</a>
+    </nav>
+
+    <section id="top" class="hero shell">
+      <div class="hero-copy">
+        <div class="eyebrow"><span></span> NUMPY · RESNET · TRANSFORMER</div>
+        <h1>深度学习<br><em>从零实现</em></h1>
+        <p class="hero-lead">这套中文教程从 NumPy 中的基础网络开始，依次实现 CIFAR-100 ResNet 和 decoder-only Transformer。每节包含讲解、代码、运行命令与结果核对。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#route">查看课程内容 <span>↓</span></a>
+          <a class="button secondary" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning">浏览代码 <span>↗</span></a>
+        </div>
+        <div class="hero-stats" aria-label="项目概览">
+          <div><strong>15</strong><span>可运行主题</span></div>
+          <div><strong>03</strong><span>课程模块</span></div>
+          <div><strong>43</strong><span>自动测试</span></div>
+        </div>
+      </div>
+      <div class="hero-visual" aria-label="MiniMind 模型结构图">
+        <div class="paper-tag">MODEL OVERVIEW</div>
+        <img src="./assets/figures/minimind_overview.png" alt="MiniMind 的训练与增量推理结构">
+        <div class="visual-caption"><span>FIG. 01</span><p>Decoder-only Transformer：训练主线与 KV Cache 推理</p></div>
+      </div>
+    </section>
+
+    <div class="ticker" aria-hidden="true"><div>FORWARD PASS <i>✦</i> BACKPROPAGATION <i>✦</i> IM2COL <i>✦</i> RESIDUAL CONNECTION <i>✦</i> ROPE <i>✦</i> GQA <i>✦</i> KV CACHE</div></div>
+
+    <section id="route" class="route shell section">
+      <header class="section-head">
+        <div><span class="section-index">01</span><span class="eyebrow">COURSE CONTENT</span></div>
+        <h2>三个模块</h2>
+        <p>章节按实现依赖排列。每个模块都保留独立示例，也提供可以连起来运行的完整实现。</p>
+      </header>
+      <div class="block-list">
+        <article class="block-card">
+          <div class="block-meta"><span class="block-no">01</span><span>NUMPY FOUNDATIONS</span></div>
+          <div class="block-body"><h3>基础网络与反向传播</h3><p>从线性回归和二维分类开始，实现 Layer、Loss、Optimizer 与 Sequential，再用于 MNIST 分类。</p><div class="chips"><span>线性回归</span><span>圆形分类</span><span>Mini DL Library</span><span>MNIST MLP</span></div><a href="https://github.com/satoshinji2992/quickly_access_to_deeplearning/blob/main/chapters/01-%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86.md">阅读章节 <span>↗</span></a></div>
+          <div class="block-image"><img src="./assets/figures/block1_overview.png" alt="Block 1 内容概览"></div>
+        </article>
+        <article class="block-card">
+          <div class="block-meta"><span class="block-no">02</span><span>VISION SYSTEMS</span></div>
+          <div class="block-body"><h3>Conv2D 与 ResNet</h3><p>实现 im2col 卷积、池化、BatchNorm 和残差块，并组合为 CIFAR-100 图像分类模型。</p><div class="chips"><span>CIFAR-100</span><span>Conv2D</span><span>Residual Block</span><span>Checkpoint</span></div><a href="https://github.com/satoshinji2992/quickly_access_to_deeplearning/blob/main/chapters/02-ResNet%E5%9B%BE%E5%83%8F%E5%88%86%E7%B1%BB.md">阅读章节 <span>↗</span></a></div>
+          <div class="block-image"><img src="./assets/figures/block2_overview.png" alt="Block 2 内容概览"></div>
+        </article>
+        <article class="block-card">
+          <div class="block-meta"><span class="block-no">03</span><span>SEQUENCE MODELS</span></div>
+          <div class="block-body"><h3>Decoder-only Transformer</h3><p>实现位置编码、causal attention、RoPE、GQA、SwiGLU、采样与逐层 KV Cache。</p><div class="chips"><span>RoPE</span><span>GQA</span><span>MiniMind</span><span>KV Cache</span></div><a href="https://github.com/satoshinji2992/quickly_access_to_deeplearning/blob/main/chapters/03-Transformer%E4%B8%8EMiniMind.md">阅读章节 <span>↗</span></a></div>
+          <div class="block-image"><img src="./assets/figures/minimind_overview.png" alt="Block 3 内容概览"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="figures" class="figures section"><div class="shell">
+      <header class="section-head light"><div><span class="section-index">02</span><span class="eyebrow">FIGURES</span></div><h2>关键结构图</h2><p>配图与代码采用相同的矩阵方向、张量 shape 和 head 映射。相关数值由仓库测试核对。</p></header>
+      <div class="figure-grid">
+        <figure class="figure-card featured"><div class="figure-frame"><img src="./assets/figures/im2col_explained.png" alt="im2col 矩阵展开"></div><figcaption><span>01 / IM2COL</span><strong>滑动窗口与矩阵乘法</strong></figcaption></figure>
+        <figure class="figure-card"><div class="figure-frame"><img src="./assets/figures/gqa.png" alt="Grouped Query Attention"></div><figcaption><span>02 / GQA</span><strong>4 个 Query 头共享 2 组 KV</strong></figcaption></figure>
+        <figure class="figure-card"><div class="figure-frame"><img src="./assets/figures/kv_cache.png" alt="逐层 KV Cache"></div><figcaption><span>03 / KV CACHE</span><strong>增量解码与缓存更新</strong></figcaption></figure>
+      </div>
+    </div></section>
+
+    <section id="tests" class="reproduce shell section">
+      <div class="reproduce-copy"><span class="section-index">03</span><div class="eyebrow">TESTS</div><h2>实现检查</h2><p>测试覆盖数据集隔离、有限差分梯度、causal 性质、单 batch 拟合和 checkpoint round-trip。它们用于检查实现约束，不替代完整训练指标。</p><a class="button primary" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning/tree/main/tests">查看测试代码 <span>↗</span></a></div>
+      <div class="terminal" role="img" aria-label="测试运行结果示例"><div class="terminal-bar"><i></i><i></i><i></i><span>repository — tests</span></div><pre><span class="muted">$</span> python -m unittest discover -s tests -v
+
+<span class="ok">✓</span> circle labels &amp; split isolation
+<span class="ok">✓</span> conv2d finite-difference gradient
+<span class="ok">✓</span> residual identity / projection
+<span class="ok">✓</span> causal attention property
+<span class="ok">✓</span> checkpoint round-trip
+
+<strong>Ran 43 tests</strong>
+<span class="success">OK</span></pre></div>
+    </section>
+
+    <section class="closing"><div class="shell closing-inner"><div class="eyebrow"><span></span> OPEN SOURCE · CHINESE TUTORIAL</div><h2>代码、讲义与<br>参考实现</h2><p>所有章节和示例均保存在 GitHub 仓库中。</p><a class="button paper" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning">打开仓库 <span>↗</span></a></div></section>
+    <footer class="footer shell"><div class="brand"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></div><p>NumPy · ResNet · Transformer</p><a href="#top">返回顶部 ↑</a></footer>
+  </main>
+</body>
+</html>
