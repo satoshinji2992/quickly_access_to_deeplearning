@@ -18,6 +18,9 @@ logits:                 (B,T,V)
 
 ---
 
+
+<div class="widget-mount" data-widget="token-embed-3d" data-title="token 向量的三维投影"></div>
+
 ## 一张矩阵，两种用法
 
 Embedding 表 $E\in\mathbb{R}^{V\times D}$ 按 token id 查行。LM head 则使用同一张表的转置，把 hidden vector 投到 `V` 个词表分数：

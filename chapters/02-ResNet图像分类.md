@@ -28,6 +28,8 @@ NCHW: (batch, channel, height, width)
 
 两种布局没有优劣之分，但代码必须始终知道每个轴代表什么。若把 NHWC 误当 NCHW，程序有时不会立刻报错，只会在错误的维度上做统计或卷积。
 
+<div class="widget-mount" data-widget="image-batch" data-title="点开一张图，看 RGB 与 NCHW"></div>
+
 像素值还会从 `0..255` 缩放到 `0..1`，再按 RGB 通道标准化：
 
 $$
@@ -139,6 +141,8 @@ $$
 
 相邻窗口会重叠。输入中间的一个像素可能参与多个输出，因此反向时也会收到多条梯度。`col2im` 必须把这些贡献**累加**回原位置，而不是把列矩阵直接 reshape。
 
+<div class="widget-mount" data-widget="im2col-grad" data-title="im2col 与梯度累加"></div>
+
 权重梯度则与上一章的 Linear 很像：
 
 $$
@@ -160,6 +164,8 @@ $$
 ### MaxPool：保留窗口里最强的响应
 
 MaxPool 在每个通道的局部窗口取最大值。forward 不只要保存输出，还要记住最大值来自哪里；backward 才能把上游梯度送回那个位置。
+
+<div class="widget-mount" data-widget="pool-sweep" data-title="池化窗口扫描与梯度路由"></div>
 
 ![MaxPool 的前向与梯度路由](../assets/images/maxpool.png)
 

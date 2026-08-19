@@ -10,6 +10,9 @@
 
 ---
 
+
+<div class="widget-mount" data-widget="im2col-grad" data-title="im2col 与梯度累加"></div>
+
 ## 核对一个输出元素
 
 图中的输入和 kernel 为：

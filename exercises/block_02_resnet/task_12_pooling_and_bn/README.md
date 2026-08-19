@@ -6,6 +6,9 @@
 
 ---
 
+
+<div class="widget-mount" data-widget="pool-sweep" data-title="池化窗口扫描与梯度路由"></div>
+
 ## MaxPool2D：forward 中的 argmax 缓存
 
 对每个样本、每个通道，MaxPool 在局部窗口内取最大值。若输入为 `(N,C,H,W)`，无 padding 时：

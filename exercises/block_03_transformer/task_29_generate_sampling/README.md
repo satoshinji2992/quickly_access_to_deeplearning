@@ -12,6 +12,9 @@
 
 ---
 
+
+<div class="widget-mount" data-widget="sampling" data-title="温度、top-k、top-p 实时对比"></div>
+
 ## 为什么取 `logits[:, -1]`
 
 ```text
