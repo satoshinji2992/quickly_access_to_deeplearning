@@ -39,7 +39,7 @@
     container.innerHTML =
       '<style>' + CSS + '</style>' +
       '<p class="wg-title">RoPE：位置变成旋转角</p>' +
-      '<p class="wg-sub">Q/K 相邻两维旋转 m·θ · D=16 · base=10000</p>' +
+      '<p class="wg-sub">正弦编码把位置向量加到 embedding 上；RoPE 不动 embedding，而是把 Q、K 的相邻两维看成平面向量，按位置旋转 m·θ。取 D=16（8 个维度对）、base=10000。</p>' +
       '<div class="wg-label"><span>句子（按字符切分，最多 8 字）</span><span data-role="cnt"></span></div>' +
       '<input class="rr-in" data-role="sent" value="小猫在睡觉">' +
       '<p class="wg-note" data-role="snote"></p>' +
@@ -66,10 +66,10 @@
             '<div class="wg-stat"><span data-role="e1l"></span><b data-role="e1"></b></div>' +
             '<div class="wg-stat"><span data-role="e2l"></span><b data-role="e2"></b></div>' +
           '</div>' +
-          '<p class="wg-note">点积只随相对距离 Δ 变化</p>' +
+          '<p class="wg-note">同一初始向量旋转到位置 m 和 n，点积 = cos((n−m)·θ)，只依赖相对距离 Δ——这就是相对位置编码。换句子改变 T，这些读数一个都不会变。</p>' +
         '</div>' +
       '</div>' +
-      '<p class="wg-note">θi = 10000^(−2i/D)；V 不旋转</p>';
+      '<p class="wg-note">把每个维度对 (x,y) 看成平面向量：位置 m 就是把它旋转 m·θi。θi = 10000^(−2i/D)，i 小转得快、i 大转得慢。旋转不改变长度和夹角，所以注意力打分里的 q·k 只看两 token 的相对距离，与绝对位置无关。V 不旋转——位置只影响「query 与哪个 key 匹配」，不影响取回的内容。</p>';
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var cvCir = q('cir');
@@ -111,12 +111,12 @@
       var note;
       if (!all.length) {
         state.tokens = ['□'];
-        note = '输入为空：占位 □（T=1）';
+        note = '输入为空：暂用占位 token □ 演示（T=1）。';
       } else {
         state.tokens = all.slice(0, MAXT);
         note = all.length > MAXT
-          ? '句子过长：已截断为前 ' + MAXT + ' 个'
-          : 'T=' + state.tokens.length + '：位置 m=0..' + (state.tokens.length - 1);
+          ? '句子过长：切分出 ' + all.length + ' 个字符，已截断为前 ' + MAXT + ' 个。'
+          : 'T=' + state.tokens.length + '：每个字符一个位置 m=0..' + (state.tokens.length - 1) + '。';
       }
       q('cnt').textContent = state.tokens.length + ' / ' + MAXT + ' 字符';
       q('snote').textContent = note;
@@ -197,7 +197,7 @@
           dt.appendChild(cell);
         }
       } else {
-        dt.appendChild(el('div', 'wg-note', 'T=1：没有点积可看'));
+        dt.appendChild(el('div', 'wg-note', 'T=1：没有第二个 token，暂时没有点积可看。'));
       }
       if (T >= 4) {
         q('eqrow').style.display = '';

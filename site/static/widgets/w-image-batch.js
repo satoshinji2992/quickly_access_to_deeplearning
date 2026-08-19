@@ -165,7 +165,8 @@
     }
     setBody(
       '<p class="wg-title">一个 batch，8 张 CIFAR 图片</p>' +
-      '<p class="wg-sub">X 的 shape 是 (8,3,32,32)，轴序 (B,C,H,W)。点缩略图选中，点像素读下标。</p>' +
+      '<p class="wg-sub">每张 32×32、3 个通道，摞成一个 shape 为 (8,&nbsp;3,&nbsp;32,&nbsp;32) 的数组 X，' +
+      '四个轴依次是 (B, C, H, W)。点击一张图片选中它，再点放大图上的一个像素，读出它的四个下标。</p>' +
       '<div class="ib-books" data-role="books"></div>' +
       '<div class="ib-names" data-role="names"></div>' +
       '<p class="wg-note" data-role="hint" style="text-align:center"></p>' +
@@ -211,7 +212,8 @@
           '</div>' +
         '</div>' +
       '</div>' +
-      '<p class="wg-note">热图越亮数值越大；冒号 : 表示整维全取。</p>');
+      '<p class="wg-note">每张缩略图 = batch 里的一张图（B = 0..7）；三张热图把 R/G/B 拆开，' +
+      '颜色越亮该通道数值越大；冒号 : 表示这一维整条取。batch 里每张图内容不同，但 shape 必须完全一致，才能拼进同一个数组。</p>');
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
     var S = {
@@ -394,8 +396,8 @@
         nameEls[i].classList.toggle('is-dim', S.expanded && i !== S.sel);
       });
       q('hint').textContent = S.expanded
-        ? '点其他图片切换；再点当前图片收起'
-        : '点击任意一张图片展开';
+        ? '已选中第 ' + (S.sel + 1) + ' 张（B=' + S.sel + '）· 点击其他图片切换；再点当前图片或按「收起」折叠'
+        : '已折叠 · 点击任意一张图片展开它的三个通道';
 
       var panel = q('panel');
       if (!S.expanded) {
@@ -424,7 +426,8 @@
         '] = <em>' + cv + '</em>';
       q('line2').textContent = 'X[' + S.sel + ', :, ' + S.h + ', ' + S.w + '] = [' +
         r + ', ' + g + ', ' + b + ']';
-      q('cap').textContent = '第 ' + (S.sel + 1) + ' 张（B=' + S.sel + '）· 当前看 C=' + S.activeC;
+      q('cap').textContent = '当前 batch 的第 ' + (S.sel + 1) + ' 张（B=' + S.sel + '）' +
+        '· C=0/1/2 依次是 R/G/B · 单独看 C=' + S.activeC + '（' + CH_ZH[S.activeC] + '）';
 
       ['all', '0', '1', '2'].forEach(function (key) {
         chipEls[key].classList.toggle('is-on',

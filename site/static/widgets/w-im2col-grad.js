@@ -151,7 +151,7 @@
 
     container.appendChild((function () { var d = document.createElement('div'); d.innerHTML =
       '<p class="wg-title">im2col：一次矩阵乘的正路与反路</p>' +
-      '<p class="wg-sub">前向点 Y_col 看乘积来源；反向看 dW 与 col2im 梯度回传。</p>' +
+      '<p class="wg-sub">4×4 输入、3×3 核、2 个输出通道。前向点开 Y_col 的格子，看它由哪些数相乘而来；反向切到 dW 与 col2im，看梯度沿同一张 X_col 表原路返回。</p>' +
       '<div class="ig-shape">X: (1,1,4,4) · W: (2,1,3,3) · Y: (1,2,2,2) · stride 1 无 padding · 展开 X_col: (4,9) · W_col: (9,2) · Y_col: (4,2)</div>' +
       '<div class="ig-modes">' +
         '<button type="button" class="wg-button is-on" data-role="vfwd">前向 · Y_col = X_col·W_col</button>' +
@@ -175,20 +175,20 @@
         '<p class="ig-formula">前向 · <b>Y_col = X_col · W_col</b> — (4,9)·(9,2) → (4,2)，内维 9 = 核的 tap 数</p>' +
         '<div class="ig-strip" data-role="fstrip"></div>' +
         '<div class="ig-readout" data-role="fread"></div>' +
-        '<p class="wg-note">点击 Y_col 格子：高亮相乘的 X_col 行与 W_col 列；k = 行优先 tap 位。</p>' +
+        '<p class="wg-note">点击 Y_col 任一格：高亮相乘的 X_col 行（一个窗口的 9 个数）与 W_col 列（一个输出通道的核）；k = 核内行优先 tap 位。</p>' +
       '</div>' +
       '<div class="ig-panel" data-role="pbwd">' +
         '<p class="ig-formula">反向 · <b>dW = X_colᵀ · dY_col</b> — (9,4)·(4,2) → (9,2)，内维换成 4 = 窗口数</p>' +
         '<div class="ig-strip" data-role="bstrip"></div>' +
         '<div class="ig-readout" data-role="dread"></div>' +
-        '<p class="wg-note">点击 dW 格子：来源为 X_colᵀ 第 k 行与 dY_col 第 o 列。</p>' +
+        '<p class="wg-note">点击 dW 任一格：贡献来源是 X_colᵀ 的第 k 行（同一 tap 在 4 个窗口的取值）与 dY_col 的第 o 列。dY_col 为预设的上游梯度。</p>' +
         '<div class="ig-div">' +
           '<div class="wg-label"><span>col2im · 梯度叠回像素</span><span>点击 X 或 dX 的像素</span></div>' +
           '<div class="ig-readout" data-role="pread"></div>' +
-          '<p class="wg-note">dX_col = W_col·dY_colᵀ；同一像素的格子累加成 dX。</p>' +
+          '<p class="wg-note">dX_col = W_col·dY_colᵀ 先算回 (4,9)，再把指向同一像素的格子累加：中间像素被 4 个窗口共享，梯度相加；角点只属 1 个窗口。</p>' +
         '</div>' +
       '</div>' +
-      '<p class="wg-note">全部数值为整数，可手算验证。</p>'; return d; })());
+      '<p class="wg-note">同一张 X_col 表：正向按行取窗口，反向转置后按 tap 累加成 dW，col2im 再把行梯度叠回像素。所有数值均为整数，可手算验证。</p>'; return d; })());
 
     var q = function (role) { return container.querySelector('[data-role="' + role + '"]'); };
 
