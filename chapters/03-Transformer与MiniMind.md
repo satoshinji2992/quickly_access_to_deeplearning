@@ -47,7 +47,7 @@ hidden:    (B, T, D)
 这三件事对应 Query、Key、Value。输入 hidden states $X$ 经过三组不同参数：
 
 $$
-Q=XW_Q,qquad K=XW_K,qquad V=XW_V.
+Q=XW_Q,\qquad K=XW_K,\qquad V=XW_V.
 $$
 
 Q 与 K 的点积衡量匹配程度，softmax 把分数变成权重，再按权重汇总 V：
@@ -196,7 +196,7 @@ Attention 让不同位置互相读取，但一次加权求和并不足以完成�
 它不混合序列位置，所以不会破坏 causal 性质。本章使用 SwiGLU：
 
 $$
-g=W_{gate}x,qquad u=W_{up}x,
+g=W_{gate}x,\qquad u=W_{up}x,
 $$
 
 $$
