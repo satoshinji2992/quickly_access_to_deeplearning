@@ -35,10 +35,47 @@
           <div><strong>43</strong><span>自动测试</span></div>
         </div>
       </div>
-      <div class="hero-visual" aria-label="MiniMind 模型结构图">
-        <div class="paper-tag">MODEL OVERVIEW</div>
-        <img src="./assets/figures/minimind_overview.png" alt="MiniMind 的训练与增量推理结构">
-        <div class="visual-caption"><span>FIG. 01</span><p>Decoder-only Transformer：训练主线与 KV Cache 推理</p></div>
+      <div class="hero-visual" data-carousel aria-roledescription="轮播" aria-label="课程结构示意图">
+        <div class="paper-tag">COURSE FIGURES</div>
+        <div class="carousel">
+          <div class="carousel-stage">
+            <figure class="carousel-slide is-active" data-caption="课程总览：从 NumPy 到 MiniMind 的实现路线" aria-hidden="false">
+              <img src="./assets/og.png" alt="课程分享图：快速入门深度学习，从 NumPy 到 MiniMind" decoding="async">
+            </figure>
+            <figure class="carousel-slide" data-caption="Block 1：线性回归、圆形分类与 Mini DL Library" aria-hidden="true">
+              <img src="./assets/figures/block1_overview.png" alt="Block 1 基础网络内容概览" decoding="async">
+            </figure>
+            <figure class="carousel-slide" data-caption="Block 2：Conv2D、BatchNorm 与残差块组成的 ResNet" aria-hidden="true">
+              <img src="./assets/figures/block2_overview.png" alt="Block 2 ResNet 内容概览" decoding="async">
+            </figure>
+            <figure class="carousel-slide" data-caption="Decoder-only Transformer：训练主线与 KV Cache 推理" aria-hidden="true">
+              <img src="./assets/figures/minimind_overview.png" alt="MiniMind 的训练与增量推理结构" decoding="async">
+            </figure>
+            <figure class="carousel-slide" data-caption="im2col：滑动窗口展开为矩阵乘法" aria-hidden="true">
+              <img src="./assets/figures/im2col_explained.png" alt="im2col 矩阵展开示意" decoding="async">
+            </figure>
+            <figure class="carousel-slide" data-caption="GQA：4 个 Query 头共享 2 组 KV" aria-hidden="true">
+              <img src="./assets/figures/gqa.png" alt="Grouped Query Attention 分组示意" decoding="async">
+            </figure>
+            <figure class="carousel-slide" data-caption="KV Cache：逐层增量解码与缓存更新" aria-hidden="true">
+              <img src="./assets/figures/kv_cache.png" alt="逐层 KV Cache 更新示意" decoding="async">
+            </figure>
+          </div>
+          <button class="carousel-arrow prev" type="button" aria-label="上一张示意图">←</button>
+          <button class="carousel-arrow next" type="button" aria-label="下一张示意图">→</button>
+        </div>
+        <div class="carousel-footer">
+          <div class="visual-caption"><span data-figure-index>FIG. 01 / 07</span><p data-carousel-caption>课程总览：从 NumPy 到 MiniMind 的实现路线</p></div>
+          <div class="carousel-dots" role="group" aria-label="选择示意图">
+            <button type="button" aria-label="课程总览" aria-current="true"></button>
+            <button type="button" aria-label="Block 1 概览"></button>
+            <button type="button" aria-label="Block 2 概览"></button>
+            <button type="button" aria-label="MiniMind 结构"></button>
+            <button type="button" aria-label="im2col 展开"></button>
+            <button type="button" aria-label="GQA 分组"></button>
+            <button type="button" aria-label="KV Cache"></button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -95,5 +132,55 @@
     <section class="closing"><div class="shell closing-inner"><div class="eyebrow"><span></span> OPEN SOURCE · CHINESE TUTORIAL</div><h2>代码、讲义与<br>参考实现</h2><p>所有章节和示例均保存在 GitHub 仓库中。</p><a class="button paper" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning">打开仓库 <span>↗</span></a></div></section>
     <footer class="footer shell"><div class="brand"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></div><p>NumPy · ResNet · Transformer</p><a href="#top">返回顶部 ↑</a></footer>
   </main>
+  <script>
+  (function () {
+    const root = document.querySelector('[data-carousel]');
+    if (!root) { return; }
+    const slides = Array.from(root.querySelectorAll('.carousel-slide'));
+    const dots = Array.from(root.querySelectorAll('.carousel-dots button'));
+    const caption = root.querySelector('[data-carousel-caption]');
+    const figureIndex = root.querySelector('[data-figure-index]');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const interval = 4200;
+    let current = 0;
+    let timer = null;
+
+    const stop = () => { if (timer) { window.clearInterval(timer); timer = null; } };
+    const show = (next) => {
+      slides[current].classList.remove('is-active');
+      slides[current].setAttribute('aria-hidden', 'true');
+      dots[current].removeAttribute('aria-current');
+      current = (next + slides.length) % slides.length;
+      slides[current].classList.add('is-active');
+      slides[current].setAttribute('aria-hidden', 'false');
+      dots[current].setAttribute('aria-current', 'true');
+      if (caption) { caption.textContent = slides[current].dataset.caption || ''; }
+      if (figureIndex) { figureIndex.textContent = 'FIG. ' + String(current + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0'); }
+    };
+    const start = () => { stop(); if (!reducedMotion) { timer = window.setInterval(() => show(current + 1), interval); } };
+    const go = (next) => { show(next); start(); };
+
+    root.querySelector('.carousel-arrow.prev').addEventListener('click', () => go(current - 1));
+    root.querySelector('.carousel-arrow.next').addEventListener('click', () => go(current + 1));
+    dots.forEach((dot, index) => dot.addEventListener('click', () => go(index)));
+    root.addEventListener('mouseenter', stop);
+    root.addEventListener('mouseleave', start);
+    root.addEventListener('focusin', stop);
+    root.addEventListener('focusout', start);
+    root.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); go(current - 1); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); go(current + 1); }
+    });
+    let touchX = null;
+    root.addEventListener('touchstart', (event) => { touchX = event.touches[0].clientX; stop(); }, { passive: true });
+    root.addEventListener('touchend', (event) => {
+      if (touchX === null) { return; }
+      const delta = event.changedTouches[0].clientX - touchX;
+      touchX = null;
+      if (Math.abs(delta) > 40) { go(delta < 0 ? current + 1 : current - 1); } else { start(); }
+    });
+    start();
+  })();
+  </script>
 </body>
 </html>
