@@ -6,7 +6,7 @@ NumPy 基础网络、CIFAR-100 ResNet 与 decoder-only Transformer 的实现教�
 
 [查看项目主页](https://satoshinji2992.github.io/quickly_access_to_deeplearning/) · [打开课程总览](chapters/00-课程总览.md) · [浏览论文与视频资料](推荐教学视频.md)
 
-这是一套以实现为主的中文教程。内容从线性回归和反向传播开始，随后实现小型 NumPy 深度学习库、CIFAR-100 ResNet，以及带 RoPE、GQA 和 KV Cache 的 decoder-only Transformer。
+这是一套以实现为主的深度学习入门教程。内容从线性回归和反向传播开始，随后实现小型 NumPy 深度学习库、CIFAR-100 ResNet，以及带 RoPE、GQA 和 KV Cache 的 decoder-only Transformer。
 
 每个可运行主题都附有代码入口、命令和结果核对方法。测试覆盖数据隔离、梯度、shape 与 checkpoint round-trip。
 
