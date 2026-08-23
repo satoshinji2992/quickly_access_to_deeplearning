@@ -4,15 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Title }}｜快速入门深度学习</title>
-  <meta name="description" content="{{ .Title }}：快速入门深度学习教程">
+  {{ $desc := printf "%s。" (index (split .Plain "。") 0) | truncate 110 }}{{ with .Description }}{{ $desc = . }}{{ end }}
+  <meta name="description" content="{{ $desc }}">
+  <link rel="canonical" href="{{ .Permalink }}">
+  <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
   <meta property="og:title" content="{{ .Title }}｜快速入门深度学习">
-  <meta property="og:description" content="{{ .Title }}：快速入门深度学习教程">
+  <meta property="og:description" content="{{ $desc }}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="{{ .Permalink }}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="https://satoshinji2992.github.io/quickly_access_to_deeplearning/assets/og.png">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://satoshinji2992.github.io/quickly_access_to_deeplearning/assets/og.png">
+  <meta name="theme-color" content="#071321">
   <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
   <link rel="stylesheet" href="{{ "docs.css" | relURL }}">
   <link rel="stylesheet" href="{{ "widgets/widgets.css" | relURL }}">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","name":"快速入门深度学习：{{ .Title }}","description":"从 NumPy 基础网络与 ResNet，到 PyTorch decoder-only Transformer 的深度学习入门实现教程。","url":"{{ .Permalink }}","inLanguage":"zh-CN","provider":{"@type":"Organization","name":"satoshinji","url":"https://github.com/satoshinji2992"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首页","item":"https://satoshinji2992.github.io/quickly_access_to_deeplearning/"},{"@type":"ListItem","position":2,"name":"文档","item":"https://satoshinji2992.github.io/quickly_access_to_deeplearning/docs/"},{"@type":"ListItem","position":3,"name":"{{ .Title }}","item":"{{ .Permalink }}"}]}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous">
 </head>
 <body class="docs-body">
