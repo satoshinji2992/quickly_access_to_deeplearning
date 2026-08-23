@@ -1,0 +1,2 @@
+{{- /* Docs images: lazy + async decode (heavyweight PNGs shouldn't block first paint). */ -}}
+<img src="{{ .Destination | safeURL }}" alt="{{ .PlainText }}" loading="lazy" decoding="async">
