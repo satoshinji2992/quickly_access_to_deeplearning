@@ -218,7 +218,11 @@ $$
 
 ![SwiGLU 的 gate、up 和 down](../assets/images/swiglu.png)
 
-这里必须有两次独立的上投影：gate 决定哪些特征通过，up 提供被门控的内容。只写 `Linear -> SiLU -> Linear` 是普通 FFN，不是真正的 SwiGLU。
+这里必须有两次独立的上投影：gate 分支像每个特征的音量旋钮，连续决定放行多少；up 分支提供被门控的内容。只写 `Linear -> SiLU -> Linear` 是普通 FFN，不是真正的 SwiGLU。
+
+三个矩阵让参数量变成 $3dm$。为与普通 FFN 的 $8d^2$ 对齐，中间维度通常取 $m\approx\frac{8}{3}d$ 而不是 $4d$——LLaMA 在 $d=4096$ 时取 11008。
+
+<div class="widget-mount" data-widget="swiglu-gate" data-title="拖一拖，看门开合"></div>
 
 [SwiGLU 前馈网络](../exercises/block_03_transformer/task_24_swiglu_ffn/README.md)
 

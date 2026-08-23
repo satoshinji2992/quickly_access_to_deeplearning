@@ -28,6 +28,7 @@
     'gqa-map': { file: 'w-gqa-map.js', title: 'GQA：分组共享 KV' },
     'token-embed-3d': { file: 'w-token-embed-3d.js', title: 'Token 向量的三维投影' },
     'sampling': { file: 'w-sampling.js', title: '采样：温度与截断' },
+    'swiglu-gate': { file: 'w-swiglu-gate.js', title: 'SwiGLU：门控与参数量' },
   };
 
   var base = (function () {
