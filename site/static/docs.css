@@ -72,3 +72,25 @@
 .docs-toc a:hover { color:#0b63f3; }
 @media(max-width:1180px){ .docs-layout{grid-template-columns:230px minmax(0,820px);gap:36px}.docs-toc{display:none} }
 @media(max-width:760px){ .docs-index-grid{grid-template-columns:1fr}.docs-topbar{height:68px;padding:0 15px}.docs-topbar nav{display:none}.docs-menu{display:block}.docs-layout{width:min(100% - 30px,820px);display:block}.docs-sidebar{display:none;position:fixed;z-index:30;top:68px;left:0;width:min(330px,88vw);height:calc(100vh - 68px);padding:25px 22px;background:#f4f2ec;box-shadow:12px 0 30px rgba(7,19,33,.18)}.docs-body.nav-open .docs-sidebar{display:block}.docs-article{padding-top:30px}.docs-heading{margin-top:20px}.docs-heading h1{font-size:44px}.markdown-body{font-size:15px}.markdown-body h2{margin-top:48px;font-size:26px}.docs-pagination{grid-template-columns:1fr} }
+
+/* 搜索、进度条、锚点复制、TOC 高亮 */
+.docs-topbar nav { gap:18px; }
+.docs-search { border:1px solid #071321; background:transparent; padding:8px 12px; font:700 12px Arial,"PingFang SC",sans-serif; color:#071321; cursor:pointer; border-radius:999px; transition:background .15s ease,color .15s ease; }
+.docs-search:hover { background:#071321; color:#fffef9; }
+.read-progress { position:fixed; top:0; left:0; height:3px; width:0; background:#0b63f3; z-index:80; }
+.anchor-copy { border:0; background:transparent; color:#8a94a0; font-size:.75em; cursor:pointer; margin-left:10px; opacity:0; transition:opacity .15s ease; }
+.markdown-body h2:hover .anchor-copy, .markdown-body h3:hover .anchor-copy { opacity:1; }
+.docs-toc a.active { color:#075dcf; font-weight:700; border-bottom:2px solid #0b63f3; }
+.search-overlay { position:fixed; inset:0; display:none; background:rgba(7,19,33,.45); z-index:90; padding-top:12vh; }
+.search-overlay.is-open { display:block; }
+.search-modal { width:min(640px,calc(100% - 40px)); margin:0 auto; background:#fffef9; border:2px solid #071321; box-shadow:10px 10px 0 rgba(11,99,243,.8); display:flex; flex-direction:column; max-height:70vh; }
+.search-input { border:0; border-bottom:2px solid #071321; padding:16px 18px; font:600 16px Arial,"PingFang SC",sans-serif; color:#071321; outline:none; background:transparent; }
+.search-results { overflow:auto; }
+.search-results a { display:block; padding:12px 18px; border-bottom:1px solid rgba(7,19,33,.12); text-decoration:none; color:#071321; }
+.search-results a:hover, .search-results a:first-child { background:#e7edf8; }
+.search-results a b { display:block; font-size:14px; }
+.search-results a span { display:block; font-size:12px; color:#56636f; margin-top:3px; }
+.search-results a span mark { background:#c8ff47; padding:0 2px; }
+.search-empty { padding:18px; font-size:13px; color:#65717c; margin:0; }
+.search-foot { padding:8px 18px; font:700 10px ui-monospace,SFMono-Regular,Consolas,monospace; color:#8a94a0; border-top:1px solid rgba(7,19,33,.12); }
+@media(max-width:760px){ .docs-search{padding:6px 9px;font-size:11px} }

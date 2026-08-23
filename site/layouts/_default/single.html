@@ -27,7 +27,7 @@
 <body class="docs-body">
   <header class="docs-topbar">
     <a class="brand" href="{{ site.Home.RelPermalink }}"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></a>
-    <nav><a href="{{ site.Home.RelPermalink }}">首页</a><a class="current" href="{{ "docs/overview/" | relURL }}">文档</a><a href="{{ site.Params.repository }}">GitHub ↗</a></nav>
+    <nav><a href="{{ site.Home.RelPermalink }}">首页</a><a class="current" href="{{ "docs/overview/" | relURL }}">文档</a><button type="button" class="docs-search">搜索 ⌘K</button><a href="{{ site.Params.repository }}/issues/new?title=%E5%8F%8D%E9%A6%88%EF%BC%9A{{ .Title | urlquery }}">发现错误 ↗</a><a href="{{ site.Params.repository }}">GitHub ↗</a></nav>
     <button class="docs-menu" type="button" aria-controls="docs-sidebar" aria-expanded="false">目录</button>
   </header>
 
