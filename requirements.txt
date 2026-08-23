@@ -1,7 +1,8 @@
-numpy
-pandas
-matplotlib
-scikit-learn
-pillow
-torch
-torchvision
+# 已验证组合：Python 3.10–3.13 + 下列版本（更早版本未测试）。
+numpy>=2.0
+pandas>=2.2
+matplotlib>=3.9
+scikit-learn>=1.5
+pillow>=10.0
+torch>=2.4
+torchvision>=0.19
