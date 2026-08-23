@@ -84,6 +84,16 @@
 
     <div class="ticker" aria-hidden="true"><div>FORWARD PASS <i>✦</i> BACKPROPAGATION <i>✦</i> IM2COL <i>✦</i> RESIDUAL CONNECTION <i>✦</i> ROPE <i>✦</i> GQA <i>✦</i> KV CACHE</div></div>
 
+    <section id="before" class="before shell">
+      <div class="before-head"><span class="eyebrow">BEFORE YOU START</span><h2>开始之前</h2></div>
+      <div class="before-grid">
+        <div class="bf-card"><h3>适合谁</h3><p>会基础 Python，想第一次系统实现神经网络；不要求先学过任何框架。</p></div>
+        <div class="bf-card"><h3>前置知识</h3><p>矩阵乘法、偏导数的含义、NumPy 数组的 shape 操作。缺什么，文中用到时补什么。</p></div>
+        <div class="bf-card"><h3>你将完成</h3><p>NumPy 手写 MLP 与迷你深度学习库 → NumPy ResNet（CIFAR-100）→ PyTorch decoder-only Transformer（RoPE / GQA / KV Cache）。</p></div>
+        <div class="bf-card"><h3>推荐路线</h3><p><b>30 分钟</b>：读完课程总览与三章主线。<br><b>3 小时</b>：跑通 Block 1 四个练习。<br><b>完整</b>：三个模块全部实现并核对测试。只用 CPU 也能完成全部内容。</p></div>
+      </div>
+    </section>
+
     <section id="route" class="route shell section">
       <header class="section-head">
         <div><span class="section-index">01</span><span class="eyebrow">COURSE CONTENT</span></div>
@@ -106,6 +116,30 @@
           <div class="block-body"><h3>Decoder-only Transformer</h3><p>实现位置编码、causal attention、RoPE、GQA、SwiGLU、采样与逐层 KV Cache。</p><div class="chips"><span>RoPE</span><span>GQA</span><span>MiniMind</span><span>KV Cache</span></div><a href="./docs/chapter-transformer/">阅读章节 <span>→</span></a></div>
           <div class="block-image"><picture><source srcset="./assets/figures/minimind_overview.webp" type="image/webp"><img src="./assets/figures/minimind_overview.png" alt="Block 3 内容概览" loading="lazy" decoding="async"></picture></div>
         </article>
+      </div>
+    </section>
+
+    <section id="results" class="results shell">
+      <div class="results-head"><span class="eyebrow">RESULTS</span><h2>学完它能跑成什么样</h2><p>下面全部来自仓库代码的真实运行结果，不是示意图。</p></div>
+      <div class="results-grid">
+        <figure class="res-card">
+          <div class="res-img"><picture><source srcset="./assets/results/circle_boundary.webp" type="image/webp"><img src="./assets/results/circle_boundary.png" alt="圆形分类决策边界" loading="lazy" decoding="async"></picture></div>
+          <figcaption><b>圆形分类决策边界</b><span>2-4-4-2 MLP · 验证准确率 98.1%</span></figcaption>
+        </figure>
+        <figure class="res-card">
+          <div class="res-img"><picture><source srcset="./assets/results/misclassified_examples.webp" type="image/webp"><img src="./assets/results/misclassified_examples.png" alt="CIFAR-100 真实误分类样本" loading="lazy" decoding="async"></picture></div>
+          <figcaption><b>CIFAR-100 误分类分析</b><span>NumPy ResNet · 官方测试集真实推理</span></figcaption>
+        </figure>
+        <div class="res-card res-text">
+          <div class="res-label">MINIMIND · NEXT-TOKEN 生成</div>
+          <p class="res-gen">“清晨，小城的雨停了。屋檐上的水滴慢慢落下，街边的树叶在”</p>
+          <span>120 步训练后的 PyTorch decoder-only 真实输出</span>
+        </div>
+        <div class="res-card res-text">
+          <div class="res-label">KV CACHE · 两条路径等价</div>
+          <div class="res-kv"><span>逐 token 缓存 vs 每步重算</span><b>max |Δlogits| = 1.97e-06</b></div>
+          <span>浮点误差内一致，省掉旧 token 的重复计算</span>
+        </div>
       </div>
     </section>
 
