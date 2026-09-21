@@ -275,6 +275,11 @@ def make_synthetic_splits(sample_count=96, num_classes=4, image_size=8, seed=0):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Train a small NumPy ResNet.")
     parser.add_argument("--synthetic", action="store_true", help="run without downloading data")
+    parser.add_argument(
+        "--eval-test",
+        action="store_true",
+        help="evaluate the held-out test split after training",
+    )
     parser.add_argument("--data-dir", type=Path, default=REPOSITORY_ROOT / "data")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -336,8 +341,11 @@ def main(argv=None):
             f"epoch={epoch} train_loss={train_loss:.4f} train_acc={train_accuracy:.3f} "
             f"val_loss={val_loss:.4f} val_acc={val_accuracy:.3f}"
         )
-    test_loss, test_accuracy = evaluate(model, loss_fn, *test, batch_size=args.batch_size)
-    print(f"test_loss={test_loss:.4f} test_acc={test_accuracy:.3f}")
+    if args.eval_test:
+        test_loss, test_accuracy = evaluate(
+            model, loss_fn, *test, batch_size=args.batch_size
+        )
+        print(f"test_loss={test_loss:.4f} test_acc={test_accuracy:.3f}")
     return model
 
 

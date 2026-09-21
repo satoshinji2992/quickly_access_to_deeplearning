@@ -28,3 +28,23 @@
   .widget-mount { margin: 22px 0; box-shadow: 4px 4px 0 rgba(11, 99, 243, .85); }
   .widget-frame { padding: 12px; }
 }
+
+.widget-guide { padding:14px 16px; background:#eef3f8; border-bottom:1px solid #cdd2d4; font-size:13px; line-height:1.75; }
+.widget-guide .guide-question { margin:0 0 8px; font-weight:700; }
+.widget-guide ol { margin:0; padding-left:22px; }
+.widget-guide li { margin:4px 0; }
+.widget-guide details { margin:12px 0 0; background:transparent; border:0; padding:0; }
+.widget-guide summary { padding:6px 0; font-size:13px; }
+.widget-guide details[open] { padding:0; }
+.widget-guide details[open]>summary { margin-bottom:8px; border-bottom:0; }
+.widget-guide details p { margin:0; }
+.tensor-grid { display:grid; gap:8px; margin:14px 0; }
+.tensor-cell { border:1px solid #bac6d1; padding:14px 8px; background:#f7f5ef; cursor:pointer; color:#263541; }
+.tensor-cell strong { display:block; font-size:24px; }
+.tensor-cell span { display:block; font-size:12px; margin-top:4px; }
+.tensor-cell[aria-pressed="true"] { background:#e3edfc; border:2px solid #075dcf; padding:13px 7px; }
+.tensor-address { padding:12px; background:#edf2f7; font-size:14px; line-height:1.8; }
+.widget-frame select { font:inherit; padding:6px; max-width:100%; }
+.wg-button:focus-visible,.tensor-cell:focus-visible { outline:3px solid #075dcf; outline-offset:3px; }
+.widget-frame .linear-comparison { padding:12px; border-left:3px solid #075dcf; background:#edf2f7; font-size:13px; line-height:1.8; }
+.widget-frame .linear-data { font-size:12px; overflow-wrap:anywhere; }

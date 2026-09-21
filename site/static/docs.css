@@ -94,3 +94,49 @@
 .search-empty { padding:18px; font-size:13px; color:#65717c; margin:0; }
 .search-foot { padding:8px 18px; font:700 10px ui-monospace,SFMono-Regular,Consolas,monospace; color:#8a94a0; border-top:1px solid rgba(7,19,33,.12); }
 @media(max-width:760px){ .docs-search{padding:6px 9px;font-size:11px} }
+
+/* Learning spine and optional references. */
+.course-main small { display:block; margin-top:3px; font-size:10px; font-weight:400; color:#65717c; }
+.reference-nav { margin-top:12px; }
+.reference-nav summary { cursor:pointer; padding:10px 8px; color:#56636f; font-size:12px; }
+.reference-nav[open] summary { color:#075dcf; }
+.learning-note { border-left:3px solid #075dcf; padding:14px 18px; margin:0 0 28px; background:#eaf0f6; font-size:14px; line-height:1.7; }
+.learning-note p { margin:5px 0; }
+.learning-note a,.course-return a { color:#075dcf; text-decoration:underline; }
+.markdown-body details { margin:24px 0; border:1px solid #cdd2d4; padding:0 18px; background:#fffef9; }
+.markdown-body summary { cursor:pointer; padding:15px 0; font-weight:650; line-height:1.6; color:#263541; }
+.markdown-body details[open] { padding-bottom:16px; }
+.markdown-body details[open]>summary { border-bottom:1px solid #d8d3c4; margin-bottom:18px; }
+.markdown-body details h3 { margin-top:26px; }
+.markdown-body [id] { scroll-margin-top:96px; }
+.markdown-body .katex-display { overflow-x:auto; overflow-y:hidden; padding:6px 0; }
+.course-return { font-size:14px; margin-top:20px; line-height:1.8; }
+.mobile-toc { display:none; }
+@media(max-width:1180px) { .mobile-toc { display:block; padding:12px 16px; border:1px solid #cdd2d4; margin-bottom:24px; font-size:14px; } .mobile-toc summary { cursor:pointer; } .mobile-toc a { color:#075dcf; } }
+@media(max-width:760px) { .docs-topbar nav { display:flex; margin-left:auto; margin-right:10px; } .docs-topbar nav>a { display:none; } .docs-topbar .brand { flex-shrink:1; } .docs-topbar .brand>span:last-child { display:none; } .docs-search { white-space:nowrap; } }
+
+/* Symbol hover: formula glyphs, shape tokens and figure legends. */
+.markdown-body .sym-hot { border-bottom:2px dotted rgba(11,99,243,.55); cursor:help; transition:background .15s ease; }
+.markdown-body .sym-hot:hover,.markdown-body .sym-hot:focus-visible { background:rgba(11,99,243,.14); border-bottom-color:#0b63f3; outline:none; }
+.markdown-body .katex-display .sym-hot { border-bottom-width:2px; }
+.markdown-body code .sym-hot { border-bottom:2px dotted rgba(11,99,243,.55); background:none; padding:0; }
+.sym-tip { position:fixed; z-index:60; max-width:min(330px,78vw); padding:12px 14px 11px; background:#071321; color:#e8eef3; border:1px solid #071321; border-left:3px solid #c8ff47; box-shadow:6px 8px 0 rgba(11,99,243,.35); font-size:12.5px; line-height:1.75; pointer-events:none; opacity:0; transform:translateY(3px); transition:opacity .14s ease,transform .14s ease; }
+.sym-tip.is-open { opacity:1; transform:none; }
+.sym-tip strong { display:block; margin-bottom:3px; font:800 11px ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.05em; color:#72d7ff; }
+.sym-tip span { display:block; }
+.sym-tip em { display:block; margin-top:5px; padding-top:5px; border-top:1px dashed rgba(232,238,243,.25); color:#b9c6d0; font-style:normal; font-size:11.5px; }
+/* 配图保持干净：不加图注或图例，宽度层级见 .w-narrow */
+
+/* Editorial texture: margin section numbers, figure captions, width rhythm. */
+.markdown-body { counter-reset: sec; }
+.markdown-body h2 { counter-increment: sec; }
+.markdown-body h2::before { content: counter(sec) "."; position: absolute; left: -34px; top: 14px; font: 700 13px ui-monospace,SFMono-Regular,Consolas,monospace; color: #0b63f3; }
+.markdown-body h2 { position: relative; }
+@media(max-width:1180px) { .markdown-body h2::before { position: static; display: inline-block; margin-right: 10px; } }
+.docs-body[data-slug="chapter-basics"] .markdown-body h2 { counter-increment: none; }
+.docs-body[data-slug="chapter-basics"] .markdown-body h2::before { content: none; }
+.markdown-body .w-narrow { width: min(62%, 470px); margin-left: 0; }
+@media(max-width:760px) { .markdown-body .w-narrow { width: 100%; } }
+.widget-mount { border-width: 2px; box-shadow: 6px 6px 0 rgba(7, 19, 33, .88); margin-inline: auto; }
+.docs-pagination a, .nav-cta { transition: transform .1s ease, box-shadow .1s ease, background .2s, color .2s; box-shadow: 4px 4px 0 rgba(7, 19, 33, .85); }
+.docs-pagination a:hover, .nav-cta:hover { transform: translate(4px, 4px); box-shadow: 0 0 0 rgba(7, 19, 33, .85); }

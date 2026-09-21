@@ -1,6 +1,6 @@
-# task_30：KV Cache
+# KV Cache
 
-未缓存生成在每一步重算整个可见窗口。Prompt 长度为 5 时：
+[未缓存生成](../task_29_generate_sampling/README.md) 每轮都会重新计算整个可见窗口。假设 prompt 有 5 个 token，虽然每轮只多生成一个 token，送入 forward 的长度却会持续增长：
 
 ```text
 第 1 步：forward 5 tokens
@@ -9,19 +9,17 @@
 ...
 ```
 
-旧 token 在每层得到的 K/V 不会因为后来又生成一个 token 而改变，因此推理时可以把它们留下。下一步只计算新 token 的 Q/K/V，再让新 Q 读取“历史 K/V + 当前 K/V”。
+参数固定、训练期随机操作关闭且前缀不变时，causal Attention 中的旧位置不会被新 token 改写，所以各层已经算好的 K/V 可以保存下来。新一轮只投影新 token 的 Q/K/V，再让新 Q 读取“历史 K/V + 当前 K/V”，这就是 KV Cache 避免重复计算的核心。
 
 ![每层 KV Cache：prefill 后逐 token 追加](assets/kv_cache.png)
 
-KV Cache 用于自回归推理，不用于本章的并行训练 forward。
+<div class="widget-mount" data-widget="kv-cache"></div>
 
-<div class="widget-mount" data-widget="kv-cache" data-title="逐步解码，看缓存增长"></div>
+KV Cache 的使用场景是自回归推理。训练时所有位置已经在同一个张量中，仍然使用并行的完整 forward，不需要把训练也拆成逐 token 循环。
 
----
+## Cache 按层保存 K/V
 
-## Cache 保存什么
-
-每个 decoder layer 有自己的 K/V 投影，cache 因此按层保存：
+每个 decoder layer 都有自己的 K/V 投影，不同层的中间结果不能混在一起，因而 cache 按层保存为一个列表：
 
 ```text
 past_key_values = [
@@ -31,35 +29,42 @@ past_key_values = [
 ]
 ```
 
-每个张量的 shape 是：
+列表中每个 K/V 张量都保留 batch、KV head、已缓存序列和 head 特征四个维度：
 
 ```text
 (B,n_kv_heads,past_len,head_dim)
 ```
 
-这里存的是尚未 `repeat_kv` 的 K/V。若模型有 8 个 query heads、2 个 KV heads，cache 只保留 2 份 K/V，计算 attention 时再按组展开到 8 份。这也是 GQA 减少缓存体积的直接来源。
+缓存中存的是尚未 `repeat_kv` 的 K/V。若模型有 8 个 query heads、2 个 KV heads，cache 只保留 2 份 K/V，计算 Attention 时才按组展开到 8 份，这也是 GQA 能够直接减少缓存体积的原因。
 
-缓存并没有把 attention 变成常数时间。单步新 query 仍要和所有可见 keys 计算 score：
+缓存并不会让单步 Attention 变成常数时间，因为新 query 仍要与所有可见 keys 计算分数。`repeat_kv` 之后，单轮解码的 shape 是：
 
 ```text
 Q:       (B,n_heads,1,head_dim)
-K(repeat_kv 展开后): (B,n_heads,past_len+1,head_dim)
+K:       (B,n_heads,past_len+1,head_dim)  # repeat_kv 后
 scores:  (B,n_heads,1,past_len+1)
 ```
 
-它省掉的是旧 token 的 block 计算和 K/V 投影；cache 本身的存储会随上下文长度增长。
+它省掉的是旧 token 重复经过各个 blocks 与 K/V 投影的计算，代价则是 cache 内存会随层数和可见前缀长度一起增长。
 
-## `prefill` 与 `decode_one`
+设 prompt 长度为 `P`，要生成 `S` 个 token，暂不考虑窗口截断，两条路径的计算账本可以写成：
 
-`prefill` 一次处理整个可见 prompt：
+| 路径 | 穿过整个 block stack 的序列长度 | 每个新 query 要读的 keys |
+| --- | --- | --- |
+| 未缓存 | `P, P+1, ..., P+S-1` | 当前全部前缀 |
+| KV Cache | 先 prefill `P` 一次，之后每轮只输入 `1` | 仍然是当前全部前缀 |
+
+缓存免去了旧 token 在 block 中的重复变换，但 Attention 的扫描长度仍会随前缀增长。若有 `L` 层，K/V cache 大约保存 `2 × L × B × n_kv_heads × (P+s) × head_dim` 个元素，前面的 2 分别对应 K 和 V。
+
+## Prefill 处理 prompt，decode_one 处理新 token
+
+正常生成开始时尚无缓存，`prefill` 会一次读取完整 prompt：
 
 ```python
 logits, cache = prefill(model, input_ids, attention_mask)
 ```
 
-返回所有 prompt 位置的 logits 和每层 K/V。实际生成第一个 token 只用 `logits[:, -1]`，保留全部 logits 是为了后面的数值对照。
-
-得到第一个新 token 后，`decode_one` 只接受 `(B,1)`：
+它返回所有 prompt 位置的 logits 和每层 K/V。生成第一个新 token 只使用 `logits[:, -1]`，完整 logits 则保留给数值对照。新 token 选出后，`decode_one` 就只需接收 `(B,1)` 的 id：
 
 ```python
 step_logits, cache = decode_one(
@@ -70,19 +75,17 @@ step_logits, cache = decode_one(
 )
 ```
 
-每层把新 K/V 沿序列轴追加，长度从 `past_len` 变为 `past_len+1`。
-
-传入 mask 时，其范围覆盖缓存前缀和当前 token：
+各层会将新 K/V 沿序列轴追加，使缓存长度从 `past_len` 增加到 `past_len+1`。与之一起传入的 mask 必须同时覆盖缓存前缀和当前 token：
 
 ```text
 attention_mask: (B,past_len+1)
 ```
 
-`decode_one` 在缺省 mask 时把整个前缀视为有效。Prompt 含左侧 PAD 时，完整 mask 会随新 token 保留并追加 `True`；如果使用缺省值，原有 PAD 位置会被视为有效。右 padding 仍会让最后一行 logits 落在 PAD query 上，因此生成接口会拒绝。
+Prompt 含左侧 PAD 时，原 mask 不能丢弃，每轮还要为新 token 追加一个 `True`。若省略 mask，`decode_one` 会把整个历史前缀都当成有效 token，原来的 PAD 也会被读取。
 
-## RoPE 的位置接着 `past_len`
+## RoPE 位置从 `past_len` 继续
 
-缓存已有 `past_len` 个位置时，新 token 的位置索引就是 `past_len`：
+缓存中已有 `past_len` 个位置时，新 token 并不是又从位置 0 开始，它的索引应当恰好是 `past_len`：
 
 ```python
 cos, sin = build_rope_cache(
@@ -92,11 +95,11 @@ cos, sin = build_rope_cache(
 )
 ```
 
-若每一步又从位置 0 开始，shape、cache 长度甚至生成循环都可能看似正常，但 Q/K 旋转角度已经偏离。Cached/full logits 的数值比较会直接暴露这种静默错误。
+若每步都从位置 0 开始，代码仍能运行，cache 长度也会正常增长，但 Q/K 的旋转角已经与完整 forward 不一致。由于所有 shape 看起来都合法，这类错误需要靠数值对照发现。
 
-## 怎样做等价测试
+## 完整 forward 是缓存实现的数值参考
 
-`logits_with_kv_cache` 采用最容易检查的路径：先 prefill 第一个 token，之后逐 token 调用 `decode_one`，最后拼出所有位置的 cached logits。
+检查缓存实现时，需要为整段输入拼出每个位置的 cached logits。`logits_with_kv_cache` 因此故意只用第一个 token 建立初始 cache，再逐 token 调用 `decode_one`。这是为了和完整 forward 逐位置对照的测试路径，不是上一节“整段 prompt 一次 prefill”的生成路径：
 
 ```python
 full_logits, _ = model(input_ids, attention_mask=mask)
@@ -104,19 +107,11 @@ cached_logits = logits_with_kv_cache(model, input_ids, mask)
 error = (full_logits - cached_logits).abs().max()
 ```
 
-CPU float32 下最大误差通常在 `1e-6` 以内；具体尾数取决于设备和浮点运算次序。Logits 使用浮点容差比较，greedy token ids 则逐项完全相同。
+CPU float32 下，最大误差通常在 `1e-6` 以内，尾数会随设备与浮点运算次序变化，所以主要判据是 logits 在容差内一致。仓库的固定测试样例还会比较 greedy token ids，因为该样例中最高两项的差距足够大。换成其他模型或输入后，若两个候选几乎并列，微小浮点误差仍可能改变 argmax。
 
-这个对照同时覆盖：
+这次 cached/full 对照会经过每层 cache、K/V 追加、RoPE 位置偏移、非方阵 causal mask 和 padding mask。它能捕捉多种常见错位，但仍然只是针对给定输入的数值检查。
 
-- 每层 cache 是否对应正确；
-- K/V 是否沿序列轴追加；
-- RoPE 的 `start_pos` 是否正确；
-- 非方阵 causal mask 是否对齐当前 query；
-- padding mask 是否覆盖历史前缀。
-
-因此，仅观察“代码里有一个 list”或“生成能跑完”无法区分上述实现细节。
-
-## 缓存生成循环
+## 缓存生成的时序
 
 ```text
 prompt -> prefill -> last logits + cache
@@ -127,66 +122,43 @@ repeat:
     decode_one(next_id, cache)
 ```
 
-Temperature、top-k、top-p、EOS 和 batch 结束规则与 Task 29 相同。`temperature=0` 时可以直接比较：
+这个循环只替换了模型 forward 的节奏，Temperature、top-k、top-p、EOS 和 batch 结束规则都沿用 [自回归生成与采样](../task_29_generate_sampling/README.md) 中的规则。在仓库固定的 greedy 测试中，缓存与未缓存版本产生相同的 token ids；对任意输入，仍应先看 logits 容差。
 
-```text
-cached greedy ids == ordinary greedy ids
-```
+## 窗口滚动时重新 prefill
 
-某个 batch 行先遇到 EOS 后会持续填 EOS，其余行继续，直到所有行结束或达到 `max_new_tokens`。
-
-## 窗口满时为什么重新 prefill
-
-Cache 长度不能超过 `max_seq_len`。窗口已满又生成新 token 时，参考实现会保留最近窗口，并把其中第一个 token 重新视作位置 0：
+本仓库的参考生成只使用最近 `max_seq_len` 个 token。窗口已满又产生新 token 时，代码会截取最近的窗口，并把其中第一个 token 重新视为位置 0：
 
 ```python
 visible = result[:, -max_seq_len:]
 ```
 
-旧 cache 中的 RoPE 位置基于滚动前的索引，直接裁掉最早 K/V 并不能得到参考实现的新位置语义。因此缓存版本在窗口滚动时重新 prefill。那一步暂时失去增量计算优势，但能保证两条教学实现一致。
+直接删掉最早的 K/V 还不够。当前接口用 cache 长度推导新 token 的 RoPE 位置；裁短 cache 后，新 Q 会按缩短后的长度编号，保留下来的 K 却仍带着裁剪前的旋转位置，两边不再处在同一套坐标中。即使另存绝对位置计数器，更深层的 K/V 也已经混入被移出窗口的旧上下文，不能等同于只用新窗口重新计算的结果。
 
-这是本仓库选择的有限窗口策略，不代表已经实现更复杂的长期位置外推或 ring-buffer cache。
+为了与未缓存版本“截取窗口后从头 forward”的语义严格一致，缓存版在窗口滚动时重新 prefill。这样会在滚动发生的那一轮暂时失去增量计算的优势，但两条路径仍可直接做数值对照。
 
-## 运行与核对
+## 从 checkpoint 启动缓存生成
 
-Checkpoint 可由 Task 28 的训练脚本产生：
-
-```bash
-python exercises/block_03_transformer/task_28_next_token_training/train.py \
-  --steps 80 --checkpoint /tmp/minimind_demo.pt
-```
-
-Greedy 缓存生成的命令是：
+Checkpoint 由 [Next-token 训练](../task_28_next_token_training/README.md) 脚本产生。不传采样参数时，缓存脚本使用 greedy 生成：
 
 ```bash
 python exercises/block_03_transformer/task_30_kv_cache/kv_cache.py \
-  --checkpoint /tmp/minimind_demo.pt --prompt "清晨，" \
+  --checkpoint /tmp/minimind_demo.pt --prompt "周一早晨，" \
   --max-new-tokens 20
 ```
 
-第一行形如：
+脚本会先打印 cached/full 的最大 logits 误差，然后再打印生成文本：
 
 ```text
 cached/full max_abs_error=1.234e-07
 ```
 
-CPU float32 下通常小于 `1e-6`。第二行是生成文本；默认模型很小，文本流畅度不用来判断 cache 是否正确。
-
-也可以检查缓存采样参数：
+Temperature、top-k 与 top-p 等采样参数也可以原样传入：
 
 ```bash
 python exercises/block_03_transformer/task_30_kv_cache/kv_cache.py \
-  --checkpoint /tmp/minimind_demo.pt --prompt "清晨，" \
+  --checkpoint /tmp/minimind_demo.pt --prompt "周一早晨，" \
   --max-new-tokens 20 --temperature 0.8 \
   --top-k 20 --top-p 0.9 --seed 0
 ```
-
-缓存性质也收录在 Block 3 测试中：
-
-```bash
-python -m unittest discover -s tests -p 'test_block3.py' -v
-```
-
-测试覆盖 cache 层数与 `n_kv_heads` shape、每次 decode 后的长度变化、cached/full logits 容差、两种 greedy 生成的 token 一致性、padding mask 沿 cache 的传递，以及跨过 `max_seq_len` 后与未缓存窗口策略的一致性。
 
 参考：[Hugging Face：Caching](https://huggingface.co/docs/transformers/main/cache_explanation)、[Cache strategies](https://huggingface.co/docs/transformers/kv_cache)。

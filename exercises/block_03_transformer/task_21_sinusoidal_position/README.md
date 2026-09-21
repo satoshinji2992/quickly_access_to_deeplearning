@@ -1,19 +1,10 @@
-# task_21：正弦位置编码
+# 正弦位置编码
 
-Self-attention 只比较向量内容，不会凭空知道 token 的先后顺序。“小猫追小狗”和“小狗追小猫”包含同一组 token，顺序却改变了句意。
+[Attention 与 decoder-only](../task_20_transformer_theory/README.md) 中的 Q/K 先根据向量内容匹配。若既没有位置信号，也没有 causal mask 这样的非对称约束，调换 token 的顺序只会同样调换输出，模型无法分辨它们原来的位置。Causal mask 规定了“左边可见、右边不可见”，位置编码则进一步把位置与距离写进向量。原始 Transformer 的做法是为每个整数位置生成一行固定的 sin/cos 数值，再与 token embedding 相加。
 
-原始 Transformer 为每个整数位置准备一个固定向量，再把它加到 token embedding 上。这张位置表不参与训练，所有数值都由 sin/cos 公式给出。
+## 一对维度共用一个频率
 
-![不同维度具有不同频率的正弦位置编码](assets/sinusoidal_position.png)
-
----
-
-
-<div class="widget-mount" data-widget="pos-encoding" data-title="正弦编码：频率有多快"></div>
-
-## 公式怎样落到数组中
-
-对位置 `pos` 和维度对 `i`：
+向量的相邻两维配成一对，同一对共用频率，一维取 sin，另一维取 cos。位置 `pos` 与第 `i` 对特征的数值为：
 
 $$
 PE(pos,2i)=\sin\left(pos/10000^{2i/D}\right),
@@ -23,51 +14,41 @@ $$
 PE(pos,2i+1)=\cos\left(pos/10000^{2i/D}\right).
 $$
 
-- `pos` 是 token 在序列中的整数位置；
-- `D` 是 embedding 维度；
-- 相邻的偶数、奇数维使用同一个频率，分别放 sin 和 cos；
-- `i` 不同，频率也不同。
-
-代码把分母写成等价的指数形式：
+`D` 是 embedding 维度。维度 `(0,1)` 共用一个频率，`(2,3)` 共用另一个频率；前面的维度对变化快，越靠后变化越慢，所以一条正弦曲线无法代表整张位置表。代码把分母改写成指数形式，一次生成每对维度的频率：
 
 ```python
 div_term = exp(arange(0, D, 2) * (-log(10000) / D))
 angles = position * div_term
 ```
 
-图中低编号维度变化快，高编号维度在同一段位置范围内变化慢。只画一条波形无法表示这种多频率结构。
+`div_term[i]` 就是第 `i` 对维度的角速度，`position` 与它做外积后，就得到“位置 × 维度对”的角度表。
 
-## 两个方便的手算点
+![不同维度具有不同频率的正弦位置编码](assets/sinusoidal_position.png)
 
-`pos=0` 时，所有角度都是 0：
+<div class="widget-mount" data-widget="pos-encoding"></div>
+
+## 位置 0 是一个有用的对照
+
+`pos=0` 是很方便的对照，因为此时所有角度都是 0，第 0 行必然是：
 
 ```text
 PE[0] = [0,1,0,1,0,1,...]
 ```
 
-这能很快查出 sin/cos 列是否放反，或 position 是否误从 1 开始。
-
-对同一维度对，还可以利用：
+若第 0 行不是这个结果，常见原因是 sin/cos 列写反，或位置编号误从 1 开始。正弦位置编码还有一个很重要的性质：对同一对维度，和角公式给出
 
 $$
-\sin(a+b)=\sin a\cos b+\cos a\sin b,
+\begin{aligned}
+\sin(a+b)&=\sin a\cos b+\cos a\sin b,\\
+\cos(a+b)&=\cos a\cos b-\sin a\sin b.
+\end{aligned}
 $$
 
-$$
-\cos(a+b)=\cos a\cos b-\sin a\sin b.
-$$
+这表明位置 `pos+k` 的一对数值，可以由位置 `pos` 的数值经过一次只与 `k` 有关的线性变换得到，这也是原论文选用 sin/cos 的动机之一。
 
-也就是说，位置 `pos+k` 的这一对数值可以由位置 `pos` 的数值做一次与 `k` 有关的线性变换得到。这是原论文选择 sin/cos 的一个重要动机。
+## 位置表怎样加到 embedding
 
-## 怎样加到 embedding
-
-函数返回整张表：
-
-```text
-sinusoidal_position_encoding(max_len, D): (max_len,D)
-```
-
-当前 batch 的 embedding 是 `(B,T,D)`，取前 `T` 行并增加 batch 轴：
+`sinusoidal_position_encoding(max_len, D)` 返回 `(max_len,D)` 的完整表。当前 batch 的 token embedding 是 `(B,T,D)`，只取位置表的前 `T` 行，再借助 batch 维的广播做逐元素相加：
 
 ```python
 x = token_embedding + position_table[:T][None, :, :]
@@ -76,11 +57,11 @@ x = token_embedding + position_table[:T][None, :, :]
 
 ![Token embedding 与位置编码逐元素相加](assets/embedding_plus_position.png)
 
-位置表在 batch 维广播，同一位置对所有样本使用相同编码。
+广播后，同一位置在所有 batch 样本中使用同一行位置编码。这张位置表保持固定，token embedding 仍然会在训练中更新。
 
-## 偶数维接口
+## 当前实现要求偶数维
 
-实现分别写入 `0::2` 和 `1::2`，每个 sin 列都有一个相邻 cos 列。若 `D` 为奇数，最后一维无法组成完整配对。当前函数因此采用以下入参范围：
+函数分别向 `0::2` 和 `1::2` 写入 sin/cos。每个 sin 列都需要一个相邻的 cos 列，所以这份实现的输入约束是：
 
 ```text
 max_len > 0
@@ -88,31 +69,19 @@ D > 0
 D % 2 == 0
 ```
 
-这是当前实现的接口约束，并不意味着所有位置编码都采用偶数维。
-
-## 运行与核对
-
-在仓库根目录运行：
+这是 `position.py` 的接口约束，并不意味着所有位置编码都必须使用偶数维。直接运行脚本，可以用第 0 行核对实现：
 
 ```bash
 python exercises/block_03_transformer/task_21_sinusoidal_position/position.py
 ```
 
-输出包含：
+输出中的第 0 行应与手算结果一致：
 
 ```text
 shape: (4, 8)
 position 0: [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
 ```
 
-位置编码的边界也收录在 Block 3 测试中：
-
-```bash
-python -m unittest discover -s tests -p 'test_block3.py' -v
-```
-
-运行结果和测试中可以核对这些性质：返回值为 `(max_len,D)`，第 0 行与手算结果一致，不同维度对使用不同频率，指定 `device` 后可直接与 embedding 相加，奇数 `D` 会触发 `ValueError`。
-
-下一节保留多频率 sin/cos，但不再把位置表加到 embedding，而是用它旋转 attention 的 Q/K。
+MiniMind 没有把这张表加到 embedding，而是采用 [RoPE](../task_22_rope_position/README.md)：多频率 sin/cos 仍然保留，它们的作用对象改成了 Attention 的 Q/K。
 
 参考：[Attention Is All You Need，第 3.5 节](https://arxiv.org/abs/1706.03762)。

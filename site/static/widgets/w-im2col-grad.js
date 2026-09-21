@@ -185,7 +185,7 @@
         '<div class="ig-div">' +
           '<div class="wg-label"><span>col2im · 梯度叠回像素</span><span>点击 X 或 dX 的像素</span></div>' +
           '<div class="ig-readout" data-role="pread"></div>' +
-          '<p class="wg-note">dX_col = W_col·dY_colᵀ 先算回 (4,9)，再把指向同一像素的格子累加：中间像素被 4 个窗口共享，梯度相加；角点只属 1 个窗口。</p>' +
+          '<p class="wg-note">dX_col = dY_col·W_colᵀ：由 (4,2)·(2,9) 算回 (4,9)，再把指向同一像素的格子累加：中间像素被 4 个窗口共享，梯度相加；角点只属 1 个窗口。</p>' +
         '</div>' +
       '</div>' +
       '<p class="wg-note">同一张 X_col 表：正向按行取窗口，反向转置后按 tap 累加成 dW，col2im 再把行梯度叠回像素。所有数值均为整数，可手算验证。</p>'; return d; })());

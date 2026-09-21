@@ -1,7 +1,7 @@
 """Render real artifacts for the homepage results strip.
 
 - Circle classifier decision boundary (same 2-4-4-2 net as task_01, trained here)
-- MiniMind generation samples (trains 80 steps, then greedy + sampled generation)
+- MiniMind generation samples (trains 120 steps, then greedy + sampled generation)
 - KV cache equivalence error (task_30 on the same checkpoint)
 
 Outputs into site/static/assets/results/.
@@ -14,9 +14,11 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "site" / "static" / "assets" / "results"
+SITE_DATA = ROOT / "site" / "data" / "results.json"
 ROOT_BIN = sys.executable
 
 
@@ -40,32 +42,44 @@ def circle_boundary() -> dict:
     W2, b2 = init(4, 4), np.zeros((1, 4))
     W3, b3 = init(4, 2), np.zeros((1, 2))
     lr = 0.12
-    for _ in range(1200):
+    # NumPy 2.x may emit spurious Accelerate matmul warnings on macOS even
+    # when every operand and result is finite.  Keep the render log clean,
+    # then make finiteness an explicit invariant instead of trusting warnings.
+    with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+        for _ in range(1200):
+            h1 = np.maximum(0, X @ W1 + b1)
+            h2 = np.maximum(0, h1 @ W2 + b2)
+            logits = h2 @ W3 + b3
+            p = np.exp(logits - np.amax(logits, axis=1, keepdims=True))
+            p /= p.sum(axis=1, keepdims=True)
+            dz3 = (p - Y) / len(X)
+            dW3, db3 = h2.T @ dz3, dz3.sum(0, keepdims=True)
+            dh2 = dz3 @ W3.T
+            dz2 = dh2 * (h2 > 0)
+            dW2, db2 = h1.T @ dz2, dz2.sum(0, keepdims=True)
+            dh1 = dz2 @ W2.T
+            dz1 = dh1 * (h1 > 0)
+            dW1, db1 = X.T @ dz1, dz1.sum(0, keepdims=True)
+            for w, dw, b, db in ((W1, dW1, b1, db1), (W2, dW2, b2, db2), (W3, dW3, b3, db3)):
+                w -= lr * dw
+                b -= lr * db
+
+        parameters = (W1, b1, W2, b2, W3, b3)
+        if not all(np.isfinite(value).all() for value in parameters):
+            raise FloatingPointError("circle classifier produced non-finite parameters")
+
         h1 = np.maximum(0, X @ W1 + b1)
         h2 = np.maximum(0, h1 @ W2 + b2)
-        p = np.exp(h2 @ W3 + b3 - np.amax(h2 @ W3 + b3, axis=1, keepdims=True))
-        p /= p.sum(axis=1, keepdims=True)
-        dz3 = (p - Y) / len(X)
-        dW3, db3 = h2.T @ dz3, dz3.sum(0, keepdims=True)
-        dh2 = dz3 @ W3.T
-        dz2 = dh2 * (h2 > 0)
-        dW2, db2 = h1.T @ dz2, dz2.sum(0, keepdims=True)
-        dh1 = dz2 @ W2.T
-        dz1 = dh1 * (h1 > 0)
-        dW1, db1 = X.T @ dz1, dz1.sum(0, keepdims=True)
-        for w, dw, b, db in ((W1, dW1, b1, db1), (W2, dW2, b2, db2), (W3, dW3, b3, db3)):
-            w -= lr * dw
-            b -= lr * db
-    acc = ((p.argmax(1)) == label).mean()
+        logits = h2 @ W3 + b3
+        acc = (logits.argmax(1) == label).mean()
 
-    gs = 240
-    xa = np.linspace(-1.6, 1.6, gs)
-    ga = np.stack(np.meshgrid(xa, xa), axis=-1).reshape(-1, 2)
-    h1 = np.maximum(0, ga @ W1 + b1)
-    h2 = np.maximum(0, h1 @ W2 + b2)
-    lg = h2 @ W3 + b3
-    grid = lg[:, 1] - lg[:, 0]
-    grid = grid.reshape(gs, gs)
+        gs = 240
+        xa = np.linspace(-1.6, 1.6, gs)
+        ga = np.stack(np.meshgrid(xa, xa), axis=-1).reshape(-1, 2)
+        h1 = np.maximum(0, ga @ W1 + b1)
+        h2 = np.maximum(0, h1 @ W2 + b2)
+        lg = h2 @ W3 + b3
+        grid = (lg[:, 1] - lg[:, 0]).reshape(gs, gs)
 
     fig, ax = plt.subplots(figsize=(3.2, 3.2), dpi=150)
     ax.imshow(grid, extent=(-1.6, 1.6, -1.6, 1.6), origin="lower",
@@ -73,16 +87,18 @@ def circle_boundary() -> dict:
     ax.scatter(x[label == 1], y[label == 1], s=5, c="#0b63f3", linewidths=0)
     ax.scatter(x[label == 0], y[label == 0], s=5, c="#c8ff47", linewidths=0)
     th = np.linspace(0, 2 * np.pi, 200)
-    ax.plot(np.cos(th), np.sin(th), color="#071321", lw=1.4, ls="--", label="真实边界")
+    ax.plot(np.cos(th), np.sin(th), color="#071321", lw=1.4, ls="--")
     ax.set_xlim(-1.6, 1.6); ax.set_ylim(-1.6, 1.6)
     ax.set_xticks([]); ax.set_yticks([])
     for s in ax.spines.values():
         s.set_color("#071321"); s.set_linewidth(1.6)
-    ax.legend(loc="upper right", fontsize=7, frameon=False)
     OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / "circle_boundary.png", bbox_inches="tight", facecolor="#fffef9")
+    png_path = OUT / "circle_boundary.png"
+    fig.savefig(png_path, bbox_inches="tight", facecolor="#fffef9")
     plt.close(fig)
-    return {"circle_val_acc": round(float(acc), 3)}
+    with Image.open(png_path) as rendered:
+        rendered.save(OUT / "circle_boundary.webp", "WEBP", quality=82, method=6)
+    return {"circle_train_acc": round(float(acc), 3)}
 
 
 def minimind() -> dict:
@@ -96,10 +112,11 @@ def minimind() -> dict:
                               capture_output=True, text=True, check=True).stdout
 
     run(train, "--steps", "120", "--checkpoint", str(ckpt))
-    greedy = run(gen, "--checkpoint", str(ckpt), "--prompt", "清晨，", "--max-new-tokens", "24")
-    sampled = run(gen, "--checkpoint", str(ckpt), "--prompt", "清晨，", "--max-new-tokens", "24",
+    prompt = "周一早晨，"
+    greedy = run(gen, "--checkpoint", str(ckpt), "--prompt", prompt, "--max-new-tokens", "24")
+    sampled = run(gen, "--checkpoint", str(ckpt), "--prompt", prompt, "--max-new-tokens", "24",
                   "--temperature", "0.8", "--top-k", "20", "--top-p", "0.9", "--seed", "3")
-    kvout = run(kv, "--checkpoint", str(ckpt), "--prompt", "清晨，", "--max-new-tokens", "20")
+    kvout = run(kv, "--checkpoint", str(ckpt), "--prompt", prompt, "--max-new-tokens", "20")
     kv_line = next((l for l in kvout.splitlines() if "max_abs_error" in l), "")
     return {
         "greedy": greedy.strip().splitlines()[-1] if greedy.strip() else "",
@@ -115,5 +132,7 @@ if __name__ == "__main__":
         data.update(minimind())
     except Exception as exc:  # torch 环境缺失时不阻塞边界图
         data["minimind_error"] = str(exc)[:120]
-    (OUT / "results.json").write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    payload = json.dumps(data, ensure_ascii=False, indent=1)
+    (OUT / "results.json").write_text(payload, encoding="utf-8")
+    SITE_DATA.write_text(payload, encoding="utf-8")
     print(json.dumps(data, ensure_ascii=False, indent=1))

@@ -34,6 +34,21 @@
   });
 
   var article = document.querySelector('.markdown-body');
+  function revealHash() {
+    var id;
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { return; }
+    var target = document.getElementById(id);
+    if (!target) { return; }
+    var parent = target.parentElement;
+    var opened = false;
+    while (parent) {
+      if (parent.tagName === 'DETAILS' && !parent.open) { parent.open = true; opened = true; }
+      parent = parent.parentElement;
+    }
+    if (opened) { target.scrollIntoView({ block: 'start' }); }
+  }
+  window.addEventListener('hashchange', revealHash);
+  revealHash();
 
   /* ---- 阅读进度条 ---- */
   var bar = document.createElement('div');
@@ -98,9 +113,9 @@
   overlay.className = 'search-overlay';
   overlay.innerHTML =
     '<div class="search-modal" role="dialog" aria-label="搜索文档">' +
-      '<input type="search" class="search-input" placeholder="搜索 25 个页面…（Esc 关闭）" aria-label="搜索文档">' +
+      '<input type="search" class="search-input" placeholder="搜索课程内容…（Esc 关闭）" aria-label="搜索文档">' +
       '<div class="search-results"></div>' +
-      '<div class="search-foot">Pagefind 静态索引 · Enter 打开第一条</div>' +
+      '<div class="search-foot">输入关键词 · Enter 打开第一条</div>' +
     '</div>';
   document.body.appendChild(overlay);
   var input = overlay.querySelector('.search-input');

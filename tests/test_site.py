@@ -43,6 +43,24 @@ class ProjectSiteTests(unittest.TestCase):
         )
         self.assertEqual([], [phrase for phrase in phrases if phrase in html])
 
+    def test_homepage_results_come_from_generated_data(self):
+        html = HOMEPAGE.read_text(encoding="utf-8")
+        results_path = SITE / "data" / "results.json"
+        results = json.loads(results_path.read_text(encoding="utf-8"))
+        public_results = json.loads(
+            (SITE / "static" / "assets" / "results" / "results.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertIn("hugo.Data.results", html)
+        self.assertEqual(results, public_results)
+        self.assertEqual(
+            {"circle_train_acc", "greedy", "sampled", "kv_error"},
+            set(results),
+        )
+        self.assertTrue(results["greedy"].startswith("周一早晨，"))
+        self.assertRegex(results["kv_error"], r"^max_abs_error=\d\.\d{3}e[+-]\d{2}$")
+
     def test_docs_catalog_sources_and_slugs(self):
         catalog = json.loads((SITE / "data" / "docs.json").read_text(encoding="utf-8"))
         items = [item for group in catalog["groups"] for item in group["items"]]
@@ -64,6 +82,22 @@ class ProjectSiteTests(unittest.TestCase):
             (ROOT / "README.md").read_text(encoding="utf-8"),
         )
         self.assertIn("https://satoshinji2992.github.io/quickly_access_to_deeplearning/assets/og.png", html)
+
+    def test_symbol_tooltip_registry(self):
+        single = (SITE / "layouts" / "_default" / "single.html").read_text(encoding="utf-8")
+        self.assertIn("data-symscope", single)
+        self.assertIn("data-slug", single)
+        self.assertIn("symbol-data.js", single)
+        self.assertIn("symbols.js", single)
+        self.assertTrue((SITE / "static" / "symbol-data.js").is_file())
+        self.assertTrue((SITE / "static" / "symbols.js").is_file())
+        data_text = (SITE / "static" / "symbol-data.js").read_text(encoding="utf-8")
+        self.assertIn("scopes", data_text)
+        for name in re.findall(r"'([A-Za-z0-9_]+\.png)':\s*\{", data_text):
+            self.assertTrue(
+                (ROOT / "assets" / "images" / name).is_file(),
+                f"figure legend references missing image {name}",
+            )
 
 
 if __name__ == "__main__":

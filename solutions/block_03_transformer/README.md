@@ -55,7 +55,7 @@ python exercises/block_03_transformer/task_28_next_token_training/train.py \
 
 ```bash
 python exercises/block_03_transformer/task_29_generate_sampling/generate.py \
-  --checkpoint /tmp/minimind_demo.pt --prompt "清晨，" \
+  --checkpoint /tmp/minimind_demo.pt --prompt "周一早晨，" \
   --max-new-tokens 20 --temperature 0.8 \
   --top-k 20 --top-p 0.9 --seed 0
 ```
@@ -64,7 +64,7 @@ python exercises/block_03_transformer/task_29_generate_sampling/generate.py \
 
 ```bash
 python exercises/block_03_transformer/task_30_kv_cache/kv_cache.py \
-  --checkpoint /tmp/minimind_demo.pt --prompt "清晨，" \
+  --checkpoint /tmp/minimind_demo.pt --prompt "周一早晨，" \
   --max-new-tokens 20 --temperature 0.8 \
   --top-k 20 --top-p 0.9 --seed 0
 ```

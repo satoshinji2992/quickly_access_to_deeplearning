@@ -1,24 +1,22 @@
-# 快速入门深度学习
+# 从 y = ax + b 到 MiniMind
 
-NumPy 基础网络、CIFAR-100 ResNet 与 decoder-only Transformer 的实现教程。
+这套教程从一个很小的问题开始：电脑怎样拟合一条直线？把预测、损失、梯度和更新算清以后，我们会保留这条“预测—计算损失—沿梯度更新”的骨架，依次处理 CIFAR-100 图片和文本生成。
 
-![alt text](assets/images/og.png)
+我把正文写成 Markdown，而不是把讲义塞进 Notebook。文章里保留思路、公式和真正需要对照的代码片段，完整程序则放在旁边的 `exercises/` 目录。读到某个 shape 或一行训练日志时，可以立刻打开对应文件，不必在两套内容之间猜哪一份才算数。
 
-[查看项目主页](https://satoshinji2992.github.io/quickly_access_to_deeplearning/) · [打开课程总览](chapters/00-课程总览.md) · [浏览论文与视频资料](推荐教学视频.md)
+![从多层感知机、卷积到 Transformer 的课程封面](assets/images/og.png)
 
-这是一套以实现为主的深度学习入门教程。内容从线性回归和反向传播开始，随后实现小型 NumPy 深度学习库、CIFAR-100 ResNet，以及带 RoPE、GQA 和 KV Cache 的 decoder-only Transformer。
+[打开网页版教程](https://satoshinji2992.github.io/quickly_access_to_deeplearning/) · [从课程总览开始](chapters/00-课程总览.md) · [论文与视频资料](推荐教学视频.md)
 
-每个可运行主题都附有代码入口、命令和结果核对方法。测试覆盖数据隔离、梯度、shape 与 checkpoint round-trip。
+## 三个 Block
 
-**内容分为三个模块：**
-
-- **Block 1 · 看清梯度** — 线性回归 → 圆形分类 → Mini DL Library → MNIST
-- **Block 2 · 看清像素流** — CIFAR-100 → Conv2D → BatchNorm → ResNet
-- **Block 3 · 看清上下文** — Attention → RoPE / GQA → MiniMind → KV Cache
+- **Block 1：基础网络**：从直线拟合走到圆形分类，期间把 Linear、ReLU、交叉熵、反向传播和优化器拆成一个小型 NumPy 库，最后用它识别 MNIST。
+- **Block 2：卷积与 ResNet**：先手算一个卷积窗口，再处理多通道、im2col、BatchNorm 和 shortcut，然后把 SmallResNet 接到 CIFAR-100。
+- **Block 3：Transformer 与 MiniMind**：从 token（文本切分后的片段）查表和下一个 token 预测开始，随后加入 causal attention、RoPE、GQA、SwiGLU、采样和 KV Cache。
 
 ## 环境准备
 
-推荐使用 conda 管理 Python 环境，用 `requirements.txt` 安装项目依赖。该文件覆盖完整教程，包括 NumPy、MNIST 和 Transformer 相关依赖：
+阅读网页版不需要安装任何东西。要运行代码，可以用 conda 建一个 Python 3.10 环境：
 
 ```bash
 conda create -n dl_tutorial python=3.10
@@ -26,103 +24,83 @@ conda activate dl_tutorial
 pip install -r requirements.txt
 ```
 
-如果只学习 Block 1 和 Block 2 的 NumPy 部分，核心依赖是 `numpy`、`pandas`、`matplotlib` 和 `scikit-learn`。`torch` / `torchvision` 主要用于 MNIST 与 Transformer 相关任务。
+神经网络算子主要使用 `numpy` 实现；绘图和数据处理还会用到 `pandas`、`matplotlib`、`scikit-learn` 与 `torchvision`。Block 3 使用 `torch`。
 
-## 目录
+## 阅读顺序
 
-```text
-chapters/     # 章节
-exercises/    # 分节代码与可运行示例
-solutions/    # 参考实现
-common/       # task_02 之后共享的小型 NumPy 深度学习库完整实现
-assets/       # 共享图片
-```
+### Block 1：先把一次更新算清楚
 
-关键配图中的矩阵数值、shape、梯度数量和 head 映射都有自动检查。task 15 的误分类图来自真实 CIFAR-100 推理，并保留 test split、checkpoint 摘要和测试索引。
+1. [y = ax + b：神经网络到底是什么？](chapters/01-基础知识.md)
+2. [拟合一条直线](exercises/block_01_basics/task_00_linear_regression/README.md)
+3. [判断点在圆内还是圆外](exercises/block_01_basics/task_01_circle_classifier/README.md)
+4. [整理一个小型深度学习库](exercises/block_01_basics/task_02_mini_dl_lib/README.md)
+5. [用 MLP 识别 MNIST](exercises/block_01_basics/task_03_mnist_mlp/README.md)
 
-## 从哪里开始
+### Block 2：看一张图怎样变成 100 个分数
 
-1. [课程总览](chapters/00-课程总览.md)
-2. [Block 1: 基础知识](chapters/01-基础知识.md) — 直线拟合 → 圆形分类 → 小型 NumPy DL 库 → MNIST
-3. [Block 2: ResNet 图像分类](chapters/02-ResNet图像分类.md) — 卷积、池化、残差块、训练
-4. [Block 3: Transformer 与 MiniMind](chapters/03-Transformer与MiniMind.md) — Attention、位置编码、Decoder、生成
+1. [一张图片怎样变成一百个分数](chapters/02-ResNet图像分类.md)
+2. [图片进入卷积层之前](exercises/block_02_resnet/task_10_image_data_pipeline/README.md)
+3. [从一个卷积窗口到 im2col](exercises/block_02_resnet/task_11_conv2d_im2col/README.md)
+4. [BatchNorm、全局平均池化与 MaxPool](exercises/block_02_resnet/task_12_pooling_and_bn/README.md)
+5. [两条路径怎样组成残差块](exercises/block_02_resnet/task_13_residual_block/README.md)
+6. [把 SmallResNet 跑起来](exercises/block_02_resnet/task_14_numpy_resnet_train/README.md)
+7. [读一遍已经跑完的实验](exercises/block_02_resnet/task_15_experiment_notes/README.md)
 
-### Block 1: y = ax + b! 神经网络到底是什么?
+### Block 3：从 token 到文本生成
 
-- [task_00: 拟合一条直线](exercises/block_01_basics/task_00_linear_regression/README.md)
-- [task_01: 圆形分类](exercises/block_01_basics/task_01_circle_classifier/README.md)
-- [task_02: 小型深度学习库](exercises/block_01_basics/task_02_mini_dl_lib/README.md)
-- [task_03: MLP 识别 MNIST](exercises/block_01_basics/task_03_mnist_mlp/README.md)
+1. [Transformer 语言模型：从文本到下一个 token](chapters/03-Transformer与MiniMind.md)
+2. [Embedding 与 LM head](exercises/block_03_transformer/task_25_embedding_lm_head/README.md)
+3. [Attention 与 decoder-only](exercises/block_03_transformer/task_20_transformer_theory/README.md)
+4. [正弦位置编码](exercises/block_03_transformer/task_21_sinusoidal_position/README.md)
+5. [RoPE：把位置写进 Q/K](exercises/block_03_transformer/task_22_rope_position/README.md)
+6. [Causal Attention 与 GQA](exercises/block_03_transformer/task_23_causal_attention/README.md)
+7. [SwiGLU 前馈网络](exercises/block_03_transformer/task_24_swiglu_ffn/README.md)
+8. [组装 Decoder Block](exercises/block_03_transformer/task_26_decoder_blocks/README.md)
+9. [MiniMind Core](exercises/block_03_transformer/task_27_minimind_core/README.md)
+10. [Next-token 训练](exercises/block_03_transformer/task_28_next_token_training/README.md)
+11. [自回归生成与采样](exercises/block_03_transformer/task_29_generate_sampling/README.md)
+12. [KV Cache](exercises/block_03_transformer/task_30_kv_cache/README.md)
 
-### Block 2: 用 ResNet 分类 CIFAR-100 小图像
+Block 3 按概念出现的顺序阅读，所以会先打开 `task_25`，再回到 `task_20`。这些数字是仓库早期留下的目录编号，不是当前的阅读次序。
 
-- [task_10: 图像数据管线](exercises/block_02_resnet/task_10_image_data_pipeline/README.md)
-- [task_11: Conv2D 与 im2col](exercises/block_02_resnet/task_11_conv2d_im2col/README.md)
-- [task_12: 池化与 BatchNorm](exercises/block_02_resnet/task_12_pooling_and_bn/README.md)
-- [task_13: 残差块](exercises/block_02_resnet/task_13_residual_block/README.md)
-- [task_14: NumPy ResNet 训练](exercises/block_02_resnet/task_14_numpy_resnet_train/README.md)
-- [task_15: 实验记录](exercises/block_02_resnet/task_15_experiment_notes/README.md)
-
-### Block 3: 用上下文补出下一个 token
-
-- [task_20: Transformer 理论](exercises/block_03_transformer/task_20_transformer_theory/README.md)
-- [task_21: Sinusoidal 位置编码](exercises/block_03_transformer/task_21_sinusoidal_position/README.md)
-- [task_22: RoPE 位置编码](exercises/block_03_transformer/task_22_rope_position/README.md)
-- [task_23: Causal Attention 与 GQA](exercises/block_03_transformer/task_23_causal_attention/README.md)
-- [task_24: SwiGLU FFN](exercises/block_03_transformer/task_24_swiglu_ffn/README.md)
-- [task_25: Embedding 与 LM Head](exercises/block_03_transformer/task_25_embedding_lm_head/README.md)
-- [task_26: Decoder Block](exercises/block_03_transformer/task_26_decoder_blocks/README.md)
-- [task_27: MiniMind Core](exercises/block_03_transformer/task_27_minimind_core/README.md)
-- [task_28: Next-token 训练](exercises/block_03_transformer/task_28_next_token_training/README.md)
-- [task_29: Generate 与采样](exercises/block_03_transformer/task_29_generate_sampling/README.md)
-- [task_30: KV Cache](exercises/block_03_transformer/task_30_kv_cache/README.md)
-
-## 还想继续往前？
-
-`exercises/ComingSoon.../`
+## 仓库里有什么
 
 ```text
-CrossAttention
-KVCache
-MQA_GQA
-Sampling
-Tokenizer
-SFT
-RL/Alignment_DPO_RLHF
-MoE
-Mamba / StateSpaceModels
-RL
+chapters/     # 可以连续阅读的章节
+exercises/    # 与各节对应的实现和运行说明
+solutions/    # 对照实现
+common/       # 后续任务共用的 NumPy 组件
+tests/        # 数据隔离、梯度、shape、causal 和 checkpoint 检查
+site/         # Hugo 文档站
+assets/       # 共享配图
 ```
 
-同步上游更新：
+## 快速检查
 
-```bash
-git pull origin main
-```
-
-运行参考实现：
-
-```bash
-python solutions/block_01_basics/linear_regression_solution.py
-python solutions/block_01_basics/mini_network_reference.py
-python solutions/block_02_resnet/train_cifar100_solution.py --subset-size 200 --epochs 20 --batch-size 20 --channels 8 16 32 --lr 0.03
-python solutions/block_03_transformer/minimind_solution.py
-```
-
-不下载数据的快速检查：
+不下载数据也能跑完的检查：
 
 ```bash
 python -m unittest discover -s tests -p 'test_block1.py' -v
 python -m unittest discover -s tests -p 'test_block2.py' -v
 python -m unittest discover -s tests -p 'test_block3.py' -v
-python -m unittest tests.test_docs -v
+python -m unittest tests.test_docs tests.test_site -v
 ```
 
-预期每条命令末尾都显示 `OK`。Block 2/3 的测试覆盖 shape、梯度、数据隔离、causal 性质和 checkpoint 等基础约束；它们不衡量完整 CIFAR-100 训练精度，也不代表模型具备通用语言能力。
+这些测试会抓住常见的实现错误。CIFAR-100 准确率和生成文本质量则属于实验结果，不能从单元测试推出。
+
+## 后续内容
+
+`exercises/ComingSoon.../` 收录了正在整理的 Tokenizer、Cross-Attention、SFT / LoRA、MoE、Mamba / State Space Model 和 RL Alignment 等主题。它们还没有进入当前三个 Block 的学习路线。
+
+更新本地副本：
+
+```bash
+git pull origin main
+```
 
 ## 许可
 
-- 代码（`common/`、`exercises/` 代码、`solutions/`、`tests/`、`scripts/`）：[MIT](LICENSE)
+- 代码（`common/`、`exercises/` 中的代码、`solutions/`、`tests/`、`scripts/`）：[MIT](LICENSE)
 - 教程文字与配图：[CC BY 4.0](LICENSE-CONTENT.md)
 
-教程内容的分层、改稿顺序和发布检查见 [教程改稿 workflow](CONTRIBUTING.md)。
+改稿原则和发布检查见 [教程改稿约定](CONTRIBUTING.md)。

@@ -8,6 +8,9 @@ from unittest import mock
 import numpy as np
 
 from common.my_dl_lib import CrossEntropyLoss, Momentum, SGD
+from exercises.block_02_resnet.task_14_numpy_resnet_train import (
+    train_resnet as train_resnet_module,
+)
 from exercises.block_02_resnet.task_10_image_data_pipeline.data_pipeline import (
     assert_disjoint_splits,
     load_cifar100_splits,
@@ -276,6 +279,27 @@ class Block2Tests(unittest.TestCase):
         np.testing.assert_allclose(train_loss, expected_loss, rtol=0, atol=1e-12)
         self.assertEqual(eval_accuracy, 2 / 3)
         self.assertEqual(train_accuracy, 2 / 3)
+
+    def test_official_test_split_is_only_evaluated_when_requested(self):
+        split = (
+            np.zeros((2, 3, 8, 8), dtype=np.float64),
+            np.zeros(2, dtype=np.int64),
+        )
+        with mock.patch.object(
+            train_resnet_module,
+            "load_cifar100_splits",
+            return_value=(split, split, split),
+        ), mock.patch.object(
+            train_resnet_module, "train_epoch", return_value=(1.0, 0.25)
+        ), mock.patch.object(
+            train_resnet_module, "evaluate", return_value=(0.9, 0.5)
+        ) as mocked_evaluate, mock.patch("builtins.print"):
+            train_resnet_module.main(["--epochs", "1"])
+            self.assertEqual(mocked_evaluate.call_count, 1)
+
+            mocked_evaluate.reset_mock()
+            train_resnet_module.main(["--epochs", "1", "--eval-test"])
+            self.assertEqual(mocked_evaluate.call_count, 2)
 
     def test_checkpoint_round_trip_restores_everything_and_exact_logits(self):
         rng = np.random.default_rng(21)

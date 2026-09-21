@@ -1,14 +1,15 @@
+{{- $results := hugo.Data.results -}}
 <!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>快速入门深度学习｜NumPy、ResNet 与 Transformer</title>
-  <meta name="description" content="从 NumPy 基础网络与 ResNet，到 PyTorch decoder-only Transformer 的深度学习入门实现教程。">
+  <title>从 y = ax + b 到 MiniMind｜深度学习入门</title>
+  <meta name="description" content="包含 NumPy 基础网络、CIFAR-100 ResNet 和 decoder-only Transformer 的中文实现教程。">
   <link rel="canonical" href="https://satoshinji2992.github.io/quickly_access_to_deeplearning/">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <meta property="og:title" content="快速入门深度学习">
-  <meta property="og:description" content="从 NumPy 基础网络与 ResNet，到 PyTorch decoder-only Transformer 的实现教程。">
+  <meta property="og:title" content="从 y = ax + b 到 MiniMind">
+  <meta property="og:description" content="从一条直线出发，写出基础网络、ResNet 和 decoder-only Transformer。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://satoshinji2992.github.io/quickly_access_to_deeplearning/">
   <meta property="og:image" content="https://satoshinji2992.github.io/quickly_access_to_deeplearning/assets/og.png">
@@ -29,26 +30,26 @@
     <section id="top" class="hero shell">
       <div class="hero-copy">
         <div class="eyebrow"><span></span> NUMPY · RESNET · TRANSFORMER</div>
-        <h1>深度学习<br><em>从零实现</em></h1>
-        <p class="hero-lead">这套深度学习入门教程从 NumPy 中的基础网络开始，依次实现 CIFAR-100 ResNet 和 decoder-only Transformer。每节包含讲解、代码、运行命令与结果核对。</p>
+        <h1>从一条直线<br><em>走到 Transformer</em></h1>
+        <p class="hero-lead">我们先拿 y = ax + b 完整算一遍参数更新，再看图片中的局部结构和文本中的前后依赖怎样改变模型。公式不会只停在纸上，旁边就是可以核对的代码。</p>
         <div class="hero-actions">
-          <a class="button primary" href="./docs/overview/">阅读文档 <span>→</span></a>
+          <a class="button primary" href="./docs/overview/">从第一节开始 <span>→</span></a>
           <a class="button secondary" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning">浏览代码 <span>↗</span></a>
         </div>
         <div class="hero-stats" aria-label="项目概览">
-          <div><strong>15</strong><span>可运行主题</span></div>
-          <div><strong>03</strong><span>课程模块</span></div>
-          <div><strong>43</strong><span>自动测试</span></div>
+          <div><strong>21</strong><span>实现页面</span></div>
+          <div><strong>03</strong><span>三个 Block</span></div>
+          <div><strong>✓</strong><span>关键实现有测试</span></div>
         </div>
       </div>
       <div class="hero-visual" data-carousel aria-roledescription="轮播" aria-label="课程结构示意图">
         <div class="paper-tag">COURSE FIGURES</div>
         <div class="carousel">
           <div class="carousel-stage">
-            <figure class="carousel-slide is-active" data-caption="课程总览：从 NumPy 到 MiniMind 的实现路线" aria-hidden="false">
+            <figure class="carousel-slide is-active" data-caption="从一条直线，到会读取上下文的 MiniMind" aria-hidden="false">
               <picture>
                 <source srcset="./assets/og.webp" type="image/webp">
-                <img src="./assets/og.png" alt="课程分享图：快速入门深度学习，从 NumPy 到 MiniMind" fetchpriority="high" decoding="async">
+                <img src="./assets/og.png" alt="课程分享图：从 y = ax + b 到 MiniMind" fetchpriority="high" decoding="async">
               </picture>
             </figure>
             <figure class="carousel-slide" data-caption="Block 1：线性回归、圆形分类与 Mini DL Library" aria-hidden="true">
@@ -57,7 +58,7 @@
             <figure class="carousel-slide" data-caption="Block 2：Conv2D、BatchNorm 与残差块组成的 ResNet" aria-hidden="true">
               <img data-webp="./assets/figures/block2_overview.webp" data-png="./assets/figures/block2_overview.png" alt="Block 2 ResNet 内容概览" decoding="async">
             </figure>
-            <figure class="carousel-slide" data-caption="Decoder-only Transformer：训练主线与 KV Cache 推理" aria-hidden="true">
+            <figure class="carousel-slide" data-caption="Decoder-only Transformer：训练与 KV Cache 推理" aria-hidden="true">
               <img data-webp="./assets/figures/minimind_overview.webp" data-png="./assets/figures/minimind_overview.png" alt="MiniMind 的训练与增量推理结构" decoding="async">
             </figure>
             <figure class="carousel-slide" data-caption="im2col：滑动窗口展开为矩阵乘法" aria-hidden="true">
@@ -74,7 +75,7 @@
           <button class="carousel-arrow next" type="button" aria-label="下一张示意图">→</button>
         </div>
         <div class="carousel-footer">
-          <div class="visual-caption"><span data-figure-index>FIG. 01 / 07</span><p data-carousel-caption>课程总览：从 NumPy 到 MiniMind 的实现路线</p></div>
+          <div class="visual-caption"><span data-figure-index>FIG. 01 / 07</span><p data-carousel-caption>从一条直线，到会读取上下文的 MiniMind</p></div>
           <div class="carousel-dots" role="group" aria-label="选择示意图">
             <button type="button" aria-label="课程总览" aria-current="true"></button>
             <button type="button" aria-label="Block 1 概览"></button>
@@ -91,65 +92,76 @@
     <div class="ticker" aria-hidden="true"><div>FORWARD PASS <i>✦</i> BACKPROPAGATION <i>✦</i> IM2COL <i>✦</i> RESIDUAL CONNECTION <i>✦</i> ROPE <i>✦</i> GQA <i>✦</i> KV CACHE</div></div>
 
     <section id="before" class="before shell">
-      <div class="before-head"><span class="eyebrow">BEFORE YOU START</span><h2>开始之前</h2></div>
-      <p class="before-lead">会基础 Python 就能开始。矩阵乘法、偏导数和 NumPy 的 shape 操作用到时现补也来得及；全部内容只用 CPU 就能跑完。</p>
-      <div class="before-lines">
-        <div class="bf-line"><b>你会做出什么</b><span>一个手写的 NumPy 深度学习库，一个在 CIFAR-100 上训练的 NumPy ResNet，一个带 RoPE、GQA 和 KV Cache 的 PyTorch Transformer。</span></div>
-        <div class="bf-line"><b>需要多少时间</b><span>半小时可以读完三章主线，三个小时够跑通 Block 1 的四个练习，全部实现完是一门完整课程的量。</span></div>
+      <div class="before-grid">
+        <div class="before-copy">
+          <div class="before-head"><span class="eyebrow">BEFORE YOU START</span><h2>开始之前</h2></div>
+          <p class="before-lead">会读 Python，对矩阵乘法和导数有一点印象，就可以开始。示例都能在 CPU 上运行。</p>
+        </div>
+        <div class="before-lines">
+          <div class="bf-line"><b>阅读方式</b><span>每章末尾会带到对应实现，文档侧栏也按同一顺序排列。</span></div>
+          <div class="bf-line"><b>怎样看运行结果</b><span>除了程序能否结束，页面还会给出 shape、loss 变化或误差范围。</span></div>
+        </div>
       </div>
     </section>
 
-    <section id="route" class="route shell section">
+    <section id="route" class="route shell section section-anchor">
+      <span class="spine" aria-hidden="true">SECTION 01 · COURSE CONTENT</span>
       <header class="section-head">
         <div><span class="section-index">01</span><span class="eyebrow">COURSE CONTENT</span></div>
-        <h2>三个模块</h2>
-        <p>章节按实现依赖排列。每个模块都保留独立示例，也提供可以连起来运行的完整实现。</p>
+        <h2>内容简介</h2>
+        <p>三个 Block 都会重复用到预测、损失和反向传播，也都会留出不参与更新的数据。</p>
       </header>
       <div class="block-list">
         <article class="block-card">
           <div class="block-meta"><span class="block-no">01</span><span>NUMPY FOUNDATIONS</span></div>
-          <div class="block-body"><h3>基础网络与反向传播</h3><p>从线性回归和二维分类开始，实现 Layer、Loss、Optimizer 与 Sequential，再用于 MNIST 分类。</p><div class="chips"><span>线性回归</span><span>圆形分类</span><span>Mini DL Library</span><span>MNIST MLP</span></div><a href="./docs/chapter-basics/">阅读章节 <span>→</span></a></div>
+          <div class="block-body"><h3>基础网络与反向传播</h3><p>一条直线先学会靠近散点。它围不住圆时，ReLU 和多层网络就有了用处。</p><div class="chips"><span>线性回归</span><span>圆形分类</span><span>Mini DL Library</span><span>MNIST MLP</span></div><a href="./docs/chapter-basics/">阅读章节 <span>→</span></a></div>
           <div class="block-image"><picture><source srcset="./assets/figures/block1_overview.webp" type="image/webp"><img src="./assets/figures/block1_overview.png" alt="Block 1 内容概览" loading="lazy" decoding="async"></picture></div>
         </article>
         <article class="block-card">
           <div class="block-meta"><span class="block-no">02</span><span>VISION SYSTEMS</span></div>
-          <div class="block-body"><h3>Conv2D 与 ResNet</h3><p>实现 im2col 卷积、池化、BatchNorm 和残差块，并组合为 CIFAR-100 图像分类模型。</p><div class="chips"><span>CIFAR-100</span><span>Conv2D</span><span>Residual Block</span><span>Checkpoint</span></div><a href="./docs/chapter-resnet/">阅读章节 <span>→</span></a></div>
+          <div class="block-body"><h3>Conv2D 与 ResNet</h3><p>同一个小窗口在图上滑动，找出局部模式。再用 BatchNorm 和 shortcut 把更深的网络接起来。</p><div class="chips"><span>CIFAR-100</span><span>Conv2D</span><span>Residual Block</span><span>Checkpoint</span></div><a href="./docs/chapter-resnet/">阅读章节 <span>→</span></a></div>
           <div class="block-image"><picture><source srcset="./assets/figures/block2_overview.webp" type="image/webp"><img src="./assets/figures/block2_overview.png" alt="Block 2 内容概览" loading="lazy" decoding="async"></picture></div>
         </article>
         <article class="block-card">
           <div class="block-meta"><span class="block-no">03</span><span>SEQUENCE MODELS</span></div>
-          <div class="block-body"><h3>Decoder-only Transformer</h3><p>实现位置编码、causal attention、RoPE、GQA、SwiGLU、采样与逐层 KV Cache。</p><div class="chips"><span>RoPE</span><span>GQA</span><span>MiniMind</span><span>KV Cache</span></div><a href="./docs/chapter-transformer/">阅读章节 <span>→</span></a></div>
+          <div class="block-body"><h3>Decoder-only Transformer</h3><p>一个 token 怎样读取前文？先手算一次 Attention，再把位置、多头、训练和逐 token 生成接起来。</p><div class="chips"><span>RoPE</span><span>GQA</span><span>MiniMind</span><span>KV Cache</span></div><a href="./docs/chapter-transformer/">阅读章节 <span>→</span></a></div>
           <div class="block-image"><picture><source srcset="./assets/figures/minimind_overview.webp" type="image/webp"><img src="./assets/figures/minimind_overview.png" alt="Block 3 内容概览" loading="lazy" decoding="async"></picture></div>
         </article>
       </div>
     </section>
 
-    <section id="results" class="results shell">
-      <div class="results-head"><span class="eyebrow">RESULTS</span><h2>最后的成果</h2><p>下面全部来自仓库代码的真实运行结果，不是示意图。</p></div>
+    <section id="results" class="results shell section-anchor">
+      <span class="spine" aria-hidden="true">SECTION 02 · RESULTS</span>
+      <div class="results-head"><span class="eyebrow">RESULTS</span><h2>实际跑出来的结果</h2><p>圆形边界、CIFAR-100 误分类和缓存误差都由仓库脚本生成。</p></div>
       <div class="results-grid">
         <figure class="res-card">
           <div class="res-img"><picture><source srcset="./assets/results/circle_boundary.webp" type="image/webp"><img src="./assets/results/circle_boundary.png" alt="圆形分类决策边界" loading="lazy" decoding="async"></picture></div>
-          <figcaption><b>圆形分类决策边界</b><span>2-4-4-2 MLP · 验证准确率 98.1%</span></figcaption>
+          <figcaption><b>圆形分类决策边界</b><span>2-4-4-2 MLP · 800 个训练样本上的准确率 {{ printf "%.1f%%" (mul $results.circle_train_acc 100) }}</span></figcaption>
         </figure>
         <figure class="res-card">
           <div class="res-img"><picture><source srcset="./assets/results/misclassified_examples.webp" type="image/webp"><img src="./assets/results/misclassified_examples.png" alt="CIFAR-100 真实误分类样本" loading="lazy" decoding="async"></picture></div>
-          <figcaption><b>CIFAR-100 误分类分析</b><span>NumPy ResNet · 官方测试集真实推理</span></figcaption>
+          <figcaption><b>CIFAR-100 误分类分析</b><span>chenyaofo ResNet-20 · 官方 test split</span></figcaption>
         </figure>
         <div class="res-card res-text">
-          <div class="res-label">MINIMIND · NEXT-TOKEN 生成</div>
-          <p class="res-gen">“清晨，小城的雨停了。屋檐上的水滴慢慢落下，街边的树叶在”</p>
-          <span>120 步训练后的 PyTorch decoder-only 真实输出</span>
+          <div class="res-label">MINIMIND · 小语料拟合</div>
+          <p class="res-gen">“{{ $results.greedy }}”</p>
+          <span>训练 120 步后的续写；它会记住小语料，只用来核对生成流程</span>
         </div>
         <div class="res-card res-text">
           <div class="res-label">KV CACHE · 两条路径等价</div>
-          <div class="res-kv"><span>逐 token 缓存 vs 每步重算</span><b>max |Δlogits| = 1.97e-06</b></div>
+          <div class="res-kv"><span>逐 token 缓存 vs 每步重算</span><b>{{ replace $results.kv_error "max_abs_error=" "max |Δlogits| = " }}</b></div>
           <span>浮点误差内一致，省掉旧 token 的重复计算</span>
         </div>
       </div>
     </section>
 
-    <section id="figures" class="figures section"><div class="shell">
-      <header class="section-head light"><div><span class="section-index">02</span><span class="eyebrow">FIGURES</span></div><h2>关键结构图</h2><p>配图与代码采用相同的矩阵方向、张量 shape 和 head 映射。相关数值由仓库测试核对。</p></header>
+    <section id="figures" class="figures section"><div class="shell section-anchor">
+      <span class="spine" aria-hidden="true">SECTION 03 · FIGURES</span>
+      <header class="sec-headline">
+        <div class="sec-rule"><span>03 · FIGURES</span></div>
+        <h2>三张结构图</h2>
+        <p>图里的矩阵方向、张量 shape 和 head 映射与代码一致，其中的数值有对应测试。</p>
+      </header>
       <div class="figure-grid">
         <figure class="figure-card featured"><div class="figure-frame"><picture><source srcset="./assets/figures/im2col_explained.webp" type="image/webp"><img src="./assets/figures/im2col_explained.png" alt="im2col 矩阵展开" loading="lazy" decoding="async"></picture></div><figcaption><span>01 / IM2COL</span><strong>滑动窗口与矩阵乘法</strong></figcaption></figure>
         <figure class="figure-card"><div class="figure-frame"><picture><source srcset="./assets/figures/gqa.webp" type="image/webp"><img src="./assets/figures/gqa.png" alt="Grouped Query Attention" loading="lazy" decoding="async"></picture></div><figcaption><span>02 / GQA</span><strong>4 个 Query 头共享 2 组 KV</strong></figcaption></figure>
@@ -157,8 +169,9 @@
       </div>
     </div></section>
 
-    <section id="tests" class="reproduce shell section">
-      <div class="reproduce-copy"><span class="section-index">03</span><div class="eyebrow">TESTS</div><h2>实现检查</h2><p>测试覆盖数据集隔离、有限差分梯度、causal 性质、单 batch 拟合和 checkpoint round-trip。它们用于检查实现约束，不替代完整训练指标。</p><a class="button primary" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning/tree/main/tests">查看测试代码 <span>↗</span></a></div>
+    <section id="tests" class="reproduce shell section section-anchor">
+      <span class="spine" aria-hidden="true">SECTION 04 · TESTS</span>
+      <div class="reproduce-copy"><div class="eyebrow">TESTS</div><h2>实现检查</h2><p>测试覆盖数据集隔离、有限差分梯度、causal 性质、单 batch 拟合和 checkpoint round-trip。它们用于检查实现约束，不替代完整训练指标。</p><a class="button primary" href="https://github.com/satoshinji2992/quickly_access_to_deeplearning/tree/main/tests">查看测试代码 <span>↗</span></a></div>
       <div class="terminal" role="img" aria-label="测试运行结果示例"><div class="terminal-bar"><i></i><i></i><i></i><span>repository — tests</span></div><pre><span class="muted">$</span> python -m unittest discover -s tests -v
 
 <span class="ok">✓</span> circle labels &amp; split isolation
@@ -167,7 +180,7 @@
 <span class="ok">✓</span> causal attention property
 <span class="ok">✓</span> checkpoint round-trip
 
-<strong>Ran 43 tests</strong>
+	<strong>Ran 54 tests</strong>
 <span class="success">OK</span></pre></div>
     </section>
 

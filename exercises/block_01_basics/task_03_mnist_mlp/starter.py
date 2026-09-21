@@ -1,5 +1,7 @@
-"""Use the mini NumPy library from task_02 to train an MLP on MNIST."""
+"""Train an MNIST MLP with the reference library or the task_02 library."""
 
+import argparse
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -8,7 +10,28 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.append(str(REPO_ROOT))
 
-from common.my_dl_lib import CrossEntropyLoss, Linear, Momentum, ReLU, Sequential  # noqa: E402
+
+def load_training_components(library="reference"):
+    """Load the filled reference components or the implementation from task_02."""
+
+    if library == "reference":
+        from common import my_dl_lib as library_module
+    elif library == "task02":
+        library_path = (
+            Path(__file__).resolve().parents[1]
+            / "task_02_mini_dl_lib"
+            / "my_dl_lib.py"
+        )
+        spec = importlib.util.spec_from_file_location("task02_my_dl_lib", library_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"cannot load task_02 library from {library_path}")
+        library_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(library_module)
+    else:
+        raise ValueError("library must be 'reference' or 'task02'")
+
+    names = ("CrossEntropyLoss", "Linear", "Momentum", "ReLU", "Sequential")
+    return tuple(getattr(library_module, name) for name in names)
 
 
 def one_hot(labels, num_classes=10):
@@ -104,8 +127,13 @@ def evaluate(model, loss_fn, x, targets, labels):
     return loss, accuracy
 
 
-def main():
+def main(library="reference", seed=0):
+    CrossEntropyLoss, Linear, Momentum, ReLU, Sequential = load_training_components(
+        library
+    )
     x_train, y_train, train_labels, x_val, y_val, val_labels = load_mnist()
+    np.random.seed(seed)
+    print(f"library: {library}")
     print(f"data split: train={len(x_train)}, val={len(x_val)} (stratified, disjoint)")
 
     model = Sequential(Linear(784, 128), ReLU(), Linear(128, 10))
@@ -134,4 +162,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--library",
+        choices=("reference", "task02"),
+        default="reference",
+        help="component implementation used by the MLP",
+    )
+    parser.add_argument("--seed", type=int, default=0, help="weight initialization seed")
+    args = parser.parse_args()
+    main(library=args.library, seed=args.seed)

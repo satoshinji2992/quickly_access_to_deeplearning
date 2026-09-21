@@ -1,38 +1,32 @@
-/* qkv-flow — QKV 分步：T=3、D=4 的迷你数字例子，从 X 一路算到 attention 输出。
+/* qkv-flow — QKV 分步：与章节正文共用 T=3、D=2 的数字例子。
  *
- * 六个阶段：① 输入 X ② X·Wq/Wk/Wv = Q/K/V ③ QKᵀ/√4 ④ +因果掩码
- * ⑤ 逐行 softmax ⑥ 权重·V。数值全部预计算（小整数，可手算核对），
+ * 六个阶段：① 输入 X ② X·Wq/Wk/Wv = Q/K/V ③ QKᵀ/√2 ④ +因果掩码
+ * ⑤ 逐行 softmax ⑥ 权重·V。为了与手算一致，三个 W 都暂取单位矩阵；
  * 每步只新增本步的矩阵，过往矩阵保持可见可对照；第 ③ 步点击任意
  * score 格子，高亮参与计算的 Q 行与 K 行并展开点积公式。
  */
 (function () {
   'use strict';
 
-  var T = 3, D = 4, SQRTD = 2;   // √D = √4 = 2
+  var T = 3, D = 2, SQRTD = Math.sqrt(2);
 
   /* —— 预计算的全部数字 —— */
   var X = [
-    [1, 0, 2, 0],
-    [0, 1, 0, 2],
-    [2, 1, 1, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
   ];
   var WQ = [
-    [0, -1, 1, 0],
-    [1, 0, 0, -1],
-    [1, 0, -1, -1],
-    [0, -1, -1, 0],
+    [1, 0],
+    [0, 1],
   ];
   var WK = [
-    [0, -1, -1, 0],
-    [0, 1, 0, -1],
-    [-1, 0, 0, -1],
-    [1, -1, 0, 1],
+    [1, 0],
+    [0, 1],
   ];
   var WV = [
-    [-1, 1, 1, -1],
-    [0, 0, -1, 1],
-    [-1, 0, -1, 0],
-    [-1, 0, 0, 1],
+    [1, 0],
+    [0, 1],
   ];
 
   function matmul(A, B) {
@@ -57,7 +51,7 @@
     }
     return out;
   }
-  var RAW = matmul(Q, transpose(K));          // QKᵀ，除以 √4 前的原始点积
+  var RAW = matmul(Q, transpose(K));
 
   var SCORES = [], MASKED = [], WEIGHTS = [], OUT = [];
   (function precompute() {
@@ -184,32 +178,32 @@
   var ROW_K = ['k0', 'k1', 'k2'];
   var ROW_V = ['v0', 'v1', 'v2'];
   var ROW_O = ['o0', 'o1', 'o2'];
-  var COL_D = ['d0', 'd1', 'd2', 'd3'];
+  var COL_D = ['d0', 'd1'];
 
   var CHIP_LABELS = ['① X 输入', '② 三组投影', '③ QKᵀ 打分', '④ +M 掩码', '⑤ softmax', '⑥ ·V 输出'];
   var SLAB_TITLES = [
     '① 输入 X',
     '② 投影：同一输入、三组参数',
-    '③ 打分 scores = QKᵀ/√4',
+    '③ 打分 scores = QKᵀ/√2',
     '④ 因果掩码 scores + M',
     '⑤ 逐行 softmax',
     '⑥ 输出 out = 权重·V',
   ];
   var SLAB_SHAPES = [
-    '(B,T,D) = (1,3,4)',
-    'Wq/Wk/Wv (4,4) → Q/K/V (3,4)',
+    '(B,T,D) = (1,3,2)',
+    'Wq/Wk/Wv (2,2) → Q/K/V (3,2)',
     '(T,T) = (3,3) · 点击格子',
     'j > i → −∞',
     '每行和 = 1',
-    '(T,D) = (3,4)',
+    '(T,D) = (3,2)',
   ];
   var NOTES = [
-    'X 是嵌入层出来的输入：3 个 token、每个 4 维。接下来这一份 X 会同时乘三组不同的参数，得到 Q、K、V。',
-    '同一个 X，三组参数：Wq/Wk/Wv 都是 (D,D)=(4,4)。Q 用来"提问"，K 用来"被匹配"，V 才是真正被加权取走的内容。',
-    'scores[i,j] = q_i·k_j / √D，√4=2。点击任意格子：蓝底 = 参与的 Q 行（scores 的第 i 行），青底 = 参与的 K 行（第 j 列）。',
-    '因果掩码 M 与 scores 同 shape：j ≤ i 的位置加 0（不变），j > i 的位置加 −∞。比如 S[0,2]=2.5 落在未来，直接被砍掉。',
+    'X 与正文一致：“小、猫、睡”三个 token，每个用 2 个特征表示。',
+    '为了让整个过程可手算，Wq/Wk/Wv 都暂取 2×2 单位矩阵，因此 Q=K=V=X。训练模型使用三组不同的可学习参数。',
+    'scores[i,j] = q_i·k_j / √D，这里 D=2。点击任意格子：蓝底 = Q 的第 i 行，青底 = K 的第 j 行。',
+    '因果掩码 M 可广播到 scores：j ≤ i 的位置加 0，j > i 的位置加 −∞。比如 S[0,2]≈0.7 属于未来，在 softmax 前被排除。',
     '对 scores+M 的每一行独立做 softmax：−∞ 变成 0，其余归一化，每行和 = 1。底色越深，注意力权重越大。',
-    'out = 权重·V：每个 token 的输出是 V 各行的加权和。第 0 行权重是 [1.00, 0, 0]，所以 out₀ = v₀ —— 第一个 token 只看得到自己。',
+    'out = 权重·V：每个 token 的输出是 V 各行的加权和。第 0 行权重是 [1.00, 0, 0]，所以 out₀ = v₀，第一个 token 只看得到自己。',
   ];
 
   function fmtIntCell(v) { return fInt(v); }
@@ -225,7 +219,7 @@
     var shell = document.createElement('div');
     shell.innerHTML =
       '<p class="wg-title">QKV 分步：一个 attention 头的完整计算</p>' +
-      '<p class="wg-sub">T=3 个 token、D=4 维的最小数字例子，数值全部预计算。用"下一步"逐个点亮矩阵；第 ③ 步点击 scores 的任意格子，可以看到它由哪一行 Q、哪一行 K 算出。</p>' +
+      '<p class="wg-sub">沿用正文的“小、猫、睡”例子：T=3、D=2、Wq=Wk=Wv=I。点“下一步”逐步展开；第 ③ 步可点击 score 格子查看点积。</p>' +
       '<div class="qf-steps" data-role="steps"></div>' +
       '<div class="wg-controls qf-controls">' +
         '<button type="button" class="wg-button" data-role="prev">上一步</button>' +
@@ -254,10 +248,10 @@
     var side = el('div', 'qf-side');
     side.innerHTML =
       '<div><b>行 = token</b>：t0、t1、t2 共 T=3 个</div>' +
-      '<div><b>列 = 维度</b>：d0–d3 共 D=4 维</div>' +
-      '<div>例如 t2 = [2, 1, 1, 0]</div>' +
-      '<div>带上 batch 即 <b>(B,T,D) = (1,3,4)</b></div>' +
-      '<div>下面所有矩阵都从这 12 个数字出发。</div>';
+      '<div><b>列 = 维度</b>：d0、d1 共 D=2 维</div>' +
+      '<div>t0=[1,0]，t1=[0,1]，t2=[1,1]</div>' +
+      '<div>带上 batch 即 <b>(B,T,D) = (1,3,2)</b></div>' +
+      '<div>后面所有数都由这 6 个数字算出。</div>';
     q('s1body').appendChild(side);
 
     /* —— ② 投影 —— */
@@ -277,7 +271,7 @@
       q('s2body').appendChild(col);
       projRefs.push({ mat: mM });
     });
-    var ptag = el('div', 'qf-ptag', '三组 W 参数不同 → 同一个 X 投出三份不同的 (3,4)：Q 去"问"，K 去"被检索"，V 提供内容。');
+    var ptag = el('div', 'qf-ptag', '手算例暂取三个单位矩阵，所以 Q=K=V=X。真实模型的 Wq/Wk/Wv 会各自训练。');
     q('s2body').appendChild(ptag);
     var qRows = projRefs[0].mat.grid, kRows = projRefs[1].mat.grid;
 
@@ -326,7 +320,7 @@
     var mSmWrap = el('div', 'qf-mitem'); mSmWrap.appendChild(mSm.root);
     mSmWrap.appendChild(el('div', 'qf-mlab', 'scores + M'));
     s4.appendChild(mSmWrap);
-    var s4note = el('div', 'qf-ptag', '灰色 = −∞：位置 (i,j) 且 j > i 的 score 全部被砍掉 —— 每个 token 看不到未来的 token。');
+    var s4note = el('div', 'qf-ptag', '灰色 = −∞：j > i 的 score 不参与 softmax，所以每个 token 都读不到未来。');
     q('s4body').appendChild(s4note);
 
     /* —— ⑤ softmax —— */
@@ -419,10 +413,10 @@
       for (var t = 0; t < D; t += 1) { terms.push(fmtTerm(Q[i][t], K[j][t])); }
       form.textContent =
         'q' + i + ' = [' + Q[i].join(', ') + ']    k' + j + ' = [' + K[j].join(', ') + ']\n' +
-        'S[' + i + ',' + j + '] = q' + i + '·k' + j + ' / √4\n' +
-        '     = (' + terms.join(' + ') + ') / 2\n' +
-        '     = ' + RAW[i][j] + ' / 2 = ' + f1(SCORES[i][j]) +
-        (j > i ? '   ← j>i，第④步会被掩码砍成 −∞' : '');
+        'S[' + i + ',' + j + '] = q' + i + '·k' + j + ' / √2\n' +
+        '     = (' + terms.join(' + ') + ') / √2\n' +
+        '     = ' + RAW[i][j] + ' / √2 = ' + f1(SCORES[i][j]) +
+        (j > i ? '   ← j>i，第④步会被设为 −∞' : '');
     }
     matS.grid.forEach(function (row, i) {
       row.cells.forEach(function (c, j) {

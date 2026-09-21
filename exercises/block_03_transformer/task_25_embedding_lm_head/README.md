@@ -1,108 +1,102 @@
-# task_25：Embedding、LM Head 与 Weight Tying
+# Embedding 与 LM head
 
-Tokenizer 把字符或子词变成整数 id；embedding 把 id 查成向量；模型处理完这些向量后，LM head 再把每个位置投影回词表。
+语言模型的中间部分处理向量，输入与输出却都要回到 token 这一层。Embedding 把 id 变成向量，LM head 再把上下文向量变成对整个词表的打分，两者分别位于模型的入口和出口：
 
-设词表大小为 `V`，hidden dimension 为 `D`：
+```text
+token ids (B,T)
+    -> Embedding
+hidden states (B,T,D)
+    -> Transformer
+contextual states (B,T,D)
+    -> LM head
+logits (B,T,V)
+```
+
+这条数据流中，`B` 是 batch 大小，`T` 是序列长度，`D` 是向量宽度，`V` 是词表大小。
+
+![Embedding 表与共享权重的 LM head](assets/embedding_lm_head.png)
+
+<div class="widget-mount" data-widget="token-embed-3d"></div>
+
+## Embedding 就是按 id 查行
+
+设词表中有 `V` 个 token，每个 token 用 `D` 个数表示，Embedding 权重 $E$ 的 shape 就是 `(V,D)`，其中每一行对应一个 token：
+
+```text
+E[0]  -> token 0 的向量
+E[1]  -> token 1 的向量
+...
+```
+
+当 `input_ids[b,t]` 等于 `v` 时，该位置取出 `E[v]`。id 没有大小意义，只决定查哪一行；反向传播则会修改这张表，使向量逐渐适应预测任务。
+
+## LM head 为每个 token 打分
+
+Transformer 输出 `(B,T,D)` 的上下文向量，LM head 在每个位置上做一次 `D -> V` 线性投影。PyTorch 会把这层的权重存成 `(V,D)`，所以两端的 shape 对应为：
 
 ```text
 token_embedding.weight: (V,D)
-input_ids:              (B,T)
-hidden:                 (B,T,D)
 lm_head.weight:         (V,D)
 logits:                 (B,T,V)
 ```
 
-`logits[b,t,v]` 是样本 `b` 在位置 `t` 预测词表项 `v` 的未归一化分数。训练时 `cross_entropy` 内部计算 softmax；生成时才由采样函数处理最后一个位置的 logits。
+`logits[b,t,v]` 表示样本 `b` 在位置 `t` 对词表项 `v` 的未归一化分数。训练使用的 cross-entropy 会直接接收 logits，因为它内部已经包含数值更稳定的归一化计算，模型里不应提前再做一次 Softmax。
 
-![Embedding 表与共享权重的 LM head](assets/embedding_lm_head.png)
+## 共享入口和出口的权重
 
----
-
-
-<div class="widget-mount" data-widget="token-embed-3d" data-title="token 向量的三维投影"></div>
-
-## 一张矩阵，两种用法
-
-Embedding 表 $E\in\mathbb{R}^{V\times D}$ 按 token id 查行。LM head 则使用同一张表的转置，把 hidden vector 投到 `V` 个词表分数：
-
-$$
-H:(B,T,D),\qquad HE^\top:(B,T,V).
-$$
-
-PyTorch 的 `nn.Linear(D,V)` 把 weight 存成 `(V,D)`，所以可以直接让两个模块引用同一个 Parameter：
+Embedding 和 LM head 的权重恰好都是 `(V,D)`，Weight tying 利用了这个对称性，让两个模块引用同一个 Parameter：
 
 ```python
 self.lm_head.weight = self.token_embedding.weight
 ```
 
-如果改为数值复制：
+同一张表在输入时按 id 取行，在输出时则让 hidden state 与每一行做内积，一次得到 `V` 个分数：
+
+$$
+H:(B,T,D),\qquad HE^\top:(B,T,V).
+$$
+
+若只在初始化时复制数值，代码看起来很像，含义却完全不同：
 
 ```python
 self.lm_head.weight.data.copy_(self.token_embedding.weight.data)
 ```
 
-得到的只是初始数值相同的两份参数。真正的共享关系可以用对象身份确认：
+这种写法会保留两份 Parameter，训练一开始就会各自更新。真正的共享可以用对象身份来区分：
 
 ```python
 model.lm_head.weight is model.token_embedding.weight
 ```
 
-来自输入 embedding 路径和输出分类路径的梯度会累积到同一个张量，optimizer 也只维护这一份 Parameter。
+Weight tying 是模型设计选择，不是 LM head 的必要条件。MiniMind 采用这种设计，因而不需要再为输出端保留一张独立的 `(V,D)` 权重表。
 
-## `TinyLanguageModel` 的作用范围
+## `TinyLanguageModel` 只用来看入口和出口
 
-`language_model.py` 这一小模型没有 attention。为了让不同位置不至于完全相同，它额外加入可学习的位置表：
-
-```text
-token embedding + learned position embedding
-```
-
-它适合检查 embedding、LM head、weight tying 和 loss mask，却不能读取其他 token 的内容，不能当作语言模型主干来评价上下文能力。
-
-Task 27 的 `MiniMindCore` 不使用这张 learned position table；完整模型在每层 attention 内用 RoPE 处理 Q/K。两套位置方案分别属于两个示例，没有同时叠加。
-
-## Next-token 标签由 Dataset 错开
-
-`forward` 不自动移动 labels，它接收的是已经错开一位的序列：
+`language_model.py` 里的 `TinyLanguageModel` 故意省略了 Attention，只把 token embedding 与一张可学习位置表相加，然后直接送入 LM head：
 
 ```text
-tokens: [BOS, t0, t1, t2, EOS]
-input:  [BOS, t0, t1, t2]
-label:  [t0,  t1, t2, EOS]
+token embedding + learned position embedding -> tied LM head
 ```
 
-若直接传 `labels=input_ids`，监督目标会变成复制当前位置。Task 28 的 `NextTokenDataset` 会统一完成错位，因此训练循环不需要再 shift 一次。
+位置表可以让同一 token 在不同绝对位置产生不同分数，却不会把前文传给当前位置。因此，这个类适合核对查表、shape、LM head 和权重共享，不能用来判断上下文建模能力。
 
-## PAD 在 loss 中怎样消失
+它接受已经错开一位的 `labels`，可以单独走通 loss 接口，但不会在 `forward` 中自动移动标签。带有 causal decoder blocks 和 RoPE 的整模见 [MiniMind Core](../task_27_minimind_core/README.md)，数据切片、PAD 与 loss mask 则由 [Next-token 训练](../task_28_next_token_training/README.md) 处理。
 
-`TinyLanguageModel.forward` 会把以下 target 改成 `-100`：
+## 代码输出
 
-- label 等于 `pad_token_id`；
-- 当前 query 的 `attention_mask` 为 `False`。
-
-PyTorch cross-entropy 忽略 `-100`。若整个 batch 都没有有效 target，代码返回 `logits.sum() * 0.0`：数值为 0，同时仍与计算图相连。
-
-这里的 `attention_mask` 只用于筛 loss，因为这个局部模型没有 attention。完整模型还会把它传给 attention，用来屏蔽 PAD key。二者作用不同。
-
-## 运行与核对
+在仓库根目录运行脚本，可以同时核对输出 shape 与 Parameter 共享：
 
 ```bash
 python exercises/block_03_transformer/task_25_embedding_lm_head/language_model.py
 ```
 
-输出形如：
+正常输出中，`logits` 有三个维度，`weights shared` 则应为 `True`：
 
 ```text
 logits: (1, 4, 40)
 weights shared: True
 ```
 
-Embedding、weight tying 和 loss mask 也收录在 Block 3 测试中：
-
-```bash
-python -m unittest discover -s tests -p 'test_block3.py' -v
-```
-
-运行结果与测试覆盖以下性质：logits 为 `(B,T,V)`，共享关系用 `is` 观察为真，输入超过 `max_seq_len` 时会报错，PAD target 不参与 loss，全 PAD 时返回有限的 0 loss。
+Embedding 产生 `(B,T,D)`，LM head 接收同样宽度的 hidden states。中间还缺少一条让 token 互相读取的通路，[Attention 与 decoder-only](../task_20_transformer_theory/README.md) 从这个问题继续。
 
 参考：[Using the Output Embedding to Improve Language Models](https://arxiv.org/abs/1608.05859)。

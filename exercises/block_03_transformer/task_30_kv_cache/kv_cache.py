@@ -192,7 +192,7 @@ def generate_with_kv_cache(
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
-    parser.add_argument("--prompt", default="清晨，")
+    parser.add_argument("--prompt", default="周一早晨，")
     parser.add_argument("--max-new-tokens", type=int, default=40)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-k", type=int, default=None)

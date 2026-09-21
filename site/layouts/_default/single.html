@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ .Title }}｜快速入门深度学习</title>
+  <title>{{ .Title }}｜从 y = ax + b 到 MiniMind</title>
   {{ $desc := printf "%s。" (index (split .Plain "。") 0) | truncate 110 }}{{ with .Description }}{{ $desc = . }}{{ end }}
   <meta name="description" content="{{ $desc }}">
   <link rel="canonical" href="{{ .Permalink }}">
   <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
-  <meta property="og:title" content="{{ .Title }}｜快速入门深度学习">
+  <meta property="og:title" content="{{ .Title }}｜从 y = ax + b 到 MiniMind">
   <meta property="og:description" content="{{ $desc }}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="{{ .Permalink }}">
@@ -20,14 +20,14 @@
   <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
   <link rel="stylesheet" href="{{ "docs.css" | relURL }}">
   <link rel="stylesheet" href="{{ "widgets/widgets.css" | relURL }}">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","name":"快速入门深度学习：{{ .Title }}","description":"从 NumPy 基础网络与 ResNet，到 PyTorch decoder-only Transformer 的深度学习入门实现教程。","url":"{{ .Permalink }}","inLanguage":"zh-CN","provider":{"@type":"Organization","name":"satoshinji","url":"https://github.com/satoshinji2992"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","name":"从 y = ax + b 到 MiniMind：{{ .Title }}","description":"包含 NumPy 基础网络、CIFAR-100 ResNet 和 decoder-only Transformer 的中文实现教程。","url":"{{ .Permalink }}","inLanguage":"zh-CN","provider":{"@type":"Organization","name":"satoshinji","url":"https://github.com/satoshinji2992"}}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首页","item":"https://satoshinji2992.github.io/quickly_access_to_deeplearning/"},{"@type":"ListItem","position":2,"name":"文档","item":"https://satoshinji2992.github.io/quickly_access_to_deeplearning/docs/"},{"@type":"ListItem","position":3,"name":"{{ .Title }}","item":"{{ .Permalink }}"}]}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous">
 </head>
-<body class="docs-body">
+<body class="docs-body" data-symscope="{{ .Params.group }}" data-slug="{{ .Params.slug }}">
   <header class="docs-topbar">
     <a class="brand" href="{{ site.Home.RelPermalink }}"><span class="brand-mark">DL</span><span>DEEP LEARNING<br>FIELD NOTES</span></a>
-    <nav><a href="{{ site.Home.RelPermalink }}">首页</a><a class="current" href="{{ "docs/overview/" | relURL }}">文档</a><button type="button" class="docs-search">搜索 ⌘K</button><a href="{{ site.Params.repository }}/issues/new?title=%E5%8F%8D%E9%A6%88%EF%BC%9A{{ .Title | urlquery }}">发现错误 ↗</a><a href="{{ site.Params.repository }}">GitHub ↗</a></nav>
+    <nav><a href="{{ site.Home.RelPermalink }}">首页</a><a class="current" href="{{ "docs/overview/" | relURL }}">文档</a><button type="button" class="docs-search">搜索 ⌘K</button><a href="{{ site.Params.repository }}/issues/new?title=%E5%8F%8D%E9%A6%88%EF%BC%9A{{ .Title | urlquery }}">反馈建议 ↗</a><a href="{{ site.Params.repository }}">GitHub ↗</a></nav>
     <button class="docs-menu" type="button" aria-controls="docs-sidebar" aria-expanded="false">目录</button>
   </header>
 
@@ -68,5 +68,7 @@
   <script defer src="{{ "widgets/panel.js" | relURL }}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],ignoredTags:['script','noscript','style','textarea','pre','code']})"></script>
+  <script defer src="{{ "symbol-data.js" | relURL }}"></script>
+  <script defer src="{{ "symbols.js" | relURL }}"></script>
 </body>
 </html>

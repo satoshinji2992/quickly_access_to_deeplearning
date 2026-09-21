@@ -1,2 +1,9 @@
-{{- /* Docs images: lazy + async decode (heavyweight PNGs shouldn't block first paint). */ -}}
-<img src="{{ .Destination | safeURL }}" alt="{{ .PlainText }}" loading="lazy" decoding="async">
+{{- /* Docs images: lazy + async decode.  Plot-style figures (function
+     curves, scatter) render narrow so the article keeps a width rhythm. */ -}}
+{{- $base := path.Base (string .Destination) -}}
+{{- $stem := strings.TrimSuffix (path.Ext $base) $base -}}
+{{- $narrow := false -}}
+{{- range slice "mission_0" "data_circle" "relu" "relu_approximation" "sigmoid" "silu_gelu" -}}
+{{- if strings.HasSuffix $stem . }}{{ $narrow = true }}{{ end -}}
+{{- end -}}
+<img src="{{ .Destination | safeURL }}" alt="{{ .PlainText }}" loading="lazy" decoding="async"{{ if $narrow }} class="w-narrow"{{ end }}>

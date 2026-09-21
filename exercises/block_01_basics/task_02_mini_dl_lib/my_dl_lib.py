@@ -61,6 +61,18 @@ class Sequential:
                 params.extend(layer.parameters())
         return params
 
+    def train(self):
+        for layer in self.layers:
+            if hasattr(layer, "train"):
+                layer.train()
+        return self
+
+    def eval(self):
+        for layer in self.layers:
+            if hasattr(layer, "eval"):
+                layer.eval()
+        return self
+
 
 class SGD:
     def __init__(self, parameters, lr=0.01):

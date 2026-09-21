@@ -8,10 +8,10 @@
   'use strict';
 
   /* ---------- 固定设定 ---------- */
-  var X = [0.8, 0.3], Y = 0, ETA = 0.3;
+  var X = [0.8, 0.3], Y = 1, ETA = 0.3;
   var W1 = [[0.8, -0.5], [-0.6, 0.9], [0.5, 0.5], [1.0, -1.0]], B1 = [0.1, -0.4, -0.2, 0];
   var W2 = [[0.6, 0, -0.4, 0.3], [-0.5, 0.7, 0.2, -0.6], [0.4, -0.3, 0.8, 0.2], [0.3, 0.5, -0.2, 0.7]], B2 = [-0.3, 0.2, -0.1, 0.05];
-  var W3 = [[0.5, -0.9, 0.4, -0.5], [-0.6, 1.0, -0.5, 0.7]], B3 = [-0.1, 0.1];
+  var W3 = [[-0.6, 1.0, -0.5, 0.7], [0.5, -0.9, 0.4, -0.5]], B3 = [0.1, -0.1];
 
   var relu = function (v) { return v > 0 ? v : 0; };
   var mm = function (W, v) { return W.map(function (r) { return r.reduce(function (s, w, j) { return s + w * v[j]; }, 0); }); };
@@ -153,39 +153,39 @@
       panel:
         ar('logit' + SO[0], W3[0].map(function (w, j) { return dot(w, F.h2[j]); }), B3[0], fmt(F.lg[0]), 'g') +
         ar('logit' + SO[1], W3[1].map(function (w, j) { return dot(w, F.h2[j]); }), B3[1], fmt(F.lg[1]), 'g') +
-        kv('比较', 'logit' + SO[1] + ' 大 → 猜「圆外」', 'r'),
+        kv('比较', 'logit' + SO[0] + ' 大 → 猜「圆外」', 'r'),
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: F.lg, st: 'new' } }, edges: { 2: { mode: 'fwd' } } } },
 
     { phase: 'f', chip: '前向 6/6', title: 'P = softmax(logits)',
-      desc: '取指数再归一化，得到概率。P₀ = 0.432 < 0.5：这个圆内的点被猜成了圆外。',
+      desc: '取指数再归一化，得到概率。P₁ = 0.432 < 0.5：这个圆内的点被猜成了圆外。',
       formula: 'P = softmax(logits)', shape: 'e^z ÷ Σ e^z → (2×1)',
       legend: '节点半径 ∝ 概率　·　数值 = P',
       panel:
         kv('e^(logit' + SO[0] + ' − ' + fmt(Math.max(F.lg[0], F.lg[1])) + ')', fmt(Math.exp(F.lg[0] - Math.max(F.lg[0], F.lg[1]))) + '　（减 max 防溢出）') +
-        kv('e^(logit' + SO[1] + ' − ' + fmt(Math.max(F.lg[0], F.lg[1])) + ')', '1　（max 自己 = 1）') +
-        kv('P' + SO[0] + ' = 0.76 ÷ 1.76', fmtP(F.P[0]), 'g') +
-        kv('P' + SO[1] + ' = 1 ÷ 1.76', fmtP(F.P[1])) +
+        kv('e^(logit' + SO[1] + ' − ' + fmt(Math.max(F.lg[0], F.lg[1])) + ')', fmt(Math.exp(F.lg[1] - Math.max(F.lg[0], F.lg[1])))) +
+        kv('P' + SO[0] + ' = 1 ÷ 1.76', fmtP(F.P[0]), 'g') +
+        kv('P' + SO[1] + ' = 0.76 ÷ 1.76', fmtP(F.P[1])) +
         kv('校验 ΣP', fmtP(F.P[0] + F.P[1])),
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: F.P, st: 'new' } }, radius: { 3: [12 + 9 * F.P[0], 12 + 9 * F.P[1]] } } },
 
     { phase: 'l', chip: '损失 1/1', title: 'L = −log P[y]',
-      desc: '交叉熵只看正确类的概率：P₀ 越接近 1，L 越接近 0。现在 P₀ 只有 0.43，损失不小。',
-      formula: 'L = −log P₀', shape: '标量',
+      desc: '交叉熵只看正确类的概率：P₁ 越接近 1，L 越接近 0。现在 P₁ 只有 0.43，损失不小。',
+      formula: 'L = −log P₁', shape: '标量',
       legend: '节点数值 = P　·　求损失不改任何节点',
       panel:
-        ar('L', ['−log(' + fmtP(F.P[0]) + ')'], null, fmt(F.L, 3), 'g') +
-        kv('P₀（正确类）', fmtP(F.P[0]), 'r') +
-        kv('P₁（错误类）', fmtP(F.P[1])) +
-        kv('直觉', 'P₀=1 → L=0；P₀=0.5 → L≈0.69'),
+        ar('L', ['−log(' + fmtP(F.P[Y]) + ')'], null, fmt(F.L, 3), 'g') +
+        kv('P₁（正确类）', fmtP(F.P[Y]), 'r') +
+        kv('P₀（错误类）', fmtP(F.P[0])) +
+        kv('直觉', 'P₁=1 → L=0；P₁=0.5 → L≈0.69'),
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: F.P, st: 'known' } }, radius: { 3: [12 + 9 * F.P[0], 12 + 9 * F.P[1]] } } },
 
     { phase: 'b', chip: '反向 1/7', title: 'dlogits = (P − Y)/m',
-      desc: '反向传播从损失的门口出发。正确类概率不足 1，dlogits₀ 为负（要把 logit₀ 顶上去）；错误类正好相反。',
+      desc: '反向传播从损失的门口出发。正确类概率不足 1，dlogits₁ 为负（要把 logit₁ 顶上去）；错误类正好相反。',
       formula: 'dlogits = (P − Y) / m', shape: '(2×1)，m = 1',
       legend: '节点数值 = dlogits（红 = 梯度）',
       panel:
-        ar('dlogits' + SO[0], ['(' + fmtP(F.P[0]) + ' − 1) / 1'], null, fmt(dlogits[0]), 'g') +
-        ar('dlogits' + SO[1], ['(' + fmtP(F.P[1]) + ' − 0) / 1'], null, fmt(dlogits[1]), 'g') +
+        ar('dlogits' + SO[0], ['(' + fmtP(F.P[0]) + ' − 0) / 1'], null, fmt(dlogits[0]), 'g') +
+        ar('dlogits' + SO[1], ['(' + fmtP(F.P[1]) + ' − 1) / 1'], null, fmt(dlogits[1]), 'g') +
         kv('校验 Σdlogits', '0　（softmax 的性质）'),
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: F.h1, st: 'known', dead: F.z1.map(function (v) { return v <= 0; }) }, 2: { vals: F.h2, st: 'known', dead: F.z2.map(function (v) { return v <= 0; }) }, 3: { vals: dlogits, st: 'grad' } } } },
 
@@ -258,7 +258,7 @@
         ar('b³₀', [fmt(B3[0], 1) + ' − ' + ETA + '·(' + fmt(db3[0]) + ')'], null, fmt(B3[0] - ETA * db3[0]), 'g') +
         kv('参数总数', NPARAM + ' 个，全部同样更新') +
         kv('logits', fmt(F.lg[0]) + ' / ' + fmt(F.lg[1]) + ' → ' + fmt(G.lg[0]) + ' / ' + fmt(G.lg[1]), 'g') +
-        kv('P₀（圆内）', fmtP(F.P[0]) + ' → ' + fmtP(G.P[0]), 'g') +
+        kv('P₁（圆内）', fmtP(F.P[Y]) + ' → ' + fmtP(G.P[Y]), 'g') +
         kv('损失 L', fmt(F.L, 3) + ' → ' + fmt(G.L, 3), 'g'),
       g: { nodes: { 0: { vals: X, st: 'known' }, 1: { vals: G.h1, st: 'new', dead: G.z1.map(function (v) { return v <= 0; }) }, 2: { vals: G.h2, st: 'new', dead: G.z2.map(function (v) { return v <= 0; }) }, 3: { vals: G.P, st: 'new' } }, radius: { 3: [12 + 9 * G.P[0], 12 + 9 * G.P[1]] } } },
   ];
@@ -274,7 +274,7 @@
     { cap: 'x', ys: CY2, names: ['x₁', 'x₂'], under: null },
     { cap: 'h¹ = ReLU(z¹)', ys: CY4, names: ['h¹₁', 'h¹₂', 'h¹₃', 'h¹₄'], under: null },
     { cap: 'h² = ReLU(z²)', ys: CY4, names: ['h²₁', 'h²₂', 'h²₃', 'h²₄'], under: null },
-    { cap: 'logits → P', ys: CY2, names: ['ŷ₀', 'ŷ₁'], under: ['圆内 · 类 0', '圆外 · 类 1'] },
+    { cap: 'logits → P', ys: CY2, names: ['ŷ₀', 'ŷ₁'], under: ['圆外 · 类 0', '圆内 · 类 1'] },
   ];
   var T4 = [0.26, 0.44, 0.62, 0.80], T2 = [0.42, 0.58];   // 边上标签的错位位置
 
@@ -347,7 +347,7 @@
 
     container.insertAdjacentHTML('beforeend',
       '<p class="wg-title">反向传播：一步一次走清楚</p>' +
-      '<p class="wg-sub">固定一个 2−4−4−2 网络、固定一个样本 x = (0.8, 0.3)（落在单位圆内）、固定一组权重。下面 15 步把一次「前向 → 损失 → 反向 → 更新」完整拆开，每个数字都能照着面板手算。本演示把圆内记作类别 0（task_01 代码里圆内是类别 1——枚举顺序不影响算法本身）。</p>' +
+      '<p class="wg-sub">固定一个 2−4−4−2 网络、固定一个样本 x = (0.8, 0.3)（落在单位圆内）、固定一组权重。下面 15 步把一次「前向 → 损失 → 反向 → 更新」完整拆开，每个数字都能照着面板手算。圆内记作类别 1，与正文一致。此面板将输入画成列向量，使用 W·x；正文将样本写成行，使用 X·W，两者的权重矩阵互为转置，运算原理相同。</p>' +
       '<div class="bp-rail" data-role="rail"></div>' +
       '<div class="bp-main">' +
         '<div class="bp-graph">' +
@@ -511,7 +511,7 @@
       var final = state.step === N;
       q('s-loss').textContent = final ? fmt(F.L, 3) + ' → ' + fmt(G.L, 3) : fmt(F.L, 3);
       q('s-loss').className = final ? 'up' : '';
-      q('s-p').textContent = final ? fmtP(F.P[0]) + ' → ' + fmtP(G.P[0]) : fmtP(F.P[0]);
+      q('s-p').textContent = final ? fmtP(F.P[Y]) + ' → ' + fmtP(G.P[Y]) : fmtP(F.P[Y]);
       q('s-p').className = final ? 'up' : '';
       q('prev').disabled = state.step === 1;
       q('next').disabled = final;

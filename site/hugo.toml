@@ -1,6 +1,6 @@
 baseURL = "https://satoshinji2992.github.io/quickly_access_to_deeplearning/"
 languageCode = "zh-CN"
-title = "快速入门深度学习"
+title = "从 y = ax + b 到 MiniMind"
 disableKinds = ["taxonomy", "term", "rss"]
 
 [markup]

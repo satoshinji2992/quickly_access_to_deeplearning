@@ -1,48 +1,176 @@
 {
   "groups": [
     {
-      "title": "总览",
+      "title": "开始",
       "items": [
-        {"title": "课程总览", "slug": "overview", "source": "chapters/00-课程总览.md"}
+        {
+          "title": "从这里开始",
+          "slug": "overview",
+          "source": "chapters/00-课程总览.md",
+          "kind": "main"
+        }
       ]
     },
     {
-      "title": "Block 1 · 基础",
+      "title": "Block 1 · 基础网络",
       "items": [
-        {"title": "基础知识", "page_title": "y = ax + b! 神经网络到底是什么?", "slug": "chapter-basics", "source": "chapters/01-基础知识.md"},
-        {"title": "线性回归", "slug": "linear-regression", "source": "exercises/block_01_basics/task_00_linear_regression/README.md"},
-        {"title": "圆形分类", "slug": "circle-classifier", "source": "exercises/block_01_basics/task_01_circle_classifier/README.md"},
-        {"title": "小型深度学习库", "slug": "mini-dl-lib", "source": "exercises/block_01_basics/task_02_mini_dl_lib/README.md"},
-        {"title": "MNIST MLP", "slug": "mnist-mlp", "source": "exercises/block_01_basics/task_03_mnist_mlp/README.md"}
+        {
+          "title": "从 y = ax + b 开始",
+          "page_title": "y = ax + b：神经网络到底是什么？",
+          "slug": "chapter-basics",
+          "source": "chapters/01-基础知识.md",
+          "kind": "main"
+        },
+        {
+          "title": "拟合一条直线",
+          "slug": "linear-regression",
+          "source": "exercises/block_01_basics/task_00_linear_regression/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "判断点在圆内还是圆外",
+          "slug": "circle-classifier",
+          "source": "exercises/block_01_basics/task_01_circle_classifier/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "整理一个小型深度学习库",
+          "slug": "mini-dl-lib",
+          "source": "exercises/block_01_basics/task_02_mini_dl_lib/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "用 MLP 识别 MNIST",
+          "slug": "mnist-mlp",
+          "source": "exercises/block_01_basics/task_03_mnist_mlp/README.md",
+          "kind": "reference"
+        }
       ]
     },
     {
-      "title": "Block 2 · ResNet",
+      "title": "Block 2 · 卷积与 ResNet",
       "items": [
-        {"title": "ResNet 图像分类", "page_title": "这是哪一种物体？从 MLP 走到 ResNet", "slug": "chapter-resnet", "source": "chapters/02-ResNet图像分类.md"},
-        {"title": "图像数据管线", "slug": "image-data-pipeline", "source": "exercises/block_02_resnet/task_10_image_data_pipeline/README.md"},
-        {"title": "Conv2D 与 im2col", "slug": "conv2d-im2col", "source": "exercises/block_02_resnet/task_11_conv2d_im2col/README.md"},
-        {"title": "池化与 BatchNorm", "slug": "pooling-batchnorm", "source": "exercises/block_02_resnet/task_12_pooling_and_bn/README.md"},
-        {"title": "残差块", "slug": "residual-block", "source": "exercises/block_02_resnet/task_13_residual_block/README.md"},
-        {"title": "NumPy ResNet 训练", "slug": "numpy-resnet-train", "source": "exercises/block_02_resnet/task_14_numpy_resnet_train/README.md"},
-        {"title": "实验记录", "slug": "experiment-notes", "source": "exercises/block_02_resnet/task_15_experiment_notes/README.md"}
+        {
+          "title": "一张图怎样变成一百个分数",
+          "page_title": "一张图片怎样变成一百个分数",
+          "slug": "chapter-resnet",
+          "source": "chapters/02-ResNet图像分类.md",
+          "kind": "main"
+        },
+        {
+          "title": "图片进入卷积层之前",
+          "slug": "image-data-pipeline",
+          "source": "exercises/block_02_resnet/task_10_image_data_pipeline/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "从一个卷积窗口到 im2col",
+          "slug": "conv2d-im2col",
+          "source": "exercises/block_02_resnet/task_11_conv2d_im2col/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "BatchNorm、全局平均池化与 MaxPool",
+          "slug": "pooling-batchnorm",
+          "source": "exercises/block_02_resnet/task_12_pooling_and_bn/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "两条路径怎样组成残差块",
+          "slug": "residual-block",
+          "source": "exercises/block_02_resnet/task_13_residual_block/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "把 SmallResNet 跑起来",
+          "slug": "numpy-resnet-train",
+          "source": "exercises/block_02_resnet/task_14_numpy_resnet_train/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "读一遍已经跑完的实验",
+          "slug": "experiment-notes",
+          "source": "exercises/block_02_resnet/task_15_experiment_notes/README.md",
+          "kind": "reference"
+        }
       ]
     },
     {
-      "title": "Block 3 · Transformer",
+      "title": "Block 3 · Transformer 与 MiniMind",
       "items": [
-        {"title": "Transformer 与 MiniMind", "page_title": "apple is __：从上下文预测下一个 token", "slug": "chapter-transformer", "source": "chapters/03-Transformer与MiniMind.md"},
-        {"title": "Transformer 理论", "slug": "transformer-theory", "source": "exercises/block_03_transformer/task_20_transformer_theory/README.md"},
-        {"title": "正弦位置编码", "slug": "sinusoidal-position", "source": "exercises/block_03_transformer/task_21_sinusoidal_position/README.md"},
-        {"title": "RoPE", "slug": "rope", "source": "exercises/block_03_transformer/task_22_rope_position/README.md"},
-        {"title": "Causal Attention 与 GQA", "slug": "causal-attention", "source": "exercises/block_03_transformer/task_23_causal_attention/README.md"},
-        {"title": "SwiGLU", "slug": "swiglu", "source": "exercises/block_03_transformer/task_24_swiglu_ffn/README.md"},
-        {"title": "Embedding 与 LM Head", "slug": "embedding-lm-head", "source": "exercises/block_03_transformer/task_25_embedding_lm_head/README.md"},
-        {"title": "Decoder Block", "slug": "decoder-block", "source": "exercises/block_03_transformer/task_26_decoder_blocks/README.md"},
-        {"title": "MiniMind Core", "slug": "minimind-core", "source": "exercises/block_03_transformer/task_27_minimind_core/README.md"},
-        {"title": "Next-token 训练", "slug": "next-token-training", "source": "exercises/block_03_transformer/task_28_next_token_training/README.md"},
-        {"title": "生成与采样", "slug": "generate-sampling", "source": "exercises/block_03_transformer/task_29_generate_sampling/README.md"},
-        {"title": "KV Cache", "slug": "kv-cache", "source": "exercises/block_03_transformer/task_30_kv_cache/README.md"}
+        {
+          "title": "从文本到下一个 token",
+          "page_title": "Transformer 语言模型：从文本到下一个 token",
+          "slug": "chapter-transformer",
+          "source": "chapters/03-Transformer与MiniMind.md",
+          "kind": "main"
+        },
+        {
+          "title": "Embedding 与 LM head",
+          "slug": "embedding-lm-head",
+          "source": "exercises/block_03_transformer/task_25_embedding_lm_head/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "Attention 与 decoder-only",
+          "slug": "transformer-theory",
+          "source": "exercises/block_03_transformer/task_20_transformer_theory/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "正弦位置编码",
+          "slug": "sinusoidal-position",
+          "source": "exercises/block_03_transformer/task_21_sinusoidal_position/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "RoPE：把位置写进 Q/K",
+          "slug": "rope",
+          "source": "exercises/block_03_transformer/task_22_rope_position/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "Causal Attention 与 GQA",
+          "slug": "causal-attention",
+          "source": "exercises/block_03_transformer/task_23_causal_attention/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "SwiGLU 前馈网络",
+          "slug": "swiglu",
+          "source": "exercises/block_03_transformer/task_24_swiglu_ffn/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "组装 Decoder Block",
+          "slug": "decoder-block",
+          "source": "exercises/block_03_transformer/task_26_decoder_blocks/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "MiniMind Core",
+          "slug": "minimind-core",
+          "source": "exercises/block_03_transformer/task_27_minimind_core/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "Next-token 训练",
+          "slug": "next-token-training",
+          "source": "exercises/block_03_transformer/task_28_next_token_training/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "自回归生成与采样",
+          "slug": "generate-sampling",
+          "source": "exercises/block_03_transformer/task_29_generate_sampling/README.md",
+          "kind": "reference"
+        },
+        {
+          "title": "KV Cache",
+          "slug": "kv-cache",
+          "source": "exercises/block_03_transformer/task_30_kv_cache/README.md",
+          "kind": "reference"
+        }
       ]
     }
   ]

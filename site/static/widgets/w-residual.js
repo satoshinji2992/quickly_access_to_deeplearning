@@ -96,7 +96,7 @@
       '<div class="rs-desc" data-role="desc"></div>' +
 
       '<div class="wg-label" style="margin-top:22px"><span>深度-梯度实验（简化模型）</span><span>条形为对数尺度</span></div>' +
-      '<p class="wg-note">把每一层对梯度范数的"保留率"记为 σ（卷积混合会缩小它）。普通深网把 N 层连乘，到达输入的梯度是 σᴺ；有 shortcut 时，加法节点让梯度多一条不衰减的直通路，最底层至少收到 1 份。</p>' +
+      '<p class="wg-note">下面只比较一条各层导数均为正数 σ 的标量路径（贡献 σᴺ），与恒等路径本身（贡献 1）。条形不表示真实残差网络的总梯度，也不表示梯度下界。</p>' +
       '<div class="wg-readout">' +
         '<div class="wg-stat"><span>深度 N（层）</span><b data-role="nv">12</b></div>' +
         '<div class="wg-stat"><span>每层保留率 σ</span><b data-role="sv">0.60</b></div>' +
@@ -105,7 +105,7 @@
       '<input class="wg-slider" type="range" data-role="s" min="20" max="95" step="5" value="60">' +
       '<div class="rs-bars">' +
         '<div class="rs-bar"><span>普通 N 层 σᴺ</span><div class="rs-track"><div class="rs-fill plain" data-role="bplain"></div></div><b class="rs-val" data-role="vplain"></b></div>' +
-        '<div class="rs-bar"><span>残差 · 直通路 ≥1</span><div class="rs-track"><div class="rs-fill res" data-role="bres"></div></div><b class="rs-val" data-role="vres"></b></div>' +
+        '<div class="rs-bar"><span>仅恒等路径 1</span><div class="rs-track"><div class="rs-fill res" data-role="bres"></div></div><b class="rs-val" data-role="vres"></b></div>' +
       '</div>' +
       '<div class="rs-ticks"><span>1e-9</span><span>1e-6</span><span>1e-3</span><span>1</span></div>' +
       '<p class="wg-note" data-role="bnote"></p>';
@@ -177,10 +177,10 @@
       q('bplain').style.width = width(plain) + '%';
       q('bres').style.width = width(1) + '%';
       q('vplain').textContent = fmtSci(plain);
-      q('vres').textContent = '≥ 1';
+      q('vres').textContent = '1';
       q('bnote').textContent = 'σ=' + sigma.toFixed(2) + '、N=' + N + '：普通网络的输入端梯度只剩 ' +
-        fmtSci(plain) + '（连乘 ' + N + ' 次）；残差网络无论多深，shortcut 都把完整的一份梯度送回输入。' +
-        '真实网络里 σ 不是常数，这里只演示连乘衰减与直通路保底的对比。';
+        fmtSci(plain) + '（连乘 ' + N + ' 次）；右条只画恒等路径自身的贡献 1。' +
+        '真实网络需要合并所有路径，分支导数可抵消，激活还会改变梯度，因此没有这里暗示的下界。';
     }
 
     /* ---- 事件 ---- */

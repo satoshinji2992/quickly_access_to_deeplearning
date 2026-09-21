@@ -1,248 +1,172 @@
-# task_14：训练一个 NumPy SmallResNet
+# 把 SmallResNet 跑起来
 
-前几节的算子在这里组成训练程序。代码入口 [`train_resnet.py`](./train_resnet.py) 包含模型、训练/评估循环、合成数据 smoke test 和 CIFAR-100 小样本路径。
+前几页分别实现了数据管线、卷积、BatchNorm 和残差块。[`train_resnet.py`](./train_resnet.py) 把它们接成一个完整训练循环。
 
-这份程序用于连通完整实现，不用于复现论文准确率。纯 NumPy 的 `im2col` 会占用较多内存，完整 CIFAR-100 训练也远慢于 PyTorch；小模型运行更适合观察 shape、梯度和状态是否连通。
+纯 NumPy 的 `im2col` 很适合看清数组怎样流动，代价是训练完整 CIFAR-100 会比 PyTorch 慢很多。所以这里准备了两条路：四类合成条纹用来看 forward、backward 和参数更新是否真的有效，CIFAR-100 小样本则用来接上真实的下载、划分和增强流程。
 
-![SmallResNet 的一组示例 shape](assets/resnet.png)
+## 同一个模型，两种数据规模
 
----
-
-## 模型结构
-
-`SmallResNet` 接收：
+两条路共用同一套宽度和深度：
 
 ```python
-SmallResNet(
-    num_classes=100,
-    channels=(16, 32, 64),
-    blocks_per_stage=(2, 2, 2),
-)
+channels = (8, 16, 32)
+blocks_per_stage = (1, 1, 1)
 ```
 
-类默认配置的 shape 为：
+`num_classes` 不是这套结构的固定常数，而是由数据路径决定：
+
+| 数据 | 输入 | `num_classes` |
+| --- | --- | ---: |
+| 合成条纹 | `(N,3,8,8)` | 4 |
+| CIFAR-100 | `(N,3,32,32)` | 100 |
+
+`SmallResNet` 也允许传入更宽、更深的配置，不过本页的两次运行都保持 `(8,16,32)` 和 `(1,1,1)` 不变，免得结构变化和数据变化混在一起。CIFAR-100 路径的 shape 是：
 
 | 位置 | 运算 | 输出 shape |
 | --- | --- | --- |
-| input | — | `(N,3,32,32)` |
-| stem | `Conv3x3 -> BN -> ReLU` | `(N,16,32,32)` |
-| stage 1 | 2 个 BasicBlock | `(N,16,32,32)` |
-| stage 2 | 首块 stride 2 | `(N,32,16,16)` |
-| stage 3 | 首块 stride 2 | `(N,64,8,8)` |
-| pool | GlobalAvgPool | `(N,64)` |
+| input | CIFAR-100 batch | `(N,3,32,32)` |
+| stem | `Conv3x3 → BN → ReLU` | `(N,8,32,32)` |
+| stage 1 | 1 个 identity BasicBlock | `(N,8,32,32)` |
+| stage 2 | 1 个 projection BasicBlock | `(N,16,16,16)` |
+| stage 3 | 1 个 projection BasicBlock | `(N,32,8,8)` |
+| pool | Global Average Pool | `(N,32)` |
 | fc | Linear | `(N,100)` |
 
-图中画的是这组类默认配置。命令行工具为缩短运行时间，默认改用：
+stage 2 和 stage 3 的第一个卷积都使用 stride 2，两条 shortcut 同时投影到相同 shape，中间不再插入 MaxPool。合成数据的图只有 `8×8`，因而对应路线会变成：
 
 ```text
-channels=(8,16,32)
-blocks=(1,1,1)
-train/val/test limit=500/500/500
+(N,3,8,8) -> (N,8,8,8) -> (N,16,4,4) -> (N,32,2,2)
+            -> GlobalAvgPool -> (N,32) -> Linear -> (N,4)
 ```
 
-网络不含 MaxPool。stage 2 和 stage 3 的首个 BasicBlock 同时在主分支和 projection shortcut 中使用 stride 2。
+这个模型借用了 ResNet 的 BasicBlock，但并非标准的 ResNet-18 或 ResNet-20：每个 stage 只有一个块，projection 使用 `1×1 Conv + BN`，卷积层还保留 bias。
 
-### 与论文模型的边界
+## 一批图片怎样走完训练循环
 
-这份 `SmallResNet` 沿用残差块思想，但不是 ImageNet ResNet-18，也不是原论文的 CIFAR ResNet-20：block 数量可配置，projection 统一采用 `Conv1x1 + BN`，卷积还保留 bias。实验记录中标明 `SmallResNet` 和具体配置，可以避免与标准 ResNet 配置混淆。
-
----
-
-## 模型接口
-
-```text
-forward(x)             -> logits
-backward(dlogits)      -> dx
-parameters()           -> (value, gradient) 列表
-named_parameters()     -> 稳定名称、值、梯度
-named_buffers()        -> BatchNorm running statistics
-state_dict()           -> 参数和 buffer 的副本
-load_state_dict(...)   -> 原位恢复状态
-train() / eval()       -> 递归切换子层模式
-```
-
-`load_state_dict()` 不替换参数数组，而是写入 `destination[...]`。这样在加载前已经创建的 optimizer 仍持有有效引用。
-
-严格加载会检查：
-
-- 缺失键；
-- 多余键；
-- 每个数组的 shape。
-
----
-
-## 训练循环
-
-一轮训练的顺序是：
+`model.train()` 在进入一轮数据前调用一次，然后每个 minibatch 再走完前向、反向和更新：
 
 ```text
 model.train()
-shuffle minibatches
-可选 crop + flip
-forward
-CrossEntropyLoss.forward
-dlogits = loss_fn.backward()
-model.backward(dlogits)
-optimizer.step()
+for images, labels in minibatches:
+    可选：随机裁剪与翻转
+    logits = model.forward(images)
+    loss = loss_fn.forward(logits, one_hot(labels))
+    model.backward(loss_fn.backward())
+    optimizer.step()
 ```
 
-代码使用 `one_hot()` 将整数标签转换成 `(N,num_classes)` target，以匹配公共 `CrossEntropyLoss` 接口。优化器默认为 Momentum：
+公共 `CrossEntropyLoss` 接收 one-hot target，所以训练代码会先把整数标签变成 `(N,num_classes)`。很多框架可以直接传整数标签，这只是本仓库的接口选择，不是交叉熵本身的限制。
+
+各层在 backward 时会原位覆盖自己的梯度数组，这份实现因而不需要另外调用 `zero_grad()`。优化器默认使用 Momentum：
 
 ```python
-Momentum(model.parameters(), lr=args.lr, beta=0.9)
+Momentum(model.parameters(), lr=0.03, beta=0.9)
 ```
 
-当前层实现会在每次 backward 原位覆盖梯度，因此训练循环不需要额外调用 `zero_grad()`。
+### 一轮 loss 为什么不能直接平均 batch loss
 
-### epoch loss 的权重
+交叉熵返回当前 batch 的平均值。假设前两个 batch 各有 16 张，最后一个只有 2 张；若把三个 loss 等权平均，最后两张会被放大八倍。
 
-`CrossEntropyLoss` 返回 batch 均值。若最后一个 batch 较短，不能直接平均所有 batch loss。代码按样本数累计：
+代码按样本数累计：
 
 $$
-L_{epoch}
-=\frac{\sum_b |B_b|L_b}{\sum_b |B_b|}.
+L_{epoch}=\frac{\sum_b |B_b|L_b}{\sum_b |B_b|}
 $$
 
-训练和验证都采用这一写法。对应测试专门构造了一个高损失的末尾短 batch，防止回归为“batch 均值的均值”。
+训练和评估都使用这一写法。
 
----
+## 先看四类条纹能不能学会
 
-## 评估循环与 BatchNorm
-
-`evaluate()` 首先调用 `model.eval()`：
-
-- BatchNorm 使用 `running_mean/running_var`；
-- running buffers 保持不变；
-- batch 不打乱；
-- 不做随机裁剪或翻转。
-
-下一轮 `train_epoch()` 会重新调用 `model.train()`，因此训练和评估循环会分别设置对应模式。
-
-验证集用于选配置，官方 test 用于最后一次报告。task 10 的加载器已经将 validation 从官方 train 中独立划出。
-
----
-
-## 无下载 smoke test
+合成数据包含四类 `8×8` 图片，每一类由不同通道和位置的条纹表示。随机猜测的准确率是 25%，而条纹规律足够简单，当前模型跑过几轮后，loss 应该出现明显下降。
 
 ```bash
 python exercises/block_02_resnet/task_14_numpy_resnet_train/train_resnet.py \
-  --synthetic --epochs 1 --channels 2 4 8 --blocks 1 1 1
+  --synthetic --epochs 3 --seed 0 --eval-test
 ```
 
-合成数据用不同通道和位置的条纹编码类别，共分为 train/validation/test。它检查训练程序能否运行，不代表 CIFAR-100 难度。
-
-预期输出格式：
+在本仓库当前环境中的一次输出是：
 
 ```text
-epoch=1 train_loss=... train_acc=... val_loss=... val_acc=...
-test_loss=... test_acc=...
+epoch=1 train_loss=1.5097 train_acc=0.306 val_loss=1.1607 val_acc=0.500
+epoch=3 train_loss=0.6541 train_acc=0.750 val_loss=0.5983 val_acc=0.750
+test_loss=0.6137 test_acc=0.750
 ```
 
-这个 smoke test 关心字段是否齐全、数值是否有限。一次 epoch 的准确率可能随 NumPy 版本和浮点运算略有变化，因此没有固定阈值。
+末位数字可能随 NumPy 版本改变，不必逐字一致。这次运行里，训练 loss 从约 1.5 降到 1 以下，验证准确率也离开了 25% 的随机水平，说明条纹中的信号确实传到了参数。反过来，loss 完全不动或出现 `NaN` 时，问题多半在数据、梯度或参数更新，单纯增加 epoch 很少能补救。
 
----
+自动测试里还有一个更强的检查：固定四张图片重复训练 60 步，loss 要降到初值的 25% 以下。这个结果用于确认模型能够过拟合一个小 batch，并不说明它有怎样的泛化表现。
 
-## CIFAR-100 小样本
+## 再换成 CIFAR-100 小样本
 
 第一次运行会通过 `torchvision` 下载数据到仓库根目录的 `data/`：
 
 ```bash
 python exercises/block_02_resnet/task_14_numpy_resnet_train/train_resnet.py \
   --epochs 1 \
-  --train-limit 500 --val-limit 200 --test-limit 200 \
-  --channels 8 16 32 --blocks 1 1 1
+  --train-limit 500 --val-limit 500 \
+  --seed 0
 ```
 
-默认开启 padding crop 和水平翻转。关闭增强的小样本运行如下：
+这条命令仍使用 `(8,16,32)` 和 `(1,1,1)`。500 张训练图片平均每类只有 5 张，一轮训练的准确率没有稳定的目标值。这次运行的意义是看下载、划分、增强和 100 类输出是否已经连在一起。
+
+默认会开启 padding crop 与水平翻转。想看固定输入是否能被拟合时，可以关闭增强：
 
 ```bash
 python exercises/block_02_resnet/task_14_numpy_resnet_train/train_resnet.py \
-  --epochs 5 --train-limit 100 --val-limit 100 --test-limit 100 \
-  --channels 4 8 16 --blocks 1 1 1 --no-augment
+  --epochs 5 \
+  --train-limit 500 --val-limit 500 \
+  --no-augment --seed 0
 ```
 
-这条命令仍按多个 minibatch 训练，不等同于自动测试中的“固定四张图片重复 60 步”。loss 不降时，相关的排查点有：
+训练 loss 没有下降时，可以先看有限差分是否通过，再确认 `optimizer.step()` 后卷积权重确实改变。梯度和更新都正常，再检查图片与标签是否使用同一组 shuffle 索引，以及 BatchNorm 是否处于 train 模式。
 
-1. `test_block2.py` 中的有限差分是否通过；
-2. 卷积参数在 `optimizer.step()` 后是否改变；
-3. 图片和标签是否同步打乱；
-4. 学习率是否导致 `NaN/Inf`；
-5. BN 是否在训练时处于 train 模式。
+## 评估时模型哪里变了
 
-扩大数据量或增加 epoch 不会修正前四类实现问题。
-
----
-
-## checkpoint 与恢复训练
-
-`train_resnet.py` 聚焦模型和循环，不写文件。完整保存/恢复位于：
+`evaluate()` 先调用 `model.eval()`，然后按固定顺序遍历数据：
 
 ```text
-solutions/block_02_resnet/train_cifar100_solution.py
+BatchNorm 读取 running statistics
+running buffers 不再更新
+不做随机增强
+不打乱 batch
 ```
 
-小样本示例：
+下一轮 `train_epoch()` 会重新调用 `model.train()`。验证集来自官方 train 的独立分层切分，可以反复用来比较配置；官方 test 默认不计算。配置定下来后，在原命令末尾加 `--eval-test`，才会多输出一行 `test_loss` 和 `test_acc`。
+
+## 参数和运行统计量如何归到同一个模型
+
+`SmallResNet.parameters()` 为优化器提供参数与梯度，`named_parameters()` 给它们稳定名称，`named_buffers()` 则收集所有 BatchNorm 的运行均值和方差。保存时，`state_dict()` 会同时复制参数与 buffer；恢复时，`load_state_dict()` 写入原数组而不是换成新数组，这样先创建的优化器仍然指向有效参数。
+
+<details>
+<summary>选读：保存 checkpoint 后怎样继续训练</summary>
+
+文件读写放在 [`solutions/block_02_resnet/train_cifar100_solution.py`](../../../solutions/block_02_resnet/train_cifar100_solution.py)：
 
 ```bash
 python solutions/block_02_resnet/train_cifar100_solution.py \
-  --subset-size 200 --epochs 5 --batch-size 20 \
-  --channels 8 16 32 --blocks 1 1 1 --lr 0.03 --no-augment
+  --subset-size 500 --epochs 5 --batch-size 20 \
+  --channels 8 16 32 --blocks 1 1 1 --lr 0.03
 ```
 
-`--subset-size` 只是 `--train-limit` 的别名；关闭增强需要显式传入 `--no-augment`。checkpoint 默认写到：
+checkpoint 包含模型参数、BatchNorm buffers、Momentum 的 velocity、当前 epoch、配置和历史指标。只保存 `model.parameters()` 会漏掉 BatchNorm 的 `running_mean/running_var`，新模型的评估输出就无法原样恢复。
 
-```text
-checkpoints/cifar100_numpy_resnet.npz
-```
-
-保存内容：
-
-```text
-model parameters
-BatchNorm running_mean / running_var
-optimizer class, hyperparameters, array state, step
-epoch, config, history
-model train/eval mode
-checkpoint version
-```
-
-恢复示例：
+默认文件是 `checkpoints/cifar100_numpy_resnet.npz`。继续到第 10 轮：
 
 ```bash
 python solutions/block_02_resnet/train_cifar100_solution.py \
   --resume --epochs 10
 ```
 
-`--epochs 10` 表示训练到第 10 轮；若 checkpoint 在第 5 轮，程序继续第 6～10 轮。脚本会先读取 checkpoint config，恢复模型结构、optimizer、数据限制、batch size、seed 和增强开关，再构建数据与模型；`epochs` 仍由本次命令指定，`data_dir` 也可以随仓库位置改变。随后 strict loader 恢复数组状态，并拒绝缺失 BN buffer、shape 不同或 optimizer 类型不符的 checkpoint。
+程序先读取保存时的结构与数据配置，再恢复数组和优化器状态；这里的 `--epochs 10` 表示总轮数，而不是额外再跑 10 轮。
 
-round-trip 测试会比较：
+</details>
 
-- 新模型的全部 BN buffers；
-- optimizer 的 velocity 和超参数；
-- 恢复后的 eval logits；
-- 原模型和恢复模型各继续一步后的参数。
-
----
-
-## 运行与核对
+数值梯度、单 batch 拟合和 checkpoint 往返都放在 Block 2 的测试里：
 
 ```bash
 python -m unittest discover -s tests -p 'test_block2.py' -v
 ```
 
-测试覆盖以下性质：
+[下一页](../task_15_experiment_notes/README.md) 把刚才的合成数据运行整理成一份完整记录。
 
-- `SmallResNet.forward()` 输出 `(N,num_classes)`；
-- backward 能返回与输入同 shape 的梯度；
-- 参数、buffer 名称稳定且无重复；
-- 四张合成图片重复训练后，loss 降到初值的 25% 以下；
-- epoch 指标按实际样本数加权；
-- checkpoint 恢复后 logits 逐元素一致；
-- 恢复后的下一次参数更新与原训练过程一致。
-
-[task_15：实验记录](../task_15_experiment_notes/README.md) 提供了一份保留命令、seed、配置和结果的参考格式。
-
-## 参考资料
-
-- [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
-- [Stanford CS231n: Neural Networks Part 3 — Learning and Evaluation](https://cs231n.github.io/neural-networks-3/)
+参考：[CS231n：训练与评估](https://cs231n.github.io/neural-networks-3/)。

@@ -38,6 +38,26 @@ def github_url(path: Path, anchor: str = "") -> str:
     return f"{REPOSITORY}/blob/main/{quote(relative, safe='/')}{anchor}"
 
 
+def navigation_for(entry: dict[str, str], entries: list[dict[str, str]]) -> dict[str, str]:
+    """Follow the catalog order: chapter, then its companion implementations."""
+    kind = entry.get("kind", "main")
+    track = entries
+    index = track.index(entry)
+    result = {"page_kind": kind}
+    for prefix, offset in (("prev", -1), ("next", 1)):
+        target_index = index + offset
+        if 0 <= target_index < len(track):
+            target = track[target_index]
+            result[prefix + "_title"] = target["title"]
+            result[prefix + "_url"] = "docs/" + target["slug"] + "/"
+    if kind == "reference":
+        chapter = next(item for item in entries
+                       if item["group"] == entry["group"] and item.get("kind") == "main")
+        result["main_title"] = chapter["title"]
+        result["main_url"] = "docs/" + chapter["slug"] + "/"
+    return result
+
+
 def prepare() -> None:
     entries = read_entries()
     source_to_entry = {(ROOT / entry["source"]).resolve(): entry for entry in entries}
@@ -89,8 +109,6 @@ def prepare() -> None:
             return match.group(0)
 
         body = LINK.sub(replace_link, body)
-        previous = entries[index - 1] if index else None
-        following = entries[index + 1] if index + 1 < len(entries) else None
         metadata = [
             "---",
             f"title: {yaml_string(entry.get('page_title', entry['title']))}",
@@ -99,16 +117,8 @@ def prepare() -> None:
             f"weight: {index + 1}",
             f"source_url: {yaml_string(github_url(source))}",
         ]
-        if previous:
-            metadata.extend((
-                f"prev_title: {yaml_string(previous['title'])}",
-                f"prev_url: {yaml_string('docs/' + previous['slug'] + '/')}",
-            ))
-        if following:
-            metadata.extend((
-                f"next_title: {yaml_string(following['title'])}",
-                f"next_url: {yaml_string('docs/' + following['slug'] + '/')}",
-            ))
+        metadata.extend(f"{key}: {yaml_string(value)}"
+                        for key, value in navigation_for(entry, entries).items())
         metadata.extend(("---", ""))
         (CONTENT / f"{entry['slug']}.md").write_text(
             "\n".join(metadata) + body,
