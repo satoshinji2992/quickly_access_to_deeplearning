@@ -18,4 +18,6 @@ python solutions/block_01_basics/mini_network_reference.py
 - task 01 的主线代码单独维护训练集与验证集，`mini_network_reference.py` 只演示网络计算，在同一批合成数据上训练和画图；
 - task 02 的完整组件实现位于仓库根目录的 `common/my_dl_lib.py`。
 
+`mini_network_reference.py` 的 Adam、RMSProp 和 Adagrad 都会为权重和偏置分别维护状态。切换 `BACKPROPAGATION` 后，要重新创建网络，让对应的累计量从 0 开始；它没有实现训练中途迁移优化器状态。
+
 对照时，shape、损失定义和梯度方向比最终数值更有辨别力。随机初始化、数据顺序和优化器状态都会影响日志，因此两份输出并不会逐项相等。

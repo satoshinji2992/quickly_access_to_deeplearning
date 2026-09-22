@@ -47,6 +47,18 @@ python scripts/check_site_links.py
 
 `chapters/` 或实现 README 更新后，GitHub Pages workflow 会再跑一次这些检查。`site/content`、`site/public` 和文档配图副本是生成物，不进入版本库。
 
+修改 Python 实现时，还需运行 `python -m unittest discover -s tests -v`。`tests.yml` 会在 Python 3.10 和 3.12 的 CPU 环境检查损失、梯度、数据隔离及训练恢复；这些测试不下载 MNIST 或 CIFAR-100。
+
+网页的复制、搜索、手机目录和全部交互演示使用真实浏览器检查：
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:site
+```
+
+这组命令需要本机有 Hugo 和 Python。它把页面构建到被忽略的 `site/.browser-build/`，不会和 `hugo server` 的输出目录争用；搜索索引也在这里生成。GitHub Pages 发布前会运行相同的浏览器检查。标题锚点与页面链接可以一起检查：`python scripts/check_site_links.py --site site/.browser-build`。
+
 网页标题写给读者，不显示 `task_20` 这类内部编号。顺序由 `site/data/docs.json` 决定，可以与文件编号不同。交互演示沿用正文里的同一组数字；如果换了数据，就在旁边说明。
 
 公式符号和行内 shape 的悬停解释收录在 `site/static/symbol-data.js`。新配图在图上标了参数时，可在同一文件的 `figures` 中登记图例；`tests/test_site.py` 会检查图片与图例是否对得上。

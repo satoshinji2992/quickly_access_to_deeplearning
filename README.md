@@ -16,15 +16,33 @@
 
 ## 环境准备
 
-阅读网页版不需要安装任何东西。要运行代码，可以用 conda 建一个 Python 3.10 环境：
+阅读网页版不需要安装任何东西。第一次下载代码时，在终端运行：
+
+```bash
+git clone https://github.com/satoshinji2992/quickly_access_to_deeplearning.git
+cd quickly_access_to_deeplearning
+```
+
+已经下载过的话，进入含有 `requirements.txt` 的仓库根目录即可。随后用 conda 建一个 Python 3.10 环境：
 
 ```bash
 conda create -n dl_tutorial python=3.10
 conda activate dl_tutorial
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 神经网络算子主要使用 `numpy` 实现；绘图和数据处理还会用到 `pandas`、`matplotlib`、`scikit-learn` 与 `torchvision`。Block 3 使用 `torch`。
+
+先运行不需要下载数据的直线拟合：
+
+```bash
+cd exercises/block_01_basics/task_00_linear_regression
+python starter.py
+```
+
+正常运行后，标准化坐标下的 loss 接近 `0.042`，换回原单位的斜率接近 `9450`、截距接近 `25792`。这一步用来确认 Python 环境、数据读取和参数更新都能工作，公式推导接在第一章里。其他页面的命令会注明从仓库根目录还是当前目录执行。
+
+CPU 足够运行小样例和自动检查；MNIST 与 CIFAR-100 首次运行需要联网下载数据，完整 NumPy 图像训练会慢得多。Block 2 提供 `--synthetic` 小数据入口，Block 3 自带短文本，可以先看清训练日志再换自己的数据。如果明明安装过库仍报 `ModuleNotFoundError`，用 `python -m pip --version` 检查安装位置是否属于当前环境。
 
 ## 阅读顺序
 
@@ -63,6 +81,8 @@ pip install -r requirements.txt
 
 Block 3 按概念出现的顺序阅读，所以会先打开 `task_25`，再回到 `task_20`。这些数字是仓库早期留下的目录编号，不是当前的阅读次序。
 
+Block 1 的 `task_02/my_dl_lib.py` 留有可自行实现的接口，旁边有完整对照代码；MNIST 的 `--library task02` 会使用这份文件。Block 2 则使用 `common/my_dl_lib.py` 中已经实现的公共组件，因此可以直接阅读卷积和残差结构，也可以对照自己的库看接口怎样衔接。
+
 ## 仓库里有什么
 
 ```text
@@ -77,7 +97,7 @@ assets/       # 共享配图
 
 ## 快速检查
 
-不下载数据也能跑完的检查：
+以下命令从仓库根目录运行，不需要下载数据：
 
 ```bash
 python -m unittest discover -s tests -p 'test_block1.py' -v

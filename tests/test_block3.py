@@ -1,9 +1,13 @@
 """Fast acceptance tests for the complete Block 3 learning path."""
 
 from pathlib import Path
+from contextlib import redirect_stdout
+import io
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import torch
 from torch.nn import functional as F
@@ -35,13 +39,17 @@ from kv_cache import (  # noqa: E402
 from mha import MultiHeadSelfAttention  # noqa: E402
 from minimind_core import MiniMindConfig, MiniMindCore, RMSNorm  # noqa: E402
 from position import sinusoidal_position_encoding  # noqa: E402
-from rope import build_rope_cache  # noqa: E402
+from rope import apply_rope, build_rope_cache  # noqa: E402
 from train import (  # noqa: E402
     DEFAULT_CORPUS,
+    CharacterTokenizer,
     evaluate,
     load_checkpoint,
     make_dataloaders,
     save_checkpoint,
+    split_corpus,
+    train_model,
+    NextTokenDataset,
 )
 
 
@@ -87,6 +95,47 @@ class Block3Tests(unittest.TestCase):
         first = attention(original)
         second = attention(future_changed)
         torch.testing.assert_close(first[:, :4], second[:, :4], atol=0, rtol=0)
+
+    def test_rope_preserves_norm_and_relative_dot_products(self):
+        torch.manual_seed(3)
+        q = torch.randn(1, 2, 1, 8)
+        k = torch.randn(1, 2, 1, 8)
+
+        def rotate_at(value, position):
+            return apply_rope(value, *build_rope_cache(1, 8, start_pos=position))
+
+        rotated = rotate_at(q, 5)
+        torch.testing.assert_close(rotated.square().sum(-1), q.square().sum(-1))
+        first_dot = (rotate_at(q, 2) * rotate_at(k, 5)).sum(-1)
+        shifted_dot = (rotate_at(q, 9) * rotate_at(k, 12)).sum(-1)
+        torch.testing.assert_close(first_dot, shifted_dot, atol=1e-6, rtol=1e-5)
+
+    def test_padding_keys_are_invisible_and_chunked_cache_preserves_causality(self):
+        model = tiny_model()
+        ids = torch.tensor([[0, 0, 1, 2, 3, 4]])
+        mask = ids.ne(0)
+        modified_padding = ids.clone()
+        modified_padding[:, :2] = torch.tensor([19, 23])
+        full, _ = model(ids, attention_mask=mask)
+        changed, _ = model(modified_padding, attention_mask=mask)
+        torch.testing.assert_close(full[:, 2:], changed[:, 2:], atol=0, rtol=0)
+
+        prefix, _, cache = model(ids[:, :3], attention_mask=mask[:, :3], use_cache=True)
+        suffix, _, _ = model(
+            ids[:, 3:], attention_mask=mask, past_key_values=cache, use_cache=True
+        )
+        torch.testing.assert_close(
+            torch.cat((prefix, suffix), dim=1), full, atol=1e-6, rtol=1e-5
+        )
+
+        # The new chunk contains several queries: its first row may read the
+        # cached prefix and itself, but not the last new token.
+        future_changed = ids[:, 3:].clone()
+        future_changed[:, -1] = 29
+        changed_suffix, _, _ = model(
+            future_changed, attention_mask=mask, past_key_values=cache, use_cache=True
+        )
+        torch.testing.assert_close(suffix[:, :2], changed_suffix[:, :2], atol=0, rtol=0)
 
     def test_core_is_causal_but_last_token_reads_its_prefix(self):
         model = tiny_model()
@@ -147,6 +196,22 @@ class Block3Tests(unittest.TestCase):
         )
         # The eight new tokens force one sliding-window cache rebuild.
         self.assertTrue(torch.equal(cached, ordinary))
+
+    def test_cache_cli_accepts_a_prompt_longer_than_its_visible_window(self):
+        tokenizer = CharacterTokenizer.fit("abcdefghijklmnopqrstuvwxyz. ")
+        model = tiny_model(max_seq_len=10)
+        prompt = "a long prompt with more than ten characters"
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "long_prompt.pt"
+            save_checkpoint(checkpoint, model, None, tokenizer, step=0, val_loss=0.0)
+            result = subprocess.run(
+                [sys.executable, str(BLOCK / "task_30_kv_cache" / "kv_cache.py"),
+                 "--checkpoint", str(checkpoint), "--prompt", prompt, "--max-new-tokens", "1"],
+                capture_output=True, text=True, timeout=30,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("cached/full max_abs_error=", result.stdout)
+        self.assertIn(prompt, result.stdout)
 
     def test_padded_generation_uses_the_mask_and_survives_window_rollover(self):
         torch.manual_seed(13)
@@ -282,6 +347,40 @@ class Block3Tests(unittest.TestCase):
         self.assertEqual(restored_tokenizer.token_to_id, tokenizer.token_to_id)
         self.assertEqual(metadata["step"], 3)
 
+    def test_default_validation_has_known_characters_but_new_sentences(self):
+        train_text, val_text = split_corpus(DEFAULT_CORPUS)
+        tokenizer = CharacterTokenizer.fit(train_text)
+        self.assertTrue(val_text.startswith("周四早晨"))
+        self.assertEqual(set(val_text) - set(train_text), set())
+        for sentence in val_text.split("。"):
+            if sentence:
+                self.assertNotIn(sentence, train_text)
+        self.assertNotIn(tokenizer.token_to_id[tokenizer.UNK], tokenizer.encode(val_text))
+
+    def test_failed_checkpoint_save_preserves_the_previous_readable_file(self):
+        model = tiny_model()
+        tokenizer = CharacterTokenizer.fit("abcdefghijklmnopqrstuvwxyz. ")
+        ids = torch.tensor([[1, 2, 3]])
+        expected, _ = model(ids)
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "training.pt"
+            save_checkpoint(checkpoint, model, None, tokenizer, step=1, val_loss=2.0)
+            before = checkpoint.read_bytes()
+
+            def interrupted_save(state, file):
+                file.write(b"incomplete checkpoint")
+                raise OSError("simulated interrupted write")
+
+            with patch.object(torch, "save", side_effect=interrupted_save):
+                with self.assertRaisesRegex(OSError, "interrupted write"):
+                    save_checkpoint(checkpoint, model, None, tokenizer, step=2, val_loss=1.0)
+            self.assertEqual(checkpoint.read_bytes(), before)
+            restored, _, metadata = load_checkpoint(checkpoint)
+            actual, _ = restored.eval()(ids)
+            torch.testing.assert_close(actual, expected, atol=0, rtol=0)
+            self.assertEqual(metadata["step"], 1)
+            self.assertEqual(list(Path(directory).iterdir()), [checkpoint])
+
     def test_validation_loss_is_weighted_by_valid_token_count(self):
         model = tiny_model(max_seq_len=4)
         input_ids = torch.tensor(
@@ -300,6 +399,57 @@ class Block3Tests(unittest.TestCase):
             valid = mask & labels.ne(0)
             expected = F.cross_entropy(logits[valid], labels[valid]).item()
         self.assertAlmostEqual(reported, expected, places=6)
+
+    def test_dataset_counts_each_transition_once_and_masks_only_padding(self):
+        dataset = NextTokenDataset([2, 4, 5, 6, 7, 3], seq_len=4, pad_token_id=0)
+        transitions = []
+        for input_ids, labels, mask in dataset:
+            valid = mask & labels.ne(0)
+            transitions.extend(zip(input_ids[valid].tolist(), labels[valid].tolist()))
+        self.assertEqual(transitions, [(2, 4), (4, 5), (5, 6), (6, 7), (7, 3)])
+        input_ids, labels, mask = dataset[1]
+        self.assertEqual(input_ids.tolist(), [7, 3, 0, 0])
+        self.assertEqual(labels.tolist(), [3, 0, 0, 0])
+        self.assertEqual(mask.tolist(), [True, True, False, False])
+
+    def test_validation_restores_training_mode_and_rejects_empty_targets(self):
+        model = tiny_model(max_seq_len=4).train()
+        ids = torch.tensor([[1, 2, 3, 4]])
+        loader = DataLoader(TensorDataset(ids, ids, ids.ne(0)))
+        evaluate(model, loader)
+        self.assertTrue(model.training)
+        model.eval()
+        evaluate(model, loader)
+        self.assertFalse(model.training)
+        empty = torch.zeros_like(ids)
+        empty_loader = DataLoader(TensorDataset(empty, empty, empty.bool()))
+        with self.assertRaisesRegex(ValueError, "no valid target"):
+            evaluate(model, empty_loader)
+
+    def test_resume_matches_uninterrupted_training_across_shuffled_epochs(self):
+        # Three blocks, batch size 2: the split happens mid-epoch and the
+        # resumed segment also crosses an epoch boundary.
+        corpus = "春天来了，小猫在窗边看雨。雨停以后，小猫来到花园。" * 2
+        settings = dict(text=corpus, seq_len=16, batch_size=2, seed=19, eval_every=2)
+        with tempfile.TemporaryDirectory() as directory, redirect_stdout(io.StringIO()):
+            checkpoint_path = Path(directory) / "resume.pt"
+            full, _, full_val = train_model(steps=7, **settings)
+            train_model(steps=3, checkpoint_path=checkpoint_path, **settings)
+            resumed, tokenizer, resumed_val = train_model(
+                text=corpus, steps=4, resume_path=checkpoint_path,
+                checkpoint_path=checkpoint_path, eval_every=2,
+            )
+            for name, value in full.state_dict().items():
+                torch.testing.assert_close(resumed.state_dict()[name], value, atol=0, rtol=0)
+            self.assertEqual(resumed_val, full_val)
+            _, restored_tokenizer, saved = load_checkpoint(checkpoint_path)
+            self.assertEqual(saved["step"], 7)
+            self.assertEqual(restored_tokenizer.token_to_id, tokenizer.token_to_id)
+            self.assertTrue(saved["optimizer_state"]["state"])
+            with self.assertRaisesRegex(ValueError, "same corpus"):
+                train_model(text=corpus + "新", steps=1, resume_path=checkpoint_path)
+            with self.assertRaisesRegex(ValueError, "batch_size differs"):
+                train_model(text=corpus, steps=1, batch_size=8, resume_path=checkpoint_path)
 
     def test_rmsnorm_preserves_low_precision_activation_dtype(self):
         norm = RMSNorm(8)

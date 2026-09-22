@@ -69,7 +69,13 @@ def load_cifar100(data_dir, train=True, limit=None, download=True):
 
 
 def make_optimizer(name, parameters, lr, weight_decay=0.0):
+    if not np.isfinite(lr) or lr <= 0:
+        raise ValueError("learning rate must be positive and finite")
+    if not np.isfinite(weight_decay) or weight_decay < 0:
+        raise ValueError("weight_decay must be non-negative and finite")
     if name == "momentum":
+        if weight_decay != 0.0:
+            raise ValueError("--weight-decay is supported only with --optimizer adamw")
         return Momentum(parameters, lr=lr, beta=0.9)
     if name == "adamw":
         return AdamW(parameters, lr=lr, weight_decay=weight_decay)
@@ -333,6 +339,11 @@ def parse_args(argv=None):
     parser.add_argument("--val-size", type=int, default=5000)
     parser.add_argument("--val-limit", type=int, default=None)
     parser.add_argument("--test-limit", type=int, default=None)
+    parser.add_argument(
+        "--eval-test",
+        action="store_true",
+        help="evaluate the held-out test split after training or loading a checkpoint",
+    )
     parser.add_argument("--no-augment", action="store_true")
     parser.add_argument(
         "--checkpoint",
@@ -361,6 +372,8 @@ def main(argv=None):
         saved_config = read_checkpoint_config(args.checkpoint)
         restore_resume_config(args, saved_config)
         print("restored model, optimizer, split, batch, seed, and augmentation config")
+    if args.epochs <= 0 or args.batch_size <= 0:
+        raise ValueError("epochs and batch-size must be positive")
     train_limit = args.subset_size if args.subset_size is not None else args.train_limit
     use_augmentation = not args.no_augment
     np.random.seed(args.seed)
@@ -426,10 +439,11 @@ def main(argv=None):
             config=run_config,
         )
 
-    test_loss, test_accuracy = evaluate(
-        model, loss_fn, *test, batch_size=args.batch_size
-    )
-    print(f"test_loss={test_loss:.4f} test_acc={test_accuracy:.3f}")
+    if args.eval_test:
+        test_loss, test_accuracy = evaluate(
+            model, loss_fn, *test, batch_size=args.batch_size
+        )
+        print(f"test_loss={test_loss:.4f} test_acc={test_accuracy:.3f}")
     return model, history
 
 

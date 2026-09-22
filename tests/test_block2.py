@@ -7,7 +7,7 @@ from unittest import mock
 
 import numpy as np
 
-from common.my_dl_lib import CrossEntropyLoss, Momentum, SGD
+from common.my_dl_lib import AdamW, CrossEntropyLoss, Momentum, SGD
 from exercises.block_02_resnet.task_14_numpy_resnet_train import (
     train_resnet as train_resnet_module,
 )
@@ -23,6 +23,7 @@ from exercises.block_02_resnet.task_11_conv2d_im2col.conv2d import (
 )
 from exercises.block_02_resnet.task_12_pooling_and_bn.layers import (
     BatchNorm2D,
+    GlobalAvgPool2D,
     MaxPool2D,
 )
 from exercises.block_02_resnet.task_13_residual_block.residual_block import BasicBlock
@@ -34,10 +35,12 @@ from exercises.block_02_resnet.task_14_numpy_resnet_train.train_resnet import (
 )
 from solutions.block_02_resnet.train_cifar100_solution import (
     load_checkpoint,
+    make_optimizer,
     read_checkpoint_config,
     restore_resume_config,
     save_checkpoint,
 )
+from solutions.block_02_resnet import train_cifar100_solution as reference_train_module
 
 
 def _finite_difference(array, objective, index, epsilon=1e-5):
@@ -123,6 +126,59 @@ class Block2Tests(unittest.TestCase):
         np.testing.assert_array_equal(dx, expected)
         self.assertEqual(np.sum(dx), np.sum(upstream))
 
+    def test_rectangular_multichannel_convolution_matches_loops_and_gradients(self):
+        rng = np.random.default_rng(41)
+        layer = Conv2D(2, 3, kernel_size=(2, 3), stride=(2, 1), padding=(1, 0))
+        layer.W[...] = rng.normal(scale=0.2, size=layer.W.shape)
+        layer.b[...] = rng.normal(scale=0.1, size=layer.b.shape)
+        x = rng.normal(size=(2, 2, 5, 6))
+        output = layer.forward(x)
+        self.assertEqual(output.shape, (2, 3, 3, 4))
+        padded = np.pad(x, ((0, 0), (0, 0), (1, 1), (0, 0)))
+        expected = np.empty_like(output)
+        for sample in range(2):
+            for channel in range(3):
+                for row in range(3):
+                    for column in range(4):
+                        window = padded[
+                            sample, :, 2 * row : 2 * row + 2, column : column + 3
+                        ]
+                        expected[sample, channel, row, column] = (
+                            np.sum(window * layer.W[channel]) + layer.b[channel]
+                        )
+        np.testing.assert_allclose(output, expected, rtol=1e-12, atol=1e-12)
+
+        upstream = rng.normal(size=output.shape)
+        dx = layer.backward(upstream)
+        dw, db = layer.dW.copy(), layer.db.copy()
+
+        def objective():
+            return float(np.sum(layer.forward(x) * upstream))
+
+        for array, gradient, index in (
+            (x, dx, (1, 1, 2, 4)),
+            (x, dx, (0, 0, 0, 0)),
+            (layer.W, dw, (2, 1, 1, 2)),
+            (layer.b, db, (1,)),
+        ):
+            numeric = _finite_difference(array, objective, index)
+            np.testing.assert_allclose(gradient[index], numeric, rtol=2e-5, atol=2e-6)
+
+    def test_overlapping_maxpool_accumulates_and_global_pool_distributes(self):
+        x = np.array([[[[1.0, 2.0, 3.0], [4.0, 9.0, 5.0], [6.0, 7.0, 8.0]]]])
+        maximum = MaxPool2D(kernel_size=2, stride=1)
+        np.testing.assert_array_equal(maximum.forward(x), np.full((1, 1, 2, 2), 9.0))
+        dx = maximum.backward(np.array([[[[1.0, 2.0], [3.0, 4.0]]]]))
+        expected = np.zeros_like(x)
+        expected[0, 0, 1, 1] = 10.0
+        np.testing.assert_array_equal(dx, expected)
+
+        average = GlobalAvgPool2D()
+        np.testing.assert_array_equal(average.forward(x), [[5.0]])
+        np.testing.assert_array_equal(
+            average.backward(np.array([[18.0]])), np.full_like(x, 2.0)
+        )
+
     def test_batchnorm_backward_and_running_buffer_references(self):
         rng = np.random.default_rng(7)
         layer = BatchNorm2D(2, momentum=0.7)
@@ -146,6 +202,26 @@ class Block2Tests(unittest.TestCase):
         np.testing.assert_array_equal(layer.running_mean, running_before[0])
         np.testing.assert_array_equal(layer.running_var, running_before[1])
 
+    def test_batchnorm_eval_is_independent_of_companions_and_backward_uses_forward_mode(self):
+        rng = np.random.default_rng(43)
+        layer = BatchNorm2D(2)
+        x = rng.normal(size=(3, 2, 3, 2))
+        upstream = rng.normal(size=x.shape)
+        layer.forward(x)
+        training_dx = layer.backward(upstream)
+        np.testing.assert_allclose(training_dx.sum(axis=(0, 2, 3)), 0.0, atol=1e-12)
+        layer.eval()
+        # The derivative must use the mode of its forward, even if the public
+        # mode has since changed.
+        np.testing.assert_array_equal(layer.backward(upstream), training_dx)
+        together = layer.forward(x)
+        alone = layer.forward(x[:1])
+        np.testing.assert_array_equal(together[:1], alone)
+        layer.train()
+        eval_dx = layer.backward(upstream[:1])
+        expected = upstream[:1] * layer.gamma / np.sqrt(layer.running_var + layer.eps)
+        np.testing.assert_allclose(eval_dx, expected, rtol=1e-12, atol=1e-12)
+
     def test_basic_block_projection_modes_and_named_state(self):
         rng = np.random.default_rng(11)
         block = BasicBlock(2, 4, stride=2)
@@ -167,6 +243,30 @@ class Block2Tests(unittest.TestCase):
         self.assertTrue(block.training)
         self.assertTrue(block.bn2.training)
         self.assertTrue(block.proj_bn.training)
+
+    def test_residual_backward_matches_finite_differences_on_both_shortcuts(self):
+        rng = np.random.default_rng(46)
+        for out_channels, stride in ((2, 1), (3, 2)):
+            with self.subTest(out_channels=out_channels, stride=stride):
+                np.random.seed(46)
+                block = BasicBlock(2, out_channels, stride=stride)
+                x = rng.normal(size=(2, 2, 3, 5))
+                output = block.forward(x)
+                upstream = rng.normal(size=output.shape)
+                dx = block.backward(upstream)
+                dw = block.conv1.dW.copy()
+
+                def objective():
+                    return float(np.sum(block.forward(x) * upstream))
+
+                for array, gradient, index in (
+                    (x, dx, (1, 1, 1, 2)),
+                    (block.conv1.W, dw, (0, 1, 1, 1)),
+                ):
+                    numeric = _finite_difference(array, objective, index, epsilon=1e-6)
+                    np.testing.assert_allclose(
+                        gradient[index], numeric, rtol=1e-4, atol=1e-5
+                    )
 
     def test_stratified_split_is_independent_and_leakage_fails_loudly(self):
         images = np.arange(60 * 2, dtype=np.int64).reshape(60, 2)
@@ -258,10 +358,8 @@ class Block2Tests(unittest.TestCase):
         logits = np.array([[10.0, -10.0], [10.0, -10.0], [-10.0, 10.0]])
         labels = np.array([0, 0, 0], dtype=np.int64)
         shifted = logits - np.max(logits, axis=1, keepdims=True)
-        probabilities = np.exp(shifted) / np.exp(shifted).sum(axis=1, keepdims=True)
-        expected_loss = float(
-            -np.log(probabilities[np.arange(3), labels] + 1e-12).mean()
-        )
+        log_probabilities = shifted - np.log(np.exp(shifted).sum(axis=1, keepdims=True))
+        expected_loss = float(-log_probabilities[np.arange(3), labels].mean())
 
         eval_loss, eval_accuracy = evaluate(
             IdentityClassifier(), CrossEntropyLoss(), logits, labels, batch_size=2
@@ -349,6 +447,71 @@ class Block2Tests(unittest.TestCase):
                 model.parameters(), restored.parameters()
             ):
                 np.testing.assert_allclose(actual, expected, rtol=0, atol=0)
+
+    def test_reference_trainer_also_requires_explicit_test_evaluation(self):
+        split = (
+            np.zeros((2, 3, 8, 8), dtype=np.float64),
+            np.zeros(2, dtype=np.int64),
+        )
+        with mock.patch.object(
+            reference_train_module,
+            "load_cifar100_splits",
+            return_value=(split, split, split),
+        ), mock.patch.object(
+            reference_train_module, "train_epoch", return_value=(1.0, 0.25)
+        ), mock.patch.object(
+            reference_train_module, "evaluate", return_value=(0.9, 0.5)
+        ) as mocked_evaluate, mock.patch.object(
+            reference_train_module, "save_checkpoint"
+        ), mock.patch("builtins.print"):
+            arguments = [
+                "--epochs", "1", "--channels", "2", "2", "2",
+                "--blocks", "1", "1", "1",
+            ]
+            reference_train_module.main(arguments)
+            self.assertEqual(mocked_evaluate.call_count, 1)
+            mocked_evaluate.reset_mock()
+            reference_train_module.main(arguments + ["--eval-test"])
+            self.assertEqual(mocked_evaluate.call_count, 2)
+
+    def test_optimizer_does_not_silently_ignore_weight_decay(self):
+        parameters = [(np.ones(2), np.ones(2))]
+        with self.assertRaisesRegex(ValueError, "only with --optimizer adamw"):
+            make_optimizer("momentum", parameters, lr=0.01, weight_decay=0.1)
+        optimizer = make_optimizer("adamw", parameters, lr=0.01, weight_decay=0.1)
+        self.assertEqual(optimizer.weight_decay, 0.1)
+        with self.assertRaisesRegex(ValueError, "learning rate"):
+            make_optimizer("adamw", parameters, lr=float("nan"))
+
+    def test_adamw_checkpoint_resumes_moments_step_and_parameter_trajectory(self):
+        rng = np.random.default_rng(47)
+        x = rng.normal(size=(3, 3, 5, 5))
+        labels = np.array([0, 1, 0], dtype=np.int64)
+        np.random.seed(47)
+        model = SmallResNet(2, channels=(2,), blocks_per_stage=(1,))
+        optimizer = AdamW(model.parameters(), lr=0.003, weight_decay=0.02)
+        for _ in range(3):
+            _one_training_step(model, optimizer, x, labels)
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "adamw.npz"
+            save_checkpoint(checkpoint, model, optimizer, 3, [])
+            restored = SmallResNet(2, channels=(2,), blocks_per_stage=(1,))
+            restored_optimizer = AdamW(restored.parameters(), lr=0.9, weight_decay=0.0)
+            load_checkpoint(checkpoint, restored, restored_optimizer)
+        self.assertEqual(restored_optimizer.t, 3)
+        self.assertEqual(restored_optimizer.lr, 0.003)
+        self.assertEqual(restored_optimizer.weight_decay, 0.02)
+        for name in ("m", "v"):
+            for actual, expected in zip(
+                getattr(restored_optimizer, name), getattr(optimizer, name)
+            ):
+                np.testing.assert_array_equal(actual, expected)
+        _one_training_step(model, optimizer, x, labels)
+        _one_training_step(restored, restored_optimizer, x, labels)
+        self.assertEqual(restored_optimizer.t, 4)
+        restored_state = restored.state_dict()
+        for name, expected in model.state_dict().items():
+            np.testing.assert_array_equal(restored_state[name], expected)
 
     def test_resume_restores_trajectory_defining_run_config(self):
         from argparse import Namespace

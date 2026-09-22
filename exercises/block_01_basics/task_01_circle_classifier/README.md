@@ -95,6 +95,8 @@ $$
 
 因为 one-hot 每行只有一个 1，单个样本的损失就是正确类别概率的负对数。正确类别概率越接近 1，损失越接近 0。
 
+`CE()` 保留了直接代入概率的写法，便于和手算对照；训练时的 `compute_loss()` 则先按行得到 $s_k=z_k-\max_j z_j$，再用 $\log p_k=s_k-\log\sum_j e^{s_j}$ 计算同一个损失。这样就不必先算出一个极小的概率再取对数。[下一节](../task_02_mini_dl_lib/README.md)封装 CrossEntropyLoss 时会展开这个数值细节。
+
 softmax 与交叉熵合在一起求导后，网络末端的梯度可化简为：
 
 $$
@@ -170,11 +172,18 @@ Epoch    1 | train_loss=... train_acc=... | val_loss=... val_acc=...
 
 默认参数固定了随机种子，最终验证准确率通常在 `0.95` 以上。第一行先核对数据：train/val 应为 800/200，`overlap=0`；后面的损失再总体下降，期间不应出现 `nan` 或 `inf`。
 
+训练后，`model.predict()` 默认预测验证集。换成新的点时，只需要提供坐标，不需要提前知道标签；例如在 `starter.py` 的训练之后调用：
+
+```python
+new_points = pd.DataFrame({"x": [0.0, 2.0], "y": [0.0, 0.0]})
+print(model.predict(new_points))  # 这两个点的真实类别是 [1, 0]
+```
+
 这组数据中，永远猜数量更多的那一类，也能有大约 60% 的准确率。所以“高于 60%”只表明模型超过了这个最简单的基线，还不能说明边界已经学好。
 
 若 `backward()` 的结果可疑，可以直接比较每个 $\mathrm dW$、$\mathrm db$ 与对应参数的 shape。它们不一样时，沿矩阵乘法的内维往回查，通常比反复调学习率更快找到问题。
 
-仓库测试会单独检查标签、分层和集合泄漏：
+回到仓库根目录后，下面的测试会单独检查标签、分层和集合泄漏：
 
 ```bash
 python -m unittest tests.test_block1 -v

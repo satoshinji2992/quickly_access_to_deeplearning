@@ -88,6 +88,7 @@ class BatchNorm1D:
         self.training = False
 
     def forward(self, x):
+        self.forward_training = self.training
         if self.training:
             mean = np.mean(x, axis=0, keepdims=True)
             var = np.var(x, axis=0, keepdims=True)
@@ -105,6 +106,9 @@ class BatchNorm1D:
         self.dbeta[...] = np.sum(dout, axis=0, keepdims=True)
         self.dgamma[...] = np.sum(dout * self.x_hat, axis=0, keepdims=True)
         dxhat = dout * self.gamma
+        # In eval mode the stored statistics are constants, not functions of x.
+        if not self.forward_training:
+            return dxhat * self.std_inv
         sum_dxhat = np.sum(dxhat, axis=0, keepdims=True)
         sum_dxhat_xhat = np.sum(dxhat * self.x_hat, axis=0, keepdims=True)
         return (dxhat - sum_dxhat / n - self.x_hat * sum_dxhat_xhat / n) * self.std_inv
@@ -199,9 +203,12 @@ class CrossEntropyLoss:
         self.targets = targets
         shifted = logits - np.max(logits, axis=1, keepdims=True)
         exp = np.exp(shifted)
-        self.probs = exp / np.sum(exp, axis=1, keepdims=True)
-        eps = 1e-12
-        return -np.mean(np.sum(targets * np.log(self.probs + eps), axis=1))
+        normalizer = np.sum(exp, axis=1, keepdims=True)
+        self.probs = exp / normalizer
+        # Compute log probabilities before exp can underflow to zero. Adding
+        # eps inside log would cap the loss and no longer match backward().
+        log_probs = shifted - np.log(normalizer)
+        return -np.mean(np.sum(targets * log_probs, axis=1))
 
     def backward(self):
         return (self.probs - self.targets) / self.targets.shape[0]

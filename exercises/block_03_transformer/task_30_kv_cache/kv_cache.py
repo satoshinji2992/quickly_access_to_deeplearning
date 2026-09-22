@@ -181,8 +181,9 @@ def generate_with_kv_cache(
                 model, next_id, cache, attention_mask=visible_mask
             )
         else:
-            # Sliding the window changes which token is position zero. Re-prefill
-            # the new window so RoPE positions exactly match ordinary generation.
+            # Re-prefill matches full recomputation on the truncated window:
+            # both RoPE positions and deeper-layer states must be rebuilt.
+            # The latter already contain information from evicted tokens.
             visible = result[:, -model.config.max_seq_len :]
             visible_mask = attention_mask[:, -model.config.max_seq_len :]
             logits, cache = prefill(model, visible, visible_mask)
@@ -212,7 +213,8 @@ def main():
         [tokenizer.encode(args.prompt, add_bos=True)], dtype=torch.long, device=device
     )
     generator = torch.Generator(device=device).manual_seed(args.seed)
-    print(f"cached/full max_abs_error={cache_equivalence_error(model, ids):.3e}")
+    visible = ids[:, -model.config.max_seq_len:]
+    print(f"cached/full max_abs_error={cache_equivalence_error(model, visible):.3e}")
     generated = generate_with_kv_cache(
         model,
         ids,

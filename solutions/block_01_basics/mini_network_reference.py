@@ -77,7 +77,12 @@ def create_biases(n_neurons):
 
 
 # ----------------------------------
-def precise_loss_function(predicted, real):
+def precise_loss_function(predicted, real, logits=None):
+    if logits is not None:
+        shifted = logits - np.max(logits, axis=1, keepdims=True)
+        log_probs = shifted - np.log(np.sum(np.exp(shifted), axis=1, keepdims=True))
+        return -np.mean(np.sum(real * log_probs, axis=1))
+    # Probability-only form remains useful for the small hand-worked examples.
     epsilon = 1e-12
     predicted = np.clip(predicted, epsilon, 1.0 - epsilon)
     ce_loss = -np.sum(real * np.log(predicted), axis=1)
@@ -103,6 +108,8 @@ class Layer:
         # 初始化用于不同优化器的参数
         self.v = np.zeros_like(self.weights)  # RMSprop ,Adagrad
         self.m = np.zeros_like(self.weights)  # Adam
+        self.bias_v = np.zeros_like(self.biases)
+        self.bias_m = np.zeros_like(self.biases)
         self.t = 1  # Adam
 
     def layer_forward(self, inputs):
@@ -141,13 +148,18 @@ class Layer:
 
         self.m = beta1 * self.m + (1 - beta1) * weights_adjust_matrix
         self.v = beta2 * self.v + (1 - beta2) * weights_adjust_matrix**2
+        bias_gradient = np.mean(afterWeights_demands, axis=0)
+        self.bias_m = beta1 * self.bias_m + (1 - beta1) * bias_gradient
+        self.bias_v = beta2 * self.bias_v + (1 - beta2) * bias_gradient**2
 
         # 进行偏差修正
         m_hat = self.m / (1 - beta1**self.t)
         v_hat = self.v / (1 - beta2**self.t)
+        bias_m_hat = self.bias_m / (1 - beta1**self.t)
+        bias_v_hat = self.bias_v / (1 - beta2**self.t)
 
         self.weights -= learning_rate * m_hat / (np.sqrt(v_hat) + epsilon)
-        self.biases -= learning_rate * np.mean(afterWeights_demands, axis=0)
+        self.biases -= learning_rate * bias_m_hat / (np.sqrt(bias_v_hat) + epsilon)
 
         self.t += 1  # 训练步长增加
 
@@ -163,10 +175,12 @@ class Layer:
             preWeights_values, afterWeights_demands
         )
         self.v = beta1 * self.v + (1 - beta1) * weights_adjust_matrix**2
+        bias_gradient = np.mean(afterWeights_demands, axis=0)
+        self.bias_v = beta1 * self.bias_v + (1 - beta1) * bias_gradient**2
         self.weights -= (
             learning_rate * weights_adjust_matrix / (np.sqrt(self.v) + epsilon)
         )
-        self.biases -= learning_rate * np.mean(afterWeights_demands, axis=0)
+        self.biases -= learning_rate * bias_gradient / (np.sqrt(self.bias_v) + epsilon)
 
     def layer_backward_adagrad(
         self, preWeights_values, afterWeights_demands, learning_rate, epsilon=1e-8
@@ -175,10 +189,12 @@ class Layer:
             preWeights_values, afterWeights_demands
         )
         self.v += weights_adjust_matrix**2
+        bias_gradient = np.mean(afterWeights_demands, axis=0)
+        self.bias_v += bias_gradient**2
         self.weights -= (
             learning_rate * weights_adjust_matrix / (np.sqrt(self.v) + epsilon)
         )
-        self.biases -= learning_rate * np.mean(afterWeights_demands, axis=0)
+        self.biases -= learning_rate * bias_gradient / (np.sqrt(self.bias_v) + epsilon)
 
     backpropagation_dict = {
         "mbsgd": layer_backward_mbsgd,
@@ -246,7 +262,9 @@ class Network:
             if epoch % 100 == 0:
                 # 计算整个数据集的损失
                 full_outputs = self.network_forward(inputs)
-                loss = precise_loss_function(full_outputs[-1], targets)
+                loss = precise_loss_function(
+                    full_outputs[-1], targets, logits=self.layers[-1].sum
+                )
                 print(f"Epoch {epoch}, Loss: {loss}")
 
 
@@ -264,7 +282,7 @@ def test():
     data2 = np.copy(data)
     print("Classification:", classification)
     print("Targets:", targets[:, 1])
-    print("Loss:", precise_loss_function(outputs[-1], targets))
+    print("Loss:", precise_loss_function(outputs[-1], targets, logits=network.layers[-1].sum))
     plot_data(data1, data2, "training")
 
 

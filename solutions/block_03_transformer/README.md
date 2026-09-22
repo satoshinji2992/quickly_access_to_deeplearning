@@ -51,6 +51,14 @@ python exercises/block_03_transformer/task_28_next_token_training/train.py \
   --steps 80 --checkpoint /tmp/minimind_demo.pt
 ```
 
+训练脚本会定期报告验证 loss，并保存最近一次状态。接着这个文件继续 20 步时，模型、优化器和 batch 顺序一起恢复，最后的 step 为 100：
+
+```bash
+python exercises/block_03_transformer/task_28_next_token_training/train.py \
+  --resume /tmp/minimind_demo.pt --steps 20 \
+  --checkpoint /tmp/minimind_step100.pt
+```
+
 未缓存采样：
 
 ```bash
@@ -77,6 +85,6 @@ python exercises/block_03_transformer/task_30_kv_cache/kv_cache.py \
 python -m unittest discover -s tests -p 'test_block3.py' -v
 ```
 
-测试覆盖正弦位置编码、RoPE 频率、GQA shape、causal 与上下文敏感性、weight tying、PAD mask、attention 梯度、单 batch 过拟合、train/validation 隔离、checkpoint round-trip、采样边界，以及 cached/full logits 和滑动窗口生成等价。
+测试覆盖正弦位置编码、RoPE 频率与相对位移、GQA shape、causal 与上下文敏感性、weight tying、PAD mask、attention 梯度、单 batch 过拟合、train/validation 隔离、checkpoint round-trip、断点续跑、采样边界，以及 cached/full logits、分块追加与滑动窗口生成等价。
 
 这套参考实现用于检查微型训练与生成管线。默认语料、字符 tokenizer、模型大小和训练步数不支持通用语言能力评估。

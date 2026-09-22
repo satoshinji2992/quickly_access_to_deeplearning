@@ -14,6 +14,25 @@ logits (B,T,V)
 
 这条数据流中，`B` 是 batch 大小，`T` 是序列长度，`D` 是向量宽度，`V` 是词表大小。
 
+## 从自己保存参数到 `nn.Module`
+
+前两章的层自己保管 `W`、`b` 和对应梯度，组合模型再逐层收集参数。PyTorch 的 `nn.Module` 接手了这部分工作：在 `__init__` 中把子层赋给 `self`，模块就会登记它们；`model.parameters()` 能递归取到这些子层的可训练 Parameter，优化器不必再手动寻找每一张权重表。
+
+`forward` 仍然由我们写，调用 `model(input_ids)` 时会进入这个方法。与 NumPy 不同，PyTorch 会记录可求导的运算，因此只需对标量 loss 调用一次 `backward()`。拿第一章的直线做一个很小的对照：
+
+```python
+import torch
+
+a = torch.nn.Parameter(torch.tensor(1.0))
+b = torch.nn.Parameter(torch.tensor(0.0))
+prediction = a * 2.0 + b
+loss = (prediction - 3.0).square()
+loss.backward()
+print(a.grad.item(), b.grad.item())  # -4.0 -2.0
+```
+
+因为当前预测为 2，误差为 -1，手算得到 $\partial L/\partial a=2(-1)\times2=-4$，$\partial L/\partial b=2(-1)=-2$，与自动求导一致。Embedding 的权重也是 Parameter；整数 id 只是索引，不需要也不能像连续权重一样求导。
+
 ![Embedding 表与共享权重的 LM head](assets/embedding_lm_head.png)
 
 <div class="widget-mount" data-widget="token-embed-3d"></div>
@@ -29,6 +48,8 @@ E[1]  -> token 1 的向量
 ```
 
 当 `input_ids[b,t]` 等于 `v` 时，该位置取出 `E[v]`。id 没有大小意义，只决定查哪一行；反向传播则会修改这张表，使向量逐渐适应预测任务。
+
+例如 `input_ids=[[2,1,2]]` 时，输出依次是 `E[2]、E[1]、E[2]`，shape 为 `(1,3,D)`。第一个和第三个位置引用的是同一行权重，而不是为两次出现各造一张表。沿输入查表这条路径反向传播时，这两个位置给 `E[2]` 的梯度会相加。
 
 ## LM head 为每个 token 打分
 
@@ -99,4 +120,4 @@ weights shared: True
 
 Embedding 产生 `(B,T,D)`，LM head 接收同样宽度的 hidden states。中间还缺少一条让 token 互相读取的通路，[Attention 与 decoder-only](../task_20_transformer_theory/README.md) 从这个问题继续。
 
-参考：[Using the Output Embedding to Improve Language Models](https://arxiv.org/abs/1608.05859)。
+参考：[PyTorch：Automatic Differentiation](https://docs.pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html)、[Using the Output Embedding to Improve Language Models](https://arxiv.org/abs/1608.05859)。

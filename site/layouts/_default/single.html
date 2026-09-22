@@ -44,13 +44,14 @@
       {{ end }}
     </aside>
 
-    <article class="docs-article">
-      <div class="docs-breadcrumb"><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>文档</span><span>/</span><span>{{ .Title }}</span></div>
+    <article class="docs-article" data-pagefind-body>
+      <div class="docs-breadcrumb" data-pagefind-ignore><a href="{{ site.Home.RelPermalink }}">首页</a><span>/</span><span>文档</span><span>/</span><span>{{ .Title }}</span></div>
       <header class="docs-heading">
         <div class="eyebrow">{{ .Params.group }}</div>
         <h1>{{ .Title }}</h1>
-        <a class="source-link" href="{{ .Params.source_url }}">在 GitHub 查看源文件 ↗</a>
+        <a class="source-link" data-pagefind-ignore href="{{ .Params.source_url }}">在 GitHub 查看源文件 ↗</a>
       </header>
+      {{ with .TableOfContents }}<details class="mobile-toc" data-pagefind-ignore><summary>本页目录</summary>{{ . }}</details>{{ end }}
       <div class="markdown-body">{{ .Content }}</div>
       <nav class="docs-pagination" aria-label="前后章节">
         {{ with .Params.prev_url }}<a class="prev" href="{{ . | relURL }}"><span>上一节</span><strong>{{ $.Params.prev_title }}</strong></a>{{ else }}<span></span>{{ end }}

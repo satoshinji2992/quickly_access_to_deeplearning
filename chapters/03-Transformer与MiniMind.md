@@ -4,6 +4,8 @@
 
 token 是文本切分后的单位。本章的小模型按字符切分，“小猫睡觉”会变成“小、猫、睡、觉”；实际的大模型通常会混合使用字、词和词片段。切分方式会影响序列长度，但后面的数据流相同：token 先变成 id，再变成向量。
 
+实现从这一章换成 PyTorch。前两章算过的梯度并没有换一种原理，只是 `loss.backward()` 会替我们沿 forward 中的运算自动求导；参数仍要由优化器更新。Attention 的投影、矩阵乘法和 mask 会逐项写出来，不直接调用现成的 Attention 层。[Embedding 页](../exercises/block_03_transformer/task_25_embedding_lm_head/README.md) 先解释代码中的 `nn.Module` 和 Parameter，再接到下面的向量计算。
+
 ## 文本如何进入模型
 
 Tokenizer 为词表中的每个 token 分配一个整数 id，id 只是查表地址，编号 12 并不比编号 6 “大一倍”。Embedding 则是一张可训练的表，每行存放一个 token 的向量。为了让整个 Attention 过程可以手算，我们只给每个 token 两个特征：
@@ -38,6 +40,8 @@ Q（Query）说明当前位置想找什么，K（Key）用来接受匹配，V（
 最后一个位置的 query 是 $q=[1,1]$，它与三个 key 的点积为 `[1,1,2]`。每个向量有两维，所以再除以 $\sqrt2$，得到缩放后的分数
 
 $$s=[0.7071,\ 0.7071,\ 1.4142].$$
+
+这里除以 $\sqrt2$ 是为了控制分数的尺度。向量变宽后，点积里相加的项也变多；若各维近似独立、均值为 0、方差为 1，含 $d$ 项的点积方差约为 $d$，除以 $\sqrt d$ 后才回到约 1。否则即使还没学到合适的匹配，较大的分数也容易让 Softmax 过早接近只选一个位置。
 
 Softmax 把这三个分数变成和为 1 的读取权重
 
@@ -131,6 +135,8 @@ MiniMind 的 FFN 使用 SwiGLU：输入被投影为两路，`SiLU(gate) * up` �
 <div class="widget-mount" data-widget="sampling"></div>
 
 生成必须等待上一步选出新 token，但不必每轮都重算旧前缀的全部中间结果。KV Cache 会保存各层旧位置的 K/V，每轮只投影新 token；新 query 仍然要与所有可见 key 计算匹配分数。
+
+第一次跑这套代码时，用内置短文训练几十步就能保存 checkpoint，再输入“周一早晨，”观察生成结果。[训练页](../exercises/block_03_transformer/task_28_next_token_training/README.md) 会把训练 loss 与独立文本上的验证 loss 放在一起看：记住这段短文通常很快，但它不等于学会继续陌生文本。字符词表没覆盖到的字还会变成 `<unk>`，这也是读验证数字前需要先核对的事。
 
 ## MiniMind 的完整数据流
 

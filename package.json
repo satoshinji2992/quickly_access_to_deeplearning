@@ -1,0 +1,12 @@
+{
+  "name": "deep-learning-tutorial-checks",
+  "private": true,
+  "scripts": {
+    "build:test-site": "python3 scripts/build_docs_site.py && hugo --source site --destination .browser-build --baseURL http://127.0.0.1:8765/ --minify && pagefind --site site/.browser-build",
+    "test:site": "npm run build:test-site && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "pagefind": "1.5.2"
+  }
+}

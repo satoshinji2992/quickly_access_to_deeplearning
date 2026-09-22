@@ -90,7 +90,27 @@ $$
 
 `CrossEntropyLoss.backward()` 不接收 `dout`，因为损失是计算图末端的标量，它直接使用前向缓存的 `probs` 和 `targets` 产生第一份梯度。
 
-实现中的轴和缩放需要与公式一致：softmax 在类别轴 `axis=1` 上归一化，`max` 和 `sum` 都保留长度为 1 的维度，才能按行广播；`log` 前加很小的 `eps` 可以避免 `log(0)`。损失已经对 batch 取了平均，反向中的 batch size 也只除这一次。
+实现中的轴和缩放需要与公式一致：softmax 在类别轴 `axis=1` 上归一化，`max` 和 `sum` 都保留长度为 1 的维度，才能按行广播。损失已经对 batch 取了平均，反向中的 batch size 也只除这一次。
+
+还有一个容易漏掉的数值问题。若 logits 是 `[1000, 0]`，真实类别却是第二类，它的 softmax 概率会小到被浮点数记成 0。直接取 `log` 会得到负无穷；改成 `log(p + 1e-12)` 虽然不报错，却会把这次损失截成约 27.63，而正确值约为 1000。更稳妥的办法是先化简 $\log p$，再计算：
+
+$$
+s_k=z_k-\max_j z_j,\qquad
+\log p_k=s_k-\log\sum_j e^{s_j}.
+$$
+
+对应代码很短，既能保留损失的数值，也与 $(P-Y)/B$ 的反向公式一致：
+
+```python
+shifted = logits - logits.max(axis=1, keepdims=True)
+exp = np.exp(shifted)
+normalizer = exp.sum(axis=1, keepdims=True)
+probs = exp / normalizer
+log_probs = shifted - np.log(normalizer)
+loss = -np.mean(np.sum(targets * log_probs, axis=1))
+```
+
+这就是 `common/my_dl_lib.py` 采用的 log-softmax 写法。[SciPy 的例子](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_softmax.html)也对比了它与“先 softmax 再 log”在极端输入下的差异。
 
 ## Sequential 怎样串起各层
 
@@ -242,6 +262,8 @@ y=\gamma\hat x+\beta
 $$
 
 训练时，BatchNorm 还会积累 `running_mean` 和 `running_var`，验证时改用这组运行统计，这就是 `train()` 和 `eval()` 不能永远空着的原因。LayerNorm 不沿 batch 统计，而是对每个样本的最后一个特征维归一化；两者的统计轴不同，不能只看输入 shape 相同就互换。
+
+通常验证只做前向，不过 `eval()` 本身不等于关闭求导。若要追踪预测对输入的敏感程度，仍可以对这次前向调用 `backward`；这时运行均值和方差是常数，输入梯度就是 `dout * gamma / sqrt(running_var + eps)`，不能再套用训练时包含 batch 均值、方差导数的公式。
 
 到 Transformer 里，序列常写成 $(B,T,F)$：$B$ 是 batch size，$T$ 是序列长度，$F$ 是特征数。LayerNorm 的均值和方差沿 $F$ 计算，$\gamma,\beta$ 在所有 $B,T$ 位置共享，所以参数梯度要对前两个轴求和。
 

@@ -75,7 +75,7 @@ FeedForward  Linear -> GELU -> Linear
 SwiGLU      w3(SiLU(w1(x)) * w2(x))
 ```
 
-`w1` 和 `w2` 是两个不同的上投影，只有 `w1` 分支经过 SiLU，`w3` 再把两路乘积投影回 `D`。这些操作都只作用于最后一维，batch 和 sequence 维保持原样：
+`w1` 和 `w2` 是两个不同的上投影，只有 `w1` 分支经过 SiLU，`w3` 再把两路乘积投影回 `D`。这三个线性层和完整 MiniMind 一样不使用 bias，所以上面的矩阵公式也正好对应代码。它们只作用于最后一维，batch 和 sequence 维保持原样：
 
 ```text
 x[:,0,:] -> 同一个 FFN -> out[:,0,:]

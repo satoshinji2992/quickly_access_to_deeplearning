@@ -55,12 +55,16 @@ class MLPClassifier:
         return (M > 0).astype(float) 
     
     def CE(self,M_pred,M_true):
+        """Probability form for the hand calculation; training uses logits below."""
         epsilon = 1e-10
         M_pred = np.clip(M_pred, epsilon, 1. - epsilon)
         M_CE = -np.sum(M_true*np.log(M_pred), axis=1)
         return M_CE
     def compute_loss(self):
-        return np.mean(self.CE(self.softmax(),self.y))
+        # log(softmax(z)), rearranged before a tiny probability can become 0.
+        shifted = self.logits - np.max(self.logits, axis=1, keepdims=True)
+        log_probs = shifted - np.log(np.sum(np.exp(shifted), axis=1, keepdims=True))
+        return -np.mean(np.sum(self.y * log_probs, axis=1))
 
     def forward(self):
         self.H1 = self.relu(np.dot(self.X, self.W1) + self.b1)
@@ -123,6 +127,7 @@ class MLPClassifier:
     def predict(self, dataframe=None):
         if dataframe is None:
             dataframe = self.val_set
-        self.X, _, _ = self._prepare_data(dataframe)
+        # A new point has coordinates, but its label is what we want to predict.
+        self.X = dataframe[["x", "y"]].to_numpy(dtype=float)
         self.forward()
         return np.argmax(self.softmax(), axis=1)

@@ -1,5 +1,5 @@
 /* next-token — 对照 shifted_labels 图的交互版：
- * 输入右移一位得到 label；causal mask 管“不看未来”，
+ * 目标取输入的后一个 token；causal mask 管“不看未来”，
  * attention mask 管“不读 PAD key”，loss mask 管“PAD 目标不计损失”。
  * 点任意输入位置选中该 query；开关 PAD 观察两条屏蔽路径的差异。
  */
@@ -61,8 +61,8 @@
   function mount(container) {
     container.innerHTML =
       '<style>' + CSS + '</style>' +
-      '<p class="wg-title">Next-token 训练：标签右移一位，PAD 走两条屏蔽路径</p>' +
-      '<p class="wg-sub">句子「我爱自然语言」按字符切分。点输入行任一位置选中该 query：它能读谁、目标是谁、损失算不算，三张图同时更新。</p>' +
+      '<p class="wg-title">Next-token 训练：每个位置预测后一个 token</p>' +
+      '<p class="wg-sub">这里把「我爱自然语言」分成「我 / 爱 / 自然 / 语言」四个示意 token；训练脚本的字符词表会逐字切分。点击输入位置，可以同时查看它能读取的前文、预测目标和是否计算损失。</p>' +
       '<div class="wg-controls">' +
         '<button type="button" class="wg-button is-primary" data-role="padbtn">补 PAD 到等长：开</button>' +
         '<button type="button" class="wg-button" data-role="eosbtn">看 &lt;EOS&gt; 的两条路径</button>' +

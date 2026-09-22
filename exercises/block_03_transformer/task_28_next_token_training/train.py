@@ -7,8 +7,11 @@ pipeline remains inspectable in one file.
 
 import argparse
 from dataclasses import asdict
+import hashlib
+import os
 from pathlib import Path
 import sys
+import tempfile
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -26,7 +29,7 @@ DEFAULT_CORPUS = """
 中午云层散开，温度升到二十四摄氏度。操场边的积水比上午少了一半，银杏叶上仍然带着水珠。
 周二没有下雨，清晨温度十七摄氏度。午后风向转为南风，湿度下降，晾在窗边的滤纸很快变干。
 周三傍晚下了一场短雨，雨量筒增加了三毫米。第二天，记录员核对时间，并把连续三天的数据画成折线。
-食堂每天六点送来面包，图书馆八点开门。校车经过北门后会在实验楼停一次，再沿原路返回。
+周四早晨，温度十八摄氏度，风从南边吹来。值班员把雨量筒的读数写进表格。
 """.strip()
 
 
@@ -126,25 +129,34 @@ def split_corpus(text, train_fraction=0.85):
     if len(text) < 40:
         raise ValueError("the corpus is too short for independent train/validation splits")
     split = int(len(text) * train_fraction)
+    # Prefer a nearby paragraph boundary, so a held-out record starts with a
+    # complete sentence. A single-line corpus falls back to character positions.
+    paragraph_end = text.rfind("\n", 0, split + 1)
+    if paragraph_end >= len(text) // 2 and text[paragraph_end + 1:].strip():
+        return text[:paragraph_end], text[paragraph_end + 1:]
     return text[:split], text[split:]
 
 
-def make_dataloaders(text, seq_len=48, batch_size=8, seed=0):
+def make_dataloaders(text, seq_len=48, batch_size=8, seed=0, tokenizer=None):
     train_text, val_text = split_corpus(text)
     # Fitting only on the training split keeps validation genuinely held out.
-    tokenizer = CharacterTokenizer.fit(train_text)
+    tokenizer = CharacterTokenizer.fit(train_text) if tokenizer is None else tokenizer
     train_ids = tokenizer.encode(train_text, add_bos=True, add_eos=True)
     val_ids = tokenizer.encode(val_text, add_bos=True, add_eos=True)
     train_data = NextTokenDataset(train_ids, seq_len, tokenizer.pad_token_id)
     val_data = NextTokenDataset(val_ids, seq_len, tokenizer.pad_token_id)
     generator = torch.Generator().manual_seed(seed)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, generator=generator)
-    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(
+        val_data, batch_size=batch_size, shuffle=False,
+        generator=torch.Generator().manual_seed(seed),
+    )
     return tokenizer, train_loader, val_loader
 
 
 @torch.no_grad()
 def evaluate(model, data_loader, device="cpu"):
+    was_training = model.training
     model.eval()
     loss_total, token_count = 0.0, 0
     for input_ids, labels, attention_mask in data_loader:
@@ -161,69 +173,141 @@ def evaluate(model, data_loader, device="cpu"):
         # whenever the last sequence contains more padding.
         loss_total += float(loss) * valid_count
         token_count += valid_count
-    return loss_total / max(token_count, 1)
+    model.train(was_training)
+    if token_count == 0:
+        raise ValueError("validation contains no valid target tokens")
+    return loss_total / token_count
 
 
-def save_checkpoint(path, model, optimizer, tokenizer, step, val_loss):
+def save_checkpoint(path, model, optimizer, tokenizer, step, val_loss, training_state=None):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "config": asdict(model.config),
-            "model_state": model.state_dict(),
-            "optimizer_state": optimizer.state_dict() if optimizer is not None else None,
-            "tokenizer": tokenizer.state_dict(),
-            "step": int(step),
-            "val_loss": float(val_loss),
-        },
-        path,
-    )
+    checkpoint = {
+        "config": asdict(model.config),
+        "model_state": model.state_dict(),
+        "optimizer_state": optimizer.state_dict() if optimizer is not None else None,
+        "tokenizer": tokenizer.state_dict(),
+        "step": int(step),
+        "val_loss": float(val_loss),
+        "training_state": training_state,
+    }
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            torch.save(checkpoint, temporary)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        # Same-directory replacement is atomic: an interrupted save cannot
+        # leave half a file in place of the last readable checkpoint.
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def load_checkpoint(path, device="cpu"):
     try:
-        checkpoint = torch.load(path, map_location=device, weights_only=False)
+        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
     except TypeError:  # PyTorch before the weights_only argument existed.
-        checkpoint = torch.load(path, map_location=device)
+        checkpoint = torch.load(path, map_location="cpu")
     tokenizer = CharacterTokenizer.from_state_dict(checkpoint["tokenizer"])
     model = MiniMindCore(MiniMindConfig(**checkpoint["config"])).to(device)
     model.load_state_dict(checkpoint["model_state"])
     return model, tokenizer, checkpoint
 
 
+def training_batches(data_loader, start_step=0, seed=0):
+    """Reconstruct the next shuffled batch from the epoch and batch offset.
+
+    Each epoch has its own seed. Resuming only replays the consumed part of
+    that epoch, rather than storing an iterator or reshuffling from scratch.
+    """
+    epoch, offset = divmod(start_step, len(data_loader))
+    while True:
+        data_loader.generator.manual_seed(seed + epoch)
+        for batch_index, batch in enumerate(data_loader):
+            if batch_index >= offset:
+                yield batch
+        epoch += 1
+        offset = 0
+
+
 def train_model(
     text=DEFAULT_CORPUS,
     steps=80,
-    seq_len=48,
-    batch_size=8,
+    seq_len=None,
+    batch_size=None,
     device="cpu",
     seed=0,
     checkpoint_path=None,
+    resume_path=None,
+    eval_every=None,
 ):
+    if not isinstance(steps, int) or steps <= 0:
+        raise ValueError("steps must be a positive integer")
+    if eval_every is None:
+        eval_every = max(steps // 4, 1)
+    if not isinstance(eval_every, int) or eval_every <= 0:
+        raise ValueError("eval_every must be a positive integer")
+
     torch.manual_seed(seed)
+    tokenizer = None
+    checkpoint = None
+    start_step = 0
+    corpus_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    if resume_path is not None:
+        model, tokenizer, checkpoint = load_checkpoint(resume_path, device)
+        saved = checkpoint.get("training_state")
+        if saved is None or checkpoint.get("optimizer_state") is None:
+            raise ValueError("checkpoint has no resumable training state; it can still be used for generation")
+        if saved["corpus_sha256"] != corpus_hash:
+            raise ValueError("resume requires the same corpus; supply the original --text file")
+        if seq_len is not None and seq_len != saved["seq_len"]:
+            raise ValueError("seq_len differs from the saved training configuration")
+        if batch_size is not None and batch_size != saved["batch_size"]:
+            raise ValueError("batch_size differs from the saved training configuration")
+        seq_len, batch_size, seed = saved["seq_len"], saved["batch_size"], saved["seed"]
+        start_step = checkpoint["step"]
+    else:
+        seq_len = 48 if seq_len is None else seq_len
+        batch_size = 8 if batch_size is None else batch_size
+
     tokenizer, train_loader, val_loader = make_dataloaders(
-        text, seq_len=seq_len, batch_size=batch_size, seed=seed
+        text, seq_len=seq_len, batch_size=batch_size, seed=seed, tokenizer=tokenizer
     )
-    config = MiniMindConfig(
-        vocab_size=tokenizer.vocab_size,
-        dim=64,
-        n_layers=2,
-        n_heads=4,
-        n_kv_heads=2,
-        hidden_dim=128,
-        max_seq_len=seq_len,
-        pad_token_id=tokenizer.pad_token_id,
-    )
-    model = MiniMindCore(config).to(device)
+    if checkpoint is None:
+        config = MiniMindConfig(
+            vocab_size=tokenizer.vocab_size,
+            dim=64,
+            n_layers=2,
+            n_heads=4,
+            n_kv_heads=2,
+            hidden_dim=128,
+            max_seq_len=seq_len,
+            pad_token_id=tokenizer.pad_token_id,
+        )
+        model = MiniMindCore(config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-3)
-    iterator = iter(train_loader)
+    if checkpoint is not None:
+        optimizer.load_state_dict(checkpoint["optimizer_state"])
+        torch.set_rng_state(saved["torch_rng_state"])
+        if torch.cuda.is_available() and saved.get("cuda_rng_states") is not None:
+            torch.cuda.set_rng_state_all(saved["cuda_rng_states"])
+
+    val_text = split_corpus(text)[1]
+    unknown_count = sum(char not in tokenizer.token_to_id for char in val_text)
+    print(f"vocab_size={tokenizer.vocab_size} train_blocks={len(train_loader.dataset)} "
+          f"val_blocks={len(val_loader.dataset)} val_unknown_chars={unknown_count}/{len(val_text)}")
+    initial_val = evaluate(model, val_loader, device)
+    print(f"step={start_step:03d} validation_loss={initial_val:.4f}")
+
+    iterator = training_batches(train_loader, start_step=start_step, seed=seed)
     model.train()
-    for step in range(1, steps + 1):
-        try:
-            input_ids, labels, attention_mask = next(iterator)
-        except StopIteration:
-            iterator = iter(train_loader)
-            input_ids, labels, attention_mask = next(iterator)
+    for step in range(start_step + 1, start_step + steps + 1):
+        input_ids, labels, attention_mask = next(iterator)
         input_ids = input_ids.to(device)
         labels = labels.to(device)
         attention_mask = attention_mask.to(device)
@@ -232,13 +316,21 @@ def train_model(
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
-        if step == 1 or step % max(steps // 4, 1) == 0:
+        if step == start_step + 1 or step % eval_every == 0 or step == start_step + steps:
             print(f"step={step:03d} train_loss={loss.item():.4f}")
-
-    val_loss = evaluate(model, val_loader, device)
-    print(f"validation_loss={val_loss:.4f}")
+        if step % eval_every == 0 or step == start_step + steps:
+            val_loss = evaluate(model, val_loader, device)
+            print(f"step={step:03d} validation_loss={val_loss:.4f}")
+            if checkpoint_path is not None:
+                training_state = {
+                    "corpus_sha256": corpus_hash, "seq_len": seq_len,
+                    "batch_size": batch_size, "seed": seed,
+                    "torch_rng_state": torch.get_rng_state(),
+                    "cuda_rng_states": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+                }
+                save_checkpoint(checkpoint_path, model, optimizer, tokenizer, step, val_loss, training_state)
+    model.eval()
     if checkpoint_path is not None:
-        save_checkpoint(checkpoint_path, model, optimizer, tokenizer, steps, val_loss)
         print(f"checkpoint={Path(checkpoint_path)}")
     return model, tokenizer, val_loss
 
@@ -246,11 +338,13 @@ def train_model(
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--text", type=Path, help="optional UTF-8 corpus; built-in prose is used offline")
-    parser.add_argument("--steps", type=int, default=80)
-    parser.add_argument("--seq-len", type=int, default=48)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--steps", type=int, default=80, help="number of additional parameter updates")
+    parser.add_argument("--seq-len", type=int, default=None, help="default: 48, or the resumed run's value")
+    parser.add_argument("--batch-size", type=int, default=None, help="default: 8, or the resumed run's value")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--checkpoint", type=Path, default=Path("minimind_demo.pt"))
+    parser.add_argument("--resume", type=Path, help="resume model, optimizer and batch order from a checkpoint")
+    parser.add_argument("--eval-every", type=int, default=None, help="validate and save every N updates")
     return parser.parse_args()
 
 
@@ -269,6 +363,8 @@ def main():
         device=device,
         seed=args.seed,
         checkpoint_path=args.checkpoint,
+        resume_path=args.resume,
+        eval_every=args.eval_every,
     )
 
 

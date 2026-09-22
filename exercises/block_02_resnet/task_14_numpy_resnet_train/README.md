@@ -57,6 +57,8 @@ for images, labels in minibatches:
 
 公共 `CrossEntropyLoss` 接收 one-hot target，所以训练代码会先把整数标签变成 `(N,num_classes)`。很多框架可以直接传整数标签，这只是本仓库的接口选择，不是交叉熵本身的限制。
 
+例如三分类标签 `[2,0]` 会变成 `[[0,0,1],[1,0,0]]`。模型仍输出未归一化的 logits，`CrossEntropyLoss` 在内部计算 Softmax；如果先给 logits 做一次 Softmax 再传进去，相当于重复归一化，损失和梯度都会变。100 类等概率预测的交叉熵为 `-log(1/100)≈4.605`，可以用作读 CIFAR-100 初始日志的参照，但随机初始化模型的输出并不严格等概率。
+
 各层在 backward 时会原位覆盖自己的梯度数组，这份实现因而不需要另外调用 `zero_grad()`。优化器默认使用 Momentum：
 
 ```python
@@ -74,6 +76,8 @@ L_{epoch}=\frac{\sum_b |B_b|L_b}{\sum_b |B_b|}
 $$
 
 训练和评估都使用这一写法。
+
+日志里的 `train_loss` 还混合了一轮训练过程中不同时刻的模型：第一批用刚开始的参数计算，后面的 batch 使用已经更新过的参数。`val_loss` 则是在这一轮结束后，用最终参数统一计算。训练端还可能做随机增强、使用当前 batch 的 BN 统计，验证端却使用固定图片和 running statistics，因此出现 `val_loss < train_loss` 并不矛盾。若要更直接地比较拟合与泛化，可以在同一轮结束后分别调用 `evaluate()` 计算未增强训练集和验证集，再比较两者。
 
 ## 先看四类条纹能不能学会
 
@@ -157,7 +161,9 @@ python solutions/block_02_resnet/train_cifar100_solution.py \
   --resume --epochs 10
 ```
 
-程序先读取保存时的结构与数据配置，再恢复数组和优化器状态；这里的 `--epochs 10` 表示总轮数，而不是额外再跑 10 轮。
+程序先读取保存时的结构与数据配置，再恢复数组和优化器状态；这里的 `--epochs 10` 表示总轮数，而不是额外再跑 10 轮。shuffle 和增强使用 `seed+epoch` 作为随机种子，所以从第 6 轮恢复时，也会接上对应轮次的数据顺序。
+
+这个参考入口也只在指定 `--eval-test` 后评估官方测试集。比如已经训练到第 10 轮、配置也确定了，可以运行 `--resume --epochs 10 --eval-test`：模型会加载现有 checkpoint，直接报告测试指标，不再更新参数。
 
 </details>
 

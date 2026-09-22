@@ -16,6 +16,10 @@ on:
       - "tests/test_images.py"
       - "tests/test_im2col_figure.py"
       - "tests/test_site.py"
+      - "tests/browser/**"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.js"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -50,7 +54,16 @@ jobs:
       - name: Build site
         run: hugo --source site --minify
       - name: Build search index
-        run: npx -y pagefind@1 --site site/public
+        run: npx -y pagefind@1.5.2 --site site/public
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check reading interactions
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:site
       - name: Check documentation
         run: |
           python -m unittest tests.test_docs tests.test_site tests.test_images tests.test_im2col_figure -v

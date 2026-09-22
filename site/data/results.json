@@ -2,5 +2,5 @@
  "circle_train_acc": 0.981,
  "greedy": "周一早晨，校园气象站记录到十八摄氏度，风从东边吹来。值班员",
  "sampled": "周一早晨，校园气象站记录到十八摄氏度，风从东边吹来。值班员",
- "kv_error": "max_abs_error=2.265e-06"
+ "kv_error": "max_abs_error=2.027e-06"
 }

@@ -56,7 +56,9 @@ python solutions/block_02_resnet/train_cifar100_solution.py \
 epoch=... train_loss=... train_acc=... val_loss=... val_acc=...
 ```
 
-训练结束再输出 `test_loss/test_acc`。具体数值取决于配置和训练轮数，这里不承诺论文准确率。
+默认只输出 train 和 validation 指标，测试集留给配置确定后的最终评估。在命令末尾加 `--eval-test`，训练结束时才会输出 `test_loss/test_acc`。具体数值取决于配置和训练轮数，这里不承诺论文准确率。
+
+`--weight-decay` 目前只作用于 `--optimizer adamw`。Momentum 没有实现权重衰减，传入非零值会报错；这样日志里写下的配置就不会悄悄被忽略。切换到 AdamW 时可以显式传入 `--optimizer adamw --lr 0.001 --weight-decay 0.01`，对应公共库中的解耦权重衰减。
 
 不限制训练集的命令为：
 
@@ -130,6 +132,13 @@ optimizer 类型、learning rate 与 weight decay
 ```
 
 `epochs` 是本次运行的目标总轮数，不从 checkpoint 覆盖；`data_dir` 可以指向新的数据位置。加载模型和 optimizer 数组时仍使用 strict 检查。
+
+`--eval-test` 也不从旧配置继承，每次评估都由当前命令明确选择。已有第 10 轮 checkpoint 时，下面的命令只加载并评估，不再训练：
+
+```bash
+python solutions/block_02_resnet/train_cifar100_solution.py \
+  --resume --epochs 10 --eval-test
+```
 
 ---
 

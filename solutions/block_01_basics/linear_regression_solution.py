@@ -36,7 +36,7 @@ for epoch in range(epochs):
     grad_a = (-2/n) * np.sum(x_train * (y_train - y_pred))
     grad_b = (-2/n) * np.sum(y_train - y_pred)
 
-    # 3.4 更新参数 (反向传播)
+    # 3.4 用已经算好的梯度更新参数
     a = a - learning_rate * grad_a
     b = b - learning_rate * grad_b
 

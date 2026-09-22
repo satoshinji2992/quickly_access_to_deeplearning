@@ -83,6 +83,10 @@
 .docs-toc a.active { color:#075dcf; font-weight:700; border-bottom:2px solid #0b63f3; }
 .search-overlay { position:fixed; inset:0; display:none; background:rgba(7,19,33,.45); z-index:90; padding-top:12vh; }
 .search-overlay.is-open { display:block; }
+.search-open { overflow:hidden; }
+.search-close { align-self:flex-end; border:0; padding:10px 16px; background:transparent; color:#45515c; cursor:pointer; }
+.search-close:focus-visible,.search-results a:focus-visible { outline:2px solid #075dcf; outline-offset:-2px; }
+.anchor-copy:focus-visible { opacity:1; }
 .search-modal { width:min(640px,calc(100% - 40px)); margin:0 auto; background:#fffef9; border:2px solid #071321; box-shadow:10px 10px 0 rgba(11,99,243,.8); display:flex; flex-direction:column; max-height:70vh; }
 .search-input { border:0; border-bottom:2px solid #071321; padding:16px 18px; font:600 16px Arial,"PingFang SC",sans-serif; color:#071321; outline:none; background:transparent; }
 .search-results { overflow:auto; }

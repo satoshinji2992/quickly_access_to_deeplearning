@@ -6,4 +6,4 @@
 {{- range slice "mission_0" "data_circle" "relu" "relu_approximation" "sigmoid" "silu_gelu" -}}
 {{- if strings.HasSuffix $stem . }}{{ $narrow = true }}{{ end -}}
 {{- end -}}
-<img src="{{ .Destination | safeURL }}" alt="{{ .PlainText }}" loading="lazy" decoding="async"{{ if $narrow }} class="w-narrow"{{ end }}>
+<a class="figure-original" href="{{ .Destination | safeURL }}" target="_blank" rel="noopener" aria-label="查看原图：{{ .PlainText }}"><img src="{{ .Destination | safeURL }}" alt="{{ .PlainText }}" loading="lazy" decoding="async" title="点击查看原图"{{ if $narrow }} class="w-narrow"{{ end }}></a>

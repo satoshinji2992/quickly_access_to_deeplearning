@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -101,8 +102,8 @@ def circle_boundary() -> dict:
     return {"circle_train_acc": round(float(acc), 3)}
 
 
-def minimind() -> dict:
-    ckpt = Path("/tmp/minimind_home.pt")
+def minimind(checkpoint: Path) -> dict:
+    ckpt = checkpoint
     train = ROOT / "exercises/block_03_transformer/task_28_next_token_training/train.py"
     gen = ROOT / "exercises/block_03_transformer/task_29_generate_sampling/generate.py"
     kv = ROOT / "exercises/block_03_transformer/task_30_kv_cache/kv_cache.py"
@@ -128,10 +129,8 @@ def minimind() -> dict:
 if __name__ == "__main__":
     data = {}
     data.update(circle_boundary())
-    try:
-        data.update(minimind())
-    except Exception as exc:  # torch 环境缺失时不阻塞边界图
-        data["minimind_error"] = str(exc)[:120]
+    with tempfile.TemporaryDirectory(prefix="minimind-results-") as directory:
+        data.update(minimind(Path(directory) / "model.pt"))
     payload = json.dumps(data, ensure_ascii=False, indent=1)
     (OUT / "results.json").write_text(payload, encoding="utf-8")
     SITE_DATA.write_text(payload, encoding="utf-8")
